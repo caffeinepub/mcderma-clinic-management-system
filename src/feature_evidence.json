@@ -1,0 +1,74 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-revamp-the-appointment-entry-card-layout-in-the-schedule-tab-so-that-the-top-line-contains-the-appointment-time-and-patient-name-on-a-single-row-with-all-action-buttons-moved-into-a-second-row-beneath-it-and-the-mobile-number-displayed-below-the-action-row",
+      "featureTitle": "Revamp the appointment entry (card) layout in the Schedule tab so that the top line contains the appointment time and patient name on a single row, with all action buttons moved into a second row beneath it, and the mobile number displayed below the action row.",
+      "files": [
+        "frontend/src/components/AppointmentCard.tsx",
+        "frontend/src/pages/ScheduleTab.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-the-barcode-scanner-qr-style-button-from-appointment-entries-wherever-it-appears-in-the-schedule-tab-ui",
+      "featureTitle": "Remove the barcode scanner / QR-style button from appointment entries wherever it appears in the Schedule tab UI.",
+      "files": [
+        "frontend/src/components/AppointmentFeedbackActions.tsx",
+        "frontend/src/components/AppointmentFeedbackFlyerDialog.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-the-phonebook-import-experience-in-appointment-patient-and-lead-dialogs-by-adding-an-in-app-review-edit-step-after-selecting-a-contact-and-apply-phone-number-normalization-during-import-so-the-saved-filled-mobile-number-contains-no-spaces",
+      "featureTitle": "Improve the phonebook import experience in Appointment, Patient, and Lead dialogs by adding an in-app review/edit step after selecting a contact, and apply phone-number normalization during import so the saved/filled mobile number contains no spaces.",
+      "files": [
+        "frontend/src/components/AppointmentDialog.tsx",
+        "frontend/src/components/ContactImportReviewDialog.tsx",
+        "frontend/src/components/LeadDialog.tsx",
+        "frontend/src/components/PatientDialog.tsx",
+        "frontend/src/utils/phone.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

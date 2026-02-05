@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        /* Medical blue theme - professional and trustworthy */
+        --background: 0.98 0 0;
+        --foreground: 0.2 0 0;
+        --card: 1 0 0;
+        --card-foreground: 0.2 0 0;
+        --popover: 1 0 0;
+        --popover-foreground: 0.2 0 0;
+        /* Primary: Medical blue */
+        --primary: 0.55 0.15 240;
+        --primary-foreground: 0.99 0 0;
+        /* Secondary: Light blue-gray */
+        --secondary: 0.95 0.01 240;
+        --secondary-foreground: 0.3 0 0;
+        --muted: 0.96 0.005 240;
+        --muted-foreground: 0.5 0 0;
+        --accent: 0.94 0.02 240;
+        --accent-foreground: 0.25 0 0;
+        /* Success: Medical green */
+        --success: 0.65 0.15 150;
+        --success-foreground: 0.99 0 0;
+        /* Warning: Amber */
+        --warning: 0.75 0.15 60;
+        --warning-foreground: 0.2 0 0;
+        --destructive: 0.58 0.22 25;
+        --destructive-foreground: 0.99 0 0;
+        --border: 0.9 0.005 240;
+        --input: 0.92 0.005 240;
+        --ring: 0.55 0.15 240;
+    }
+
+    .dark {
+        --background: 0.15 0 0;
+        --foreground: 0.95 0 0;
+        --card: 0.18 0 0;
+        --card-foreground: 0.95 0 0;
+        --popover: 0.2 0 0;
+        --popover-foreground: 0.95 0 0;
+        --primary: 0.6 0.18 240;
+        --primary-foreground: 0.98 0 0;
+        --secondary: 0.25 0.01 240;
+        --secondary-foreground: 0.95 0 0;
+        --muted: 0.22 0.01 240;
+        --muted-foreground: 0.65 0 0;
+        --accent: 0.28 0.02 240;
+        --accent-foreground: 0.95 0 0;
+        --success: 0.6 0.15 150;
+        --success-foreground: 0.98 0 0;
+        --warning: 0.7 0.15 60;
+        --warning-foreground: 0.15 0 0;
+        --destructive: 0.6 0.22 25;
+        --destructive-foreground: 0.98 0 0;
+        --border: 0.3 0.01 240;
+        --input: 0.28 0.01 240;
+        --ring: 0.6 0.18 240;
+    }
+
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+}
+
+/* Smooth transitions */
+* {
+    @apply transition-colors duration-200;
+}

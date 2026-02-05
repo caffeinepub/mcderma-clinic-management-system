@@ -1,0 +1,88 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Schedule appointment card layout cleanup, remove QR action, and add contact import review/normalization",
+  "requirements": [
+    {
+      "id": "REQ-4",
+      "summary": "Restructure AppointmentCard layout across Today/Tomorrow/Upcoming to use a consistent 3-row layout (time+name, action row, mobile) with responsive wrapping.",
+      "acceptanceCriteria": [
+        "In Today and Tomorrow lists, each AppointmentCard shows: (1) first row: time (left) and patient name (right or remaining space) on one line; (2) second row: action buttons in a horizontal row beneath; (3) third row: mobile number beneath the buttons.",
+        "In Upcoming list cards (rendered inline in ScheduleTab), the same visual structure is used (top line time+name, action row under it, mobile under actions).",
+        "Action buttons wrap gracefully on small screens without overlapping text or causing layout breakage.",
+        "Existing actions still function (edit, reminder/WhatsApp message, call, add to patients/contacts, delete, feedback) except those explicitly removed in REQ-5."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppointmentCard.tsx",
+          "operation": "modify",
+          "description": "Revamp the AppointmentCard markup to a 3-row structure: top row with time + patient name on one line, second row with a flex-wrap action button row, third row with mobile number; keep existing action handlers working and ensure small-screen wrapping does not break layout."
+        },
+        {
+          "path": "frontend/src/pages/ScheduleTab.tsx",
+          "operation": "modify",
+          "description": "Update the Upcoming section to use the same AppointmentCard visual structure as Today/Tomorrow (rather than a separate inline card layout), while preserving horizontal scrolling and ensuring cards remain readable at small widths."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Remove the barcode/QR/scanner-style action button from appointment entries in the Schedule tab UI and clean up related UI code paths.",
+      "acceptanceCriteria": [
+        "No barcode/QR/scanner icon button is shown on appointment cards in Today, Tomorrow, or Upcoming sections.",
+        "Other appointment actions remain available and continue to work.",
+        "No unused code paths remain that reference the removed action in appointment card UI components."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppointmentFeedbackActions.tsx",
+          "operation": "modify",
+          "description": "Remove the QR/scanner-style button (QrCode) and its associated open-flyer behavior from feedback actions, leaving only the WhatsApp feedback request flow and its preview/confirm behavior."
+        },
+        {
+          "path": "frontend/src/components/AppointmentFeedbackFlyerDialog.tsx",
+          "operation": "delete",
+          "description": "Delete the now-unused QR flyer dialog component to eliminate leftover UI code paths referencing the removed QR/scanner action."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Add an in-app review/edit step after selecting a contact from the phonebook for Appointment/Patient/Lead dialogs and normalize imported phone numbers to remove spaces before applying.",
+      "acceptanceCriteria": [
+        "When the user taps “Add from phonebook” in AppointmentDialog, PatientDialog, or LeadDialog and selects a contact, the app shows a small in-app confirmation UI (dialog/sheet) that displays the selected name and mobile in editable inputs with Cancel/Use actions.",
+        "If the user confirms, the edited values are applied to the form; if the user cancels, the form remains unchanged.",
+        "Imported phone numbers are normalized to remove spaces between digits (e.g., \"+91 88988 00777\" becomes \"+918898800777\") before being applied to the form.",
+        "Normalization is applied consistently across Appointment, Patient, and Lead contact imports.",
+        "User-facing text for this flow is in English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/phone.ts",
+          "operation": "create",
+          "description": "Add a small shared utility to normalize imported phone numbers by removing whitespace characters (including multiple spaces) so dialogs apply consistent formatting."
+        },
+        {
+          "path": "frontend/src/components/ContactImportReviewDialog.tsx",
+          "operation": "create",
+          "description": "Create a reusable in-app confirmation dialog that shows selected contact name and mobile in editable inputs with English UI labels and Cancel/Use actions; on Use, return edited values to the caller; on Cancel, apply nothing."
+        },
+        {
+          "path": "frontend/src/components/AppointmentDialog.tsx",
+          "operation": "modify",
+          "description": "Change phonebook import flow to: pick contact -> normalize phone -> open ContactImportReviewDialog for review/edit -> only on confirm apply values into the appointment form; ensure cancel leaves existing form data unchanged and use English text."
+        },
+        {
+          "path": "frontend/src/components/PatientDialog.tsx",
+          "operation": "modify",
+          "description": "Change phonebook import flow to: pick contact -> normalize phone -> open ContactImportReviewDialog for review/edit -> only on confirm apply values into the patient form; ensure cancel leaves existing form data unchanged and use English text."
+        },
+        {
+          "path": "frontend/src/components/LeadDialog.tsx",
+          "operation": "modify",
+          "description": "Change phonebook import flow to: pick contact -> normalize phone -> open ContactImportReviewDialog for review/edit -> only on confirm apply values into the lead form; ensure cancel leaves existing form data unchanged and use English text."
+        }
+      ]
+    }
+  ]
+}

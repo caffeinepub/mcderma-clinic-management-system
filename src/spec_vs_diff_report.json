@@ -1,0 +1,35 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-05T18:52:31.405Z",
+  "summary": "Diff implements the requested appointment card 3-row layout (time+name row, action button row with flex-wrap, mobile below) and introduces a contact import review dialog used by Appointment, Patient, and Lead dialogs with initial phone-number whitespace normalization. One gap: normalization is applied only immediately after picking the contact, not re-applied on confirm after the user edits the mobile field, so spaces could still be saved/filled if the user reintroduces them in the review step.",
+  "missing_requirements": [
+    {
+      "id": "REQ-6",
+      "requirement": "Imported phone numbers are normalized to remove spaces between digits before being applied to the form (and applied consistently across Appointment, Patient, and Lead contact imports).",
+      "reason": "Normalization is performed when setting the pending contact after picking (normalizePhoneNumber(contact.mobile)), but the confirmed value passed from the editable review dialog is applied directly to the form without re-normalizing. If a user edits the mobile number and includes spaces, the final saved/filled value may contain spaces, violating the acceptance criteria.",
+      "evidence": [
+        "frontend/src/utils/phone.ts",
+        "frontend/src/components/ContactImportReviewDialog.tsx",
+        "frontend/src/components/AppointmentDialog.tsx",
+        "frontend/src/components/PatientDialog.tsx",
+        "frontend/src/components/LeadDialog.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [],
+  "confidence": 0.72,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/AppointmentCard.tsx",
+    "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/components/AppointmentFeedbackActions.tsx",
+    "frontend/src/components/AppointmentFeedbackFlyerDialog.tsx",
+    "frontend/src/components/ContactImportReviewDialog.tsx",
+    "frontend/src/components/LeadDialog.tsx",
+    "frontend/src/components/PatientDialog.tsx",
+    "frontend/src/pages/ScheduleTab.tsx",
+    "frontend/src/utils/phone.ts",
+    "project_state.json"
+  ]
+}

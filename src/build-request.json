@@ -1,0 +1,92 @@
+{
+  "kind": "build_request",
+  "title": "Clean up appointment card layout, remove barcode/QR action, and improve phonebook import UX",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-4",
+      "text": "Revamp the appointment entry (card) layout in the Schedule tab so that the top line contains the appointment time and patient name on a single row, with all action buttons moved into a second row beneath it, and the mobile number displayed below the action row.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5",
+          "msg-7"
+        ],
+        "quotes": [
+          "Appointment entry have become messy. Place Time and Name on Top line. Below it all buttons like what's reminder, feedback, edit, call, add to contact and delete button. ... Below this mobile no",
+          "Appointment entry have become messy. ..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "In Today and Tomorrow lists, each AppointmentCard shows: (1) first row: time (left) and patient name (right or remaining space) on one line; (2) second row: action buttons in a horizontal row beneath; (3) third row: mobile number beneath the buttons.",
+        "In Upcoming list cards (rendered inline in ScheduleTab), the same visual structure is used (top line time+name, action row under it, mobile under actions).",
+        "Action buttons wrap gracefully on small screens without overlapping text or causing layout breakage.",
+        "Existing actions still function (edit, reminder/WhatsApp message, call, add to patients/contacts, delete, feedback) except those explicitly removed in REQ-5."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Remove the barcode scanner / QR-style button from appointment entries wherever it appears in the Schedule tab UI.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5",
+          "msg-7"
+        ],
+        "quotes": [
+          "Remove barcode scanner button.",
+          "Remove barcode scanner button."
+        ]
+      },
+      "acceptanceCriteria": [
+        "No barcode/QR/scanner icon button is shown on appointment cards in Today, Tomorrow, or Upcoming sections.",
+        "Other appointment actions remain available and continue to work.",
+        "No unused code paths remain that reference the removed action in appointment card UI components."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Improve the phonebook import experience in Appointment, Patient, and Lead dialogs by adding an in-app review/edit step after selecting a contact, and apply phone-number normalization during import so the saved/filled mobile number contains no spaces.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "Also improve phonebook look it's to simple. Also while importing contact provide edit option. Also on importing contact make sure mobile number as no space between numbers"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When the user taps “Add from phonebook” in AppointmentDialog, PatientDialog, or LeadDialog and selects a contact, the app shows a small in-app confirmation UI (dialog/sheet) that displays the selected name and mobile in editable inputs with Cancel/Use actions.",
+        "If the user confirms, the edited values are applied to the form; if the user cancels, the form remains unchanged.",
+        "Imported phone numbers are normalized to remove spaces between digits (e.g., \"+91 88988 00777\" becomes \"+918898800777\") before being applied to the form.",
+        "Normalization is applied consistently across Appointment, Patient, and Lead contact imports.",
+        "User-facing text for this flow is in English."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify files under frontend/src/components/ui (Shadcn components must be composed, not edited).",
+    "Do not modify any frontend immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/main.tsx).",
+    "Keep backend as a single-actor Motoko canister; no backend changes are required for these UI-only fixes."
+  ],
+  "nonGoals": [
+    "Changing backend data models or adding new backend endpoints.",
+    "Implementing third-party contact sync; only the browser Contact Picker API flow is in scope.",
+    "Redesigning unrelated pages (Settings, Patients list, Leads list) beyond the phonebook import UX and appointment card layout."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}
