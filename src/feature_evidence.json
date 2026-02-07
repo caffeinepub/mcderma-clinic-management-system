@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-revamp-the-appointment-entry-card-layout-in-the-schedule-tab-so-that-the-top-line-contains-the-appointment-time-and-patient-name-on-a-single-row-with-all-action-buttons-moved-into-a-second-row-beneath-it-and-the-mobile-number-displayed-below-the-action-row",
-      "featureTitle": "Revamp the appointment entry (card) layout in the Schedule tab so that the top line contains the appointment time and patient name on a single row, with all action buttons moved into a second row beneath it, and the mobile number displayed below the action row.",
+      "featureId": "feature-add-a-lead-status-dropdown-control-to-each-lead-entry-card-in-the-leads-tab-positioned-on-the-right-side-below-the-existing-rating-display-with-exactly-these-options-1-ringing-2-will-call-and-come-3-follow-up-date-given",
+      "featureTitle": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
       "files": [
-        "frontend/src/components/AppointmentCard.tsx",
-        "frontend/src/pages/ScheduleTab.tsx"
+        "frontend/src/components/LeadCard.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -19,41 +18,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-remove-the-barcode-scanner-qr-style-button-from-appointment-entries-wherever-it-appears-in-the-schedule-tab-ui",
-      "featureTitle": "Remove the barcode scanner / QR-style button from appointment entries wherever it appears in the Schedule tab UI.",
+      "featureId": "feature-persist-the-selected-lead-status-for-each-lead-in-backend-storage-and-ensure-it-is-returned-by-the-getleads-query-and-updated-via-an-update-operation",
+      "featureTitle": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
       "files": [
-        "frontend/src/components/AppointmentFeedbackActions.tsx",
-        "frontend/src/components/AppointmentFeedbackFlyerDialog.tsx"
-      ],
-      "components": [
-        "camera@1.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-improve-the-phonebook-import-experience-in-appointment-patient-and-lead-dialogs-by-adding-an-in-app-review-edit-step-after-selecting-a-contact-and-apply-phone-number-normalization-during-import-so-the-saved-filled-mobile-number-contains-no-spaces",
-      "featureTitle": "Improve the phonebook import experience in Appointment, Patient, and Lead dialogs by adding an in-app review/edit step after selecting a contact, and apply phone-number normalization during import so the saved/filled mobile number contains no spaces.",
-      "files": [
-        "frontend/src/components/AppointmentDialog.tsx",
-        "frontend/src/components/ContactImportReviewDialog.tsx",
         "frontend/src/components/LeadDialog.tsx",
-        "frontend/src/components/PatientDialog.tsx",
-        "frontend/src/utils/phone.ts"
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "camera@1.0.0",
@@ -66,7 +40,28 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-reduce-the-vertical-height-of-each-lead-entry-card-in-the-leads-section-by-approximately-20-30-while-keeping-all-existing-actions-call-whatsapp-edit-delete-usable-and-readable-on-mobile",
+      "featureTitle": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
+      "files": [
+        "frontend/src/components/LeadCard.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

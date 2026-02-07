@@ -1,280 +1,36 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
-  "summary": "McDerma is a PWA clinic management system built with a React/Tailwind frontend and a Motoko (Internet Computer) backend. Authenticated users (via DFINITY Internet Identity) can manage appointments, patients (including photo capture/upload), and leads with follow-up tracking. The app supports background synchronization using backend \"last modified\" timestamps, manual sync, appointment reminder notifications (15 minutes before), and data export (JSON/CSV). Backend data is stored per-user (Principal-keyed) and includes access control (admin/user/guest) plus blob-storage maintenance mixins for image storage operations. Appointments now use stable identifiers (IDs) for update/delete to avoid index mismatch issues, with backend migration support for existing data.",
+  "projectStateVersion": 3,
+  "summary": "App for managing appointments, patients, and leads across multiple devices, with improved lead entry UI and periodic cross-device data syncing.",
   "architectural_notes": [
-    "Frontend is a React SPA using @tanstack/react-query for data fetching/caching and mutation invalidation; queries are configured with staleTime: Infinity and explicit invalidation/refetch controls.",
-    "Authentication uses Internet Identity via @dfinity/auth-client; identity is injected into a generated canister actor via createActorWithConfig.",
-    "Backend is a Motoko canister with modular mixins: authorization (role-based access control) and blob-storage integration (Caffeine storage gateway utilities).",
-    "Per-user data partitioning: backend stores UserData in a Map keyed by Principal, with appointments as an ordered List and patients/leads as Maps keyed by mobile number.",
-    "Sync design: frontend periodically polls backend for per-collection last-modified timestamps (every 15 minutes), triggers checks on focus/visibility and after successful mutations, and only refetches queries when backend reports newer data.",
-    "PWA support includes manifest.json and a service worker implementing offline-first caching for static assets with network-only behavior for canister/API calls.",
-    "UI built with Tailwind CSS + shadcn/ui-style components, lucide-react icons, and sonner toasts; mobile-friendly tab navigation via a fixed bottom nav.",
-    "Time handling uses nanosecond timestamps (bigint) on the frontend and backend; UI consistently formats times as 12-hour AM/PM.",
-    "Appointments are now modeled with stable IDs; all appointment mutations (update/delete) are performed by ID rather than list index, and the backend includes migration logic to assign IDs to pre-existing appointments on upgrade.",
-    "React Query provider/caching was consolidated to a single QueryClientProvider (eliminating multiple QueryClient instances and duplicated caches/invalidation)."
+    "Implement periodic background refresh every 15 minutes and surface a 'last synced' timestamp in the UI."
   ],
   "known_issues": [
-    "Bigint timestamps are frequently converted to Number for Date construction (Number(bigint)/1_000_000); very large timestamps can lose precision, though typical appointment dates are unlikely to hit limits.",
-    "Build/deployment attempt failed with a \"Deployment didn't complete\" error; user requested retry."
+    "New entries created on one device do not appear on other devices until manual refresh."
   ],
   "isFixRequest": true,
-  "generatedImages": [
-    {
-      "filename": "frontend/public/assets/generated/appointment-feedback-flyer.dim_1080x1620.png",
-      "description": "Generated appointment feedback flyer image used by the Appointment Feedback Flyer dialog/action.",
-      "targetWidth": 1080,
-      "targetHeight": 1620
-    }
-  ],
   "existing_features": [
     {
-      "id": "IF-1",
-      "title": "Internet Identity authentication",
-      "synonyms": [
-        "DFINITY Internet Identity login",
-        "II auth"
-      ],
-      "description": "Provides secure user authentication using Internet Identity via @dfinity/auth-client, including a dedicated login page and an identity context/provider that restores sessions across reloads.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-2",
-      "title": "Canister actor creation tied to identity",
-      "synonyms": [
-        "useActor",
-        "authenticated actor"
-      ],
-      "description": "Creates an anonymous or identity-bound backend actor depending on authentication state, and automatically invalidates/refetches React Query data when the actor/identity changes.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-3",
-      "title": "Role-based access control initialization and APIs",
-      "synonyms": [
-        "Access control mixin",
-        "admin/user roles"
-      ],
-      "description": "Backend authorization mixin initializes roles (first eligible caller can become admin using a secret token) and exposes role queries and admin role assignment. Frontend passes an admin token from a secret URL hash parameter when initializing authorization.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-4",
-      "title": "User profile management (username + clinic name)",
-      "synonyms": [
-        "Profile setup",
-        "Clinic info"
-      ],
-      "description": "Stores and retrieves a per-user profile (username, clinicName). Includes a mandatory first-time profile setup dialog and settings page editing with persistence in the backend.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-5",
-      "title": "Appointments CRUD with categorized views",
-      "synonyms": [
-        "Schedule tab",
-        "Appointment management"
-      ],
-      "description": "Supports adding, editing, deleting, and listing appointments. UI provides Today, Tomorrow, and Upcoming views, and uses 12-hour AM/PM time entry via dropdown selectors. Backend also provides sorted endpoints for time-ordered appointment lists.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-6",
-      "title": "Appointment communication actions",
-      "synonyms": [
-        "Call patient",
-        "WhatsApp reminder"
-      ],
-      "description": "Appointment cards enable one-tap phone dialing (tel:) and WhatsApp messages with a prefilled reminder message including formatted date/time and optional notes.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-7",
-      "title": "Patients CRUD with photo support",
-      "synonyms": [
-        "Patient records",
-        "Patient image upload"
-      ],
-      "description": "Supports adding, editing, deleting, and listing patients. Patient records include optional photo (ExternalBlob), area/location, and treatment history/notes. UI includes avatar rendering with fallback initials and a default image.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-8",
-      "title": "Camera capture and gallery upload for patient photos",
-      "synonyms": [
-        "Web camera integration",
-        "Photo capture"
-      ],
-      "description": "Implements a reusable camera hook (getUserMedia) supporting start/stop, capture to File, and upload conversion to ExternalBlob bytes for backend storage; also supports selecting an image from device storage.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-9",
-      "title": "Patient communication and workflows",
-      "synonyms": [
-        "Patient call/WhatsApp",
-        "Add patient to appointment"
-      ],
-      "description": "Patient cards support calling and WhatsApp, viewing treatment history in a dialog, editing/deleting, and starting an appointment creation flow with prefilled patient name and mobile.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-10",
-      "title": "Leads CRUD with follow-up tracking",
-      "synonyms": [
-        "Lead management",
-        "Prospect tracking"
-      ],
-      "description": "Supports adding, editing, deleting, and listing leads with treatment wanted, area, follow-up date, expected treatment date, rating (1–7), and doctor remarks. UI flags overdue follow-ups and sorts leads by follow-up date.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-11",
-      "title": "Lead communication and conversion to appointment",
-      "synonyms": [
-        "WhatsApp lead follow-up",
-        "Lead to appointment"
-      ],
-      "description": "Lead cards support calling and WhatsApp follow-up messaging. Lead creation/editing optionally triggers appointment creation based on expected treatment date (default time 9:00).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-12",
-      "title": "Backend-aware automatic synchronization",
-      "synonyms": [
-        "15-minute polling sync",
-        "timestamp-based sync"
-      ],
-      "description": "Automatically checks backend per-collection last-modified timestamps every 15 minutes, on focus/visibility changes, and after successful mutations; selectively invalidates and refetches only the queries whose backend timestamps are newer.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-13",
-      "title": "Manual sync controls and sync status UI",
-      "synonyms": [
-        "Sync now",
-        "Last synced display"
-      ],
-      "description": "Shows sync status (spinner) and relative/absolute last sync time in the header and settings. Provides a manual \"Sync Now\" action that invalidates/refetches all key queries and updates backend lastSyncTime.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-14",
-      "title": "Appointment reminder notifications",
-      "synonyms": [
-        "Browser notifications",
-        "15-minute reminders"
-      ],
-      "description": "Schedules reminders 15 minutes before each appointment using the Notification API when permitted, with automatic cleanup/rescheduling on appointment list changes and a fallback to alert() when notifications are blocked or unsupported.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-15",
-      "title": "Data export (JSON and CSV)",
-      "synonyms": [
-        "Export clinic data",
-        "Download backups"
-      ],
-      "description": "Exports appointments, patients, and leads from the current backend data into a single JSON file or multiple CSV files. Includes filename sanitization, date-based naming, and 12-hour formatted timestamps for CSV where applicable.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-16",
-      "title": "PWA install/share and offline caching",
-      "synonyms": [
-        "Add to Home Screen",
-        "Service worker"
-      ],
-      "description": "Provides a web app manifest for standalone install, handles beforeinstallprompt to show an install button, supports sharing via Web Share API (or clipboard fallback), and registers a service worker that caches static assets for offline use.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-17",
-      "title": "Blob storage maintenance mixin endpoints",
-      "synonyms": [
-        "Caffeine storage gateway",
-        "Dead blob pruning"
-      ],
-      "description": "Backend includes blob-storage mixin endpoints for updating authorized gateway principals, checking blob liveness, listing dead blobs for deletion, confirming deletion (with forced GC), and cashier refill operations for cycles management.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-18",
-      "title": "Multi-tab navigation and responsive UI shell",
-      "synonyms": [
-        "Bottom navigation",
-        "Header shell"
-      ],
-      "description": "Implements an app shell with a sticky header (clinic branding + account menu + sync indicator) and a fixed bottom navigation with tabs for Schedule, Patients, Leads, and Settings; uses cards/dialogs and toast notifications for UX feedback.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-19",
-      "title": "Stable appointment IDs with backend migration and ID-based update/delete APIs",
-      "synonyms": [
-        "Appointment ID model",
-        "ID-based appointment mutations",
-        "Appointment migration"
-      ],
-      "description": "Replaces index-based appointment update/delete with stable appointment identifiers returned by the backend. Includes a migration/upgrade path so previously stored appointments receive IDs and remain editable/deletable after the data model/API change. Frontend appointment rendering and mutations use appointment IDs end-to-end.",
+      "id": "feature-add-a-lead-status-dropdown-control-to-each-lead-entry-card-in-the-leads-tab-positioned-on-the-right-side-below-the-existing-rating-display-with-exactly-these-options-1-ringing-2-will-call-and-come-3-follow-up-date-given",
+      "title": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
       "reqIds": [
-        "REQ-1",
-        "REQ-2",
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-the-selected-lead-status-for-each-lead-in-backend-storage-and-ensure-it-is-returned-by-the-getleads-query-and-updated-via-an-update-operation",
+      "title": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-reduce-the-vertical-height-of-each-lead-entry-card-in-the-leads-section-by-approximately-20-30-while-keeping-all-existing-actions-call-whatsapp-edit-delete-usable-and-readable-on-mobile",
+      "title": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
+      "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "IF-20",
-      "title": "Appointment feedback actions (WhatsApp + shareable flyer)",
-      "synonyms": [
-        "Feedback flyer",
-        "Post-appointment WhatsApp feedback",
-        "Appointment feedback message"
-      ],
-      "description": "Adds post-appointment feedback workflows: an Appointment Feedback action set that can open a shareable feedback flyer (generated image asset) and send a prefilled WhatsApp feedback request/message to the patient, integrating into appointment UI flows.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "feature-revamp-the-appointment-entry-card-layout-in-the-schedule-tab-so-that-the-top-line-contains-the-appointment-time-and-patient-name-on-a-single-row-with-all-action-buttons-moved-into-a-second-row-beneath-it-and-the-mobile-number-displayed-below-the-action-row",
-      "title": "Revamp the appointment entry (card) layout in the Schedule tab so that the top line contains the appointment time and patient name on a single row, with all action buttons moved into a second row beneath it, and the mobile number displayed below the action row.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-barcode-scanner-qr-style-button-from-appointment-entries-wherever-it-appears-in-the-schedule-tab-ui",
-      "title": "Remove the barcode scanner / QR-style button from appointment entries wherever it appears in the Schedule tab UI.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-improve-the-phonebook-import-experience-in-appointment-patient-and-lead-dialogs-by-adding-an-in-app-review-edit-step-after-selecting-a-contact-and-apply-phone-number-normalization-during-import-so-the-saved-filled-mobile-number-contains-no-spaces",
-      "title": "Improve the phonebook import experience in Appointment, Patient, and Lead dialogs by adding an in-app review/edit step after selecting a contact, and apply phone-number normalization during import so the saved/filled mobile number contains no spaces.",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -282,37 +38,24 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Revamp appointment entry/card layout: show Time + Name on top line; move action buttons (WhatsApp reminder, feedback, edit, call, add to contact, delete) into a button row beneath; show mobile number below actions.",
+      "summary": "Add automatic data refresh every 15 minutes so new entries sync across devices without manual refresh; display a 'last synced' timestamp.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Remove barcode scanner button from the appointment entry/card UI.",
+      "summary": "In Leads section, add a dropdown (below Rating on the right side) for lead status with options: Ringing, will call and come, follow up date given.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Improve the phonebook UI/visual design (current look is too simple).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "While importing contacts, provide an edit option before saving/import completion.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "When importing contacts, normalize mobile numbers to remove spaces between digits.",
+      "summary": "Reduce the height of each lead entry in the Leads section by ~20–30%.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "McDerma Clinic Management System",
+  "projectName": "Add lead status dropdown on Lead cards and reduce Lead card height",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

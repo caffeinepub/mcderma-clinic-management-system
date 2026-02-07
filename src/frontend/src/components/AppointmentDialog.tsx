@@ -134,6 +134,7 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
             mobile: formData.mobile,
             appointmentTime,
             notes: formData.notes,
+            isFollowUp: appointment.isFollowUp, // Preserve existing isFollowUp flag
           },
         });
         toast.success('Appointment updated successfully');
@@ -186,7 +187,6 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                 value={formData.patientName}
                 onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
                 required
-                placeholder="Enter patient name"
                 disabled={isPending}
               />
             </div>
@@ -199,7 +199,6 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                 required
-                placeholder="Enter mobile number"
                 disabled={isPending}
               />
             </div>
@@ -218,13 +217,13 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
 
             <div className="space-y-2">
               <Label>Time *</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex gap-2">
                 <Select
                   value={formData.hour}
                   onValueChange={(value) => setFormData({ ...formData, hour: value })}
                   disabled={isPending}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Hour" />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,8 +240,8 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                   onValueChange={(value) => setFormData({ ...formData, minute: value })}
                   disabled={isPending}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Min" />
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Minute" />
                   </SelectTrigger>
                   <SelectContent>
                     {minutes.map((m) => (
@@ -258,7 +257,7 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                   onValueChange={(value: 'AM' | 'PM') => setFormData({ ...formData, period: value })}
                   disabled={isPending}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,18 +266,14 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Selected: {formData.hour}:{formData.minute} {formData.period}
-              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Purpose / Notes</Label>
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Enter appointment purpose or notes"
                 rows={3}
                 disabled={isPending}
               />
@@ -291,11 +286,13 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
+                ) : appointment ? (
+                  'Update'
                 ) : (
-                  'Save Appointment'
+                  'Add'
                 )}
               </Button>
             </DialogFooter>

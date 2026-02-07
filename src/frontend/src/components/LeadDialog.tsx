@@ -37,6 +37,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
     rating: 5,
     doctorRemark: '',
     addToAppointment: false,
+    leadStatus: 'Ringing',
   });
 
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -56,6 +57,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
         rating: lead.rating,
         doctorRemark: lead.doctorRemark,
         addToAppointment: false,
+        leadStatus: lead.leadStatus || 'Ringing',
       });
     } else {
       setFormData({
@@ -68,6 +70,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
         rating: 5,
         doctorRemark: '',
         addToAppointment: false,
+        leadStatus: 'Ringing',
       });
     }
   }, [lead, open]);
@@ -114,6 +117,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
           rating: formData.rating,
           doctorRemark: formData.doctorRemark,
           addToAppointment: formData.addToAppointment,
+          leadStatus: formData.leadStatus,
         });
         toast.success('Lead updated successfully');
       } else {
@@ -127,6 +131,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
           rating: formData.rating,
           doctorRemark: formData.doctorRemark,
           addToAppointment: formData.addToAppointment,
+          leadStatus: formData.leadStatus,
         });
         toast.success('Lead added successfully');
       }

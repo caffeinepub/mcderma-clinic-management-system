@@ -3,16 +3,21 @@ import { Plus, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppointmentCard from '../components/AppointmentCard';
 import AppointmentDialog from '../components/AppointmentDialog';
-import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments } from '../hooks/useQueries';
+import FollowUpDateTimeDialog from '../components/FollowUpDateTimeDialog';
+import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments, useUpdateAppointment } from '../hooks/useQueries';
 import type { Appointment } from '../backend';
+import { toast } from 'sonner';
 
 export default function ScheduleTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<{ appointment: Appointment; id: bigint } | undefined>(undefined);
+  const [isFollowUpDialogOpen, setIsFollowUpDialogOpen] = useState(false);
+  const [followUpAppointment, setFollowUpAppointment] = useState<Appointment | null>(null);
 
   const { data: todaysAppointments = [], isLoading: loadingToday } = useGetTodaysAppointments();
   const { data: tomorrowAppointments = [], isLoading: loadingTomorrow } = useGetTomorrowAppointments();
   const { data: upcomingAppointments = [], isLoading: loadingUpcoming } = useGetUpcomingAppointments();
+  const updateAppointment = useUpdateAppointment();
 
   const handleEdit = (appointment: Appointment) => {
     setEditingAppointment({ appointment, id: appointment.id });
@@ -22,6 +27,31 @@ export default function ScheduleTab() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingAppointment(undefined);
+  };
+
+  const handleFollowUp = (appointment: Appointment) => {
+    setFollowUpAppointment(appointment);
+    setIsFollowUpDialogOpen(true);
+  };
+
+  const handleFollowUpConfirm = async (newDateTime: bigint) => {
+    if (!followUpAppointment) return;
+
+    try {
+      await updateAppointment.mutateAsync({
+        id: followUpAppointment.id,
+        appointment: {
+          ...followUpAppointment,
+          appointmentTime: newDateTime,
+          isFollowUp: true,
+        },
+      });
+      toast.success('Follow-up scheduled successfully');
+      setIsFollowUpDialogOpen(false);
+      setFollowUpAppointment(null);
+    } catch (error) {
+      toast.error('Failed to schedule follow-up');
+    }
   };
 
   const isLoading = loadingToday || loadingTomorrow || loadingUpcoming;
@@ -59,6 +89,8 @@ export default function ScheduleTab() {
                 key={appointment.id.toString()}
                 appointment={appointment}
                 onEdit={handleEdit}
+                section="today"
+                onFollowUp={handleFollowUp}
               />
             ))}
           </div>
@@ -85,6 +117,7 @@ export default function ScheduleTab() {
                 key={appointment.id.toString()}
                 appointment={appointment}
                 onEdit={handleEdit}
+                section="tomorrow"
               />
             ))}
           </div>
@@ -112,6 +145,7 @@ export default function ScheduleTab() {
                   <AppointmentCard
                     appointment={appointment}
                     onEdit={handleEdit}
+                    section="upcoming"
                   />
                 </div>
               ))}
@@ -135,6 +169,14 @@ export default function ScheduleTab() {
         onOpenChange={handleCloseDialog}
         appointment={editingAppointment?.appointment}
         appointmentId={editingAppointment?.id}
+      />
+
+      {/* Follow Up Date/Time Dialog */}
+      <FollowUpDateTimeDialog
+        open={isFollowUpDialogOpen}
+        onOpenChange={setIsFollowUpDialogOpen}
+        onConfirm={handleFollowUpConfirm}
+        isPending={updateAppointment.isPending}
       />
     </div>
   );

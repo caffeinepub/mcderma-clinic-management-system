@@ -20,6 +20,7 @@ export interface Lead {
     addToAppointment: boolean;
     area: string;
     treatmentWanted: string;
+    leadStatus: string;
     rating: number;
     mobile: string;
     expectedTreatmentDate: bigint;
@@ -32,6 +33,7 @@ export interface Appointment {
     notes: string;
     patientName: string;
     mobile: string;
+    isFollowUp: boolean;
 }
 export interface UserProfile {
     username: string;
@@ -51,7 +53,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     addAppointment(patientName: string, mobile: string, appointmentTime: bigint, notes: string): Promise<string>;
-    addLead(leadName: string, mobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean): Promise<string>;
+    addLead(leadName: string, mobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     addPatient(image: ExternalBlob | null, name: string, mobile: string, area: string, notes: string): Promise<string>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteAppointment(id: bigint): Promise<string>;
@@ -82,8 +84,9 @@ export interface backendInterface {
     login(username: string, hashedPassword: Uint8Array): Promise<string>;
     register(username: string, hashedPassword: Uint8Array): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    toggleFollowUpAppointment(id: bigint): Promise<string>;
     updateAppointment(id: bigint, updatedAppointment: Appointment): Promise<string>;
     updateLastSyncTime(): Promise<void>;
-    updateLead(mobile: string, leadName: string, newMobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean): Promise<string>;
+    updateLead(mobile: string, leadName: string, newMobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     updatePatient(mobile: string, image: ExternalBlob | null, name: string, newMobile: string, area: string, notes: string): Promise<string>;
 }

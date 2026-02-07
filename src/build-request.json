@@ -1,92 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Clean up appointment card layout, remove barcode/QR action, and improve phonebook import UX",
+  "title": "Add lead status dropdown on Lead cards and reduce Lead card height",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "Revamp the appointment entry (card) layout in the Schedule tab so that the top line contains the appointment time and patient name on a single row, with all action buttons moved into a second row beneath it, and the mobile number displayed below the action row.",
+      "id": "REQ-1",
+      "text": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5",
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Appointment entry have become messy. Place Time and Name on Top line. Below it all buttons like what's reminder, feedback, edit, call, add to contact and delete button. ... Below this mobile no",
-          "Appointment entry have become messy. ..."
+          "On lead section, in lead patient entry can you put a drop down menu on right side below rating containg option 1 - Ringing, 2 - will call and come, 3 - follow up date given."
         ]
       },
       "acceptanceCriteria": [
-        "In Today and Tomorrow lists, each AppointmentCard shows: (1) first row: time (left) and patient name (right or remaining space) on one line; (2) second row: action buttons in a horizontal row beneath; (3) third row: mobile number beneath the buttons.",
-        "In Upcoming list cards (rendered inline in ScheduleTab), the same visual structure is used (top line time+name, action row under it, mobile under actions).",
-        "Action buttons wrap gracefully on small screens without overlapping text or causing layout breakage.",
-        "Existing actions still function (edit, reminder/WhatsApp message, call, add to patients/contacts, delete, feedback) except those explicitly removed in REQ-5."
+        "Each LeadCard shows a dropdown on the right side under the rating, visually aligned with the rating block.",
+        "Dropdown options are exactly: \"Ringing\", \"will call and come\", \"follow up date given\".",
+        "Changing the dropdown value updates the lead locally in the UI without requiring a page refresh (i.e., the lead list reflects the new selected value after the change)."
       ]
     },
     {
-      "id": "REQ-5",
-      "text": "Remove the barcode scanner / QR-style button from appointment entries wherever it appears in the Schedule tab UI.",
-      "target": "frontend",
+      "id": "REQ-2",
+      "text": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-5",
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Remove barcode scanner button.",
-          "Remove barcode scanner button."
+          "put a drop down menu... containg option 1 - Ringing, 2 - will call and come, 3 - follow up date given."
         ]
       },
       "acceptanceCriteria": [
-        "No barcode/QR/scanner icon button is shown on appointment cards in Today, Tomorrow, or Upcoming sections.",
-        "Other appointment actions remain available and continue to work.",
-        "No unused code paths remain that reference the removed action in appointment card UI components."
+        "Backend Lead data model includes a stored field for lead status.",
+        "Existing leads (created before this change) have a valid default status value after upgrade (no crashes/deserialization errors).",
+        "When a user changes a lead's dropdown value, the change persists after app reload and appears on other devices after the normal sync/refresh behavior.",
+        "React Query leads cache is invalidated/refetched after a successful status change so the UI stays consistent."
       ]
     },
     {
-      "id": "REQ-6",
-      "text": "Improve the phonebook import experience in Appointment, Patient, and Lead dialogs by adding an in-app review/edit step after selecting a contact, and apply phone-number normalization during import so the saved/filled mobile number contains no spaces.",
+      "id": "REQ-3",
+      "text": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Also improve phonebook look it's to simple. Also while importing contact provide edit option. Also on importing contact make sure mobile number as no space between numbers"
+          "Also reduce height of entry in lead section from 20 to 30 %."
         ]
       },
       "acceptanceCriteria": [
-        "When the user taps “Add from phonebook” in AppointmentDialog, PatientDialog, or LeadDialog and selects a contact, the app shows a small in-app confirmation UI (dialog/sheet) that displays the selected name and mobile in editable inputs with Cancel/Use actions.",
-        "If the user confirms, the edited values are applied to the form; if the user cancels, the form remains unchanged.",
-        "Imported phone numbers are normalized to remove spaces between digits (e.g., \"+91 88988 00777\" becomes \"+918898800777\") before being applied to the form.",
-        "Normalization is applied consistently across Appointment, Patient, and Lead contact imports.",
-        "User-facing text for this flow is in English."
+        "Lead cards display with visibly reduced vertical padding/spacing compared to current layout (target ~20–30% less height).",
+        "All current lead information remains present (name, mobile, area, treatment, follow-up, expected date, remark if present) and does not overlap.",
+        "Action buttons remain tappable on mobile and are not clipped or pushed off-card."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/components/ui (Shadcn components must be composed, not edited).",
-    "Do not modify any frontend immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/main.tsx).",
-    "Keep backend as a single-actor Motoko canister; no backend changes are required for these UI-only fixes."
+    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
+    "If existing stable state needs transformation for the new lead status field, add/adjust backend/migration.mo following the project’s conditional migration policy.",
+    "Do not edit any files under frontend/src/components/ui or any other immutable paths listed in SYSTEM_CONTEXT; only compose and use those UI components."
   ],
   "nonGoals": [
-    "Changing backend data models or adding new backend endpoints.",
-    "Implementing third-party contact sync; only the browser Contact Picker API flow is in scope.",
-    "Redesigning unrelated pages (Settings, Patients list, Leads list) beyond the phonebook import UX and appointment card layout."
+    "Do not add new lead filtering, sorting, or analytics based on the new status (only store and display/update it).",
+    "Do not change unrelated tabs (Schedule, Patients, Settings) or their UI/logic beyond what is necessary for compilation.",
+    "Do not introduce any third-party realtime sync mechanism (e.g., websockets)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

@@ -1,6 +1,7 @@
-import { Phone, MessageCircle, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Phone, MessageCircle, Edit, Trash2, UserPlus, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import type { Appointment } from '../backend';
 import { toast } from 'sonner';
 import { useGetPatients, useAddPatient, useDeleteAppointment } from '../hooks/useQueries';
@@ -22,9 +23,16 @@ import AppointmentFeedbackActions from './AppointmentFeedbackActions';
 interface AppointmentCardProps {
   appointment: Appointment;
   onEdit: (appointment: Appointment) => void;
+  section?: 'today' | 'tomorrow' | 'upcoming';
+  onFollowUp?: (appointment: Appointment) => void;
 }
 
-export default function AppointmentCard({ appointment, onEdit }: AppointmentCardProps) {
+export default function AppointmentCard({ 
+  appointment, 
+  onEdit, 
+  section,
+  onFollowUp 
+}: AppointmentCardProps) {
   const { data: patients = [] } = useGetPatients();
   const addPatient = useAddPatient();
   const deleteAppointment = useDeleteAppointment();
@@ -32,6 +40,7 @@ export default function AppointmentCard({ appointment, onEdit }: AppointmentCard
   const date = new Date(Number(appointment.appointmentTime) / 1000000);
   const timeStr = formatTimestamp12Hour(appointment.appointmentTime);
   const dateStr = format(date, 'MMM dd, yyyy');
+  const shortDateStr = format(date, 'MMM dd');
 
   const handleCall = () => {
     window.location.href = `tel:${appointment.mobile}`;
@@ -74,26 +83,44 @@ export default function AppointmentCard({ appointment, onEdit }: AppointmentCard
     }
   };
 
+  const handleFollowUpClick = () => {
+    if (onFollowUp) {
+      onFollowUp(appointment);
+    }
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-3.5">
-        <div className="space-y-2.5">
-          {/* Row 1: Time and Name on one line */}
+      <CardContent className="p-2.5">
+        <div className="space-y-1.5">
+          {/* Row 1: Time (with date for upcoming) and Name on one line */}
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-bold text-primary leading-none">{timeStr}</div>
-            <h3 className="font-semibold text-base truncate leading-none flex-1 text-right">{appointment.patientName}</h3>
+            <div className="text-sm font-bold text-primary leading-none flex items-center gap-1.5">
+              {timeStr}
+              {section === 'upcoming' && (
+                <span className="text-xs font-normal text-muted-foreground">• {shortDateStr}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-1 justify-end">
+              {appointment.isFollowUp && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 leading-none">
+                  Follow Up
+                </Badge>
+              )}
+              <h3 className="font-semibold text-base truncate leading-none">{appointment.patientName}</h3>
+            </div>
           </div>
 
           {/* Row 2: Action buttons in horizontal row with wrapping */}
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-0.5 flex-wrap">
             <Button 
               size="icon" 
               variant="ghost" 
               onClick={handleWhatsApp} 
-              className="h-9 w-9"
+              className="h-8 w-8"
               title="WhatsApp Reminder"
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-3.5 w-3.5" />
             </Button>
             <AppointmentFeedbackActions
               mobile={appointment.mobile}
@@ -103,39 +130,50 @@ export default function AppointmentCard({ appointment, onEdit }: AppointmentCard
               size="icon" 
               variant="ghost" 
               onClick={() => onEdit(appointment)} 
-              className="h-9 w-9"
+              className="h-8 w-8"
               title="Edit"
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
             <Button 
               size="icon" 
               variant="ghost" 
               onClick={handleCall} 
-              className="h-9 w-9"
+              className="h-8 w-8"
               title="Call"
             >
-              <Phone className="h-4 w-4" />
+              <Phone className="h-3.5 w-3.5" />
             </Button>
             <Button 
               size="icon" 
               variant="ghost" 
               onClick={handleAddToPatients} 
               disabled={addPatient.isPending} 
-              className="h-9 w-9"
+              className="h-8 w-8"
               title="Add to Patients"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-3.5 w-3.5" />
             </Button>
+            {section === 'today' && onFollowUp && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={handleFollowUpClick}
+                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                title="Follow Up"
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
                   size="icon" 
                   variant="ghost" 
-                  className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                   title="Delete"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -158,15 +196,15 @@ export default function AppointmentCard({ appointment, onEdit }: AppointmentCard
           {/* Row 3: Mobile number */}
           <button 
             onClick={handleCall}
-            className="text-sm text-muted-foreground flex items-center gap-1.5 hover:text-primary transition-colors leading-none"
+            className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors leading-none"
           >
-            <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+            <Phone className="h-3 w-3 flex-shrink-0" />
             <span className="underline">{appointment.mobile}</span>
           </button>
 
           {/* Notes (if present) */}
           {appointment.notes && (
-            <p className="text-xs text-muted-foreground line-clamp-2 leading-tight pt-0.5">{appointment.notes}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-tight">{appointment.notes}</p>
           )}
         </div>
       </CardContent>

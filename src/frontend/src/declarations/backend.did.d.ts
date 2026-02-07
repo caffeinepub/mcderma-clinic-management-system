@@ -16,6 +16,7 @@ export interface Appointment {
   'notes' : string,
   'patientName' : string,
   'mobile' : string,
+  'isFollowUp' : boolean,
 }
 export type ExternalBlob = Uint8Array;
 export interface Lead {
@@ -24,6 +25,7 @@ export interface Lead {
   'addToAppointment' : boolean,
   'area' : string,
   'treatmentWanted' : string,
+  'leadStatus' : string,
   'rating' : number,
   'mobile' : string,
   'expectedTreatmentDate' : bigint,
@@ -71,7 +73,18 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addAppointment' : ActorMethod<[string, string, bigint, string], string>,
   'addLead' : ActorMethod<
-    [string, string, string, string, bigint, bigint, number, string, boolean],
+    [
+      string,
+      string,
+      string,
+      string,
+      bigint,
+      bigint,
+      number,
+      string,
+      boolean,
+      string,
+    ],
     string
   >,
   'addPatient' : ActorMethod<
@@ -110,6 +123,7 @@ export interface _SERVICE {
   'login' : ActorMethod<[string, Uint8Array], string>,
   'register' : ActorMethod<[string, Uint8Array], string>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'toggleFollowUpAppointment' : ActorMethod<[bigint], string>,
   'updateAppointment' : ActorMethod<[bigint, Appointment], string>,
   'updateLastSyncTime' : ActorMethod<[], undefined>,
   'updateLead' : ActorMethod<
@@ -124,6 +138,7 @@ export interface _SERVICE {
       number,
       string,
       boolean,
+      string,
     ],
     string
   >,

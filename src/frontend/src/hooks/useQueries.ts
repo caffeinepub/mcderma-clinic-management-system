@@ -228,6 +228,25 @@ export function useDeleteAppointment() {
   });
 }
 
+export function useToggleFollowUpAppointment() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (appointmentId: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.toggleFollowUpAppointment(appointmentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['lastModified'] });
+    },
+  });
+}
+
 // Patient Queries
 export function useGetPatients() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -323,6 +342,7 @@ export function useAddLead() {
       rating: number;
       doctorRemark: string;
       addToAppointment: boolean;
+      leadStatus: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.addLead(
@@ -334,7 +354,8 @@ export function useAddLead() {
         data.expectedTreatmentDate,
         data.rating,
         data.doctorRemark,
-        data.addToAppointment
+        data.addToAppointment,
+        data.leadStatus
       );
     },
     onSuccess: () => {
@@ -360,6 +381,7 @@ export function useUpdateLead() {
       rating: number;
       doctorRemark: string;
       addToAppointment: boolean;
+      leadStatus: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateLead(
@@ -372,10 +394,76 @@ export function useUpdateLead() {
         data.expectedTreatmentDate,
         data.rating,
         data.doctorRemark,
-        data.addToAppointment
+        data.addToAppointment,
+        data.leadStatus
       );
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['lastModified'] });
+    },
+  });
+}
+
+export function useUpdateLeadStatus() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { mobile: string; leadStatus: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      
+      // Fetch the current lead data
+      const leads = await actor.getLeads();
+      const currentLead = leads.find((l) => l.mobile === data.mobile);
+      
+      if (!currentLead) {
+        throw new Error('Lead not found');
+      }
+
+      // Update the lead with the new status
+      return actor.updateLead(
+        data.mobile,
+        currentLead.leadName,
+        currentLead.mobile,
+        currentLead.treatmentWanted,
+        currentLead.area,
+        currentLead.followUpDate,
+        currentLead.expectedTreatmentDate,
+        currentLead.rating,
+        currentLead.doctorRemark,
+        currentLead.addToAppointment,
+        data.leadStatus
+      );
+    },
+    onMutate: async (data) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['leads'] });
+
+      // Snapshot the previous value
+      const previousLeads = queryClient.getQueryData<Lead[]>(['leads']);
+
+      // Optimistically update to the new value
+      if (previousLeads) {
+        queryClient.setQueryData<Lead[]>(
+          ['leads'],
+          previousLeads.map((lead) =>
+            lead.mobile === data.mobile ? { ...lead, leadStatus: data.leadStatus } : lead
+          )
+        );
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousLeads };
+    },
+    onError: (_err, _data, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousLeads) {
+        queryClient.setQueryData(['leads'], context.previousLeads);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we're in sync
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['lastModified'] });
     },

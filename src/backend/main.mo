@@ -11,7 +11,9 @@ import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -28,6 +30,7 @@ actor {
     mobile : Text;
     appointmentTime : Nat;
     notes : Text;
+    isFollowUp : Bool;
   };
 
   type Patient = {
@@ -48,6 +51,7 @@ actor {
     rating : Nat8;
     doctorRemark : Text;
     addToAppointment : Bool;
+    leadStatus : Text;
   };
 
   type UserProfile = {
@@ -243,6 +247,7 @@ actor {
       mobile;
       appointmentTime;
       notes;
+      isFollowUp = false;
     };
 
     let newAppointments = user.appointments.clone();
@@ -402,6 +407,44 @@ actor {
           "Appointment updated successfully!";
         } else {
           Runtime.trap("Appointment not found");
+        };
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
+  };
+
+  public shared ({ caller }) func toggleFollowUpAppointment(id : Nat) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update appointments");
+    };
+
+    switch (userData.get(caller)) {
+      case (?data) {
+        switch (data.appointments.get(id)) {
+          case (?existingAppointment) {
+            let updatedAppointment = {
+              existingAppointment with isFollowUp = not existingAppointment.isFollowUp;
+            };
+            let newAppointments = data.appointments.clone();
+            newAppointments.add(id, updatedAppointment);
+
+            let updatedUserData : UserData = {
+              profile = data.profile;
+              hashedPassword = data.hashedPassword;
+              appointments = newAppointments;
+              appointmentIdCounter = data.appointmentIdCounter;
+              patients = data.patients;
+              leads = data.leads;
+              appointmentsLastModified = Time.now();
+              patientsLastModified = data.patientsLastModified;
+              leadsLastModified = data.leadsLastModified;
+              profileLastModified = data.profileLastModified;
+            };
+
+            userData.add(caller, updatedUserData);
+            "Toggle follow-up status successfully!";
+          };
+          case (null) { Runtime.trap("Appointment not found") };
         };
       };
       case (null) { Runtime.trap("User not found") };
@@ -575,6 +618,7 @@ actor {
     rating : Nat8,
     doctorRemark : Text,
     addToAppointment : Bool,
+    leadStatus : Text,
   ) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can add leads");
@@ -590,6 +634,7 @@ actor {
       rating;
       doctorRemark;
       addToAppointment;
+      leadStatus;
     };
 
     let currentTime = Time.now();
@@ -639,6 +684,7 @@ actor {
     rating : Nat8,
     doctorRemark : Text,
     addToAppointment : Bool,
+    leadStatus : Text,
   ) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update leads");
@@ -659,6 +705,7 @@ actor {
               rating;
               doctorRemark;
               addToAppointment;
+              leadStatus;
             };
 
             let updatedData : UserData = {

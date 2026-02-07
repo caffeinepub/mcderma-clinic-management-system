@@ -31,6 +31,7 @@ export const Appointment = IDL.Record({
   'notes' : IDL.Text,
   'patientName' : IDL.Text,
   'mobile' : IDL.Text,
+  'isFollowUp' : IDL.Bool,
 });
 export const UserProfile = IDL.Record({
   'username' : IDL.Text,
@@ -43,6 +44,7 @@ export const Lead = IDL.Record({
   'addToAppointment' : IDL.Bool,
   'area' : IDL.Text,
   'treatmentWanted' : IDL.Text,
+  'leadStatus' : IDL.Text,
   'rating' : IDL.Nat8,
   'mobile' : IDL.Text,
   'expectedTreatmentDate' : IDL.Int,
@@ -100,6 +102,7 @@ export const idlService = IDL.Service({
         IDL.Nat8,
         IDL.Text,
         IDL.Bool,
+        IDL.Text,
       ],
       [IDL.Text],
       [],
@@ -160,6 +163,7 @@ export const idlService = IDL.Service({
   'login' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
   'register' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'toggleFollowUpAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
   'updateAppointment' : IDL.Func([IDL.Nat, Appointment], [IDL.Text], []),
   'updateLastSyncTime' : IDL.Func([], [], []),
   'updateLead' : IDL.Func(
@@ -174,6 +178,7 @@ export const idlService = IDL.Service({
         IDL.Nat8,
         IDL.Text,
         IDL.Bool,
+        IDL.Text,
       ],
       [IDL.Text],
       [],
@@ -211,6 +216,7 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Text,
     'patientName' : IDL.Text,
     'mobile' : IDL.Text,
+    'isFollowUp' : IDL.Bool,
   });
   const UserProfile = IDL.Record({
     'username' : IDL.Text,
@@ -223,6 +229,7 @@ export const idlFactory = ({ IDL }) => {
     'addToAppointment' : IDL.Bool,
     'area' : IDL.Text,
     'treatmentWanted' : IDL.Text,
+    'leadStatus' : IDL.Text,
     'rating' : IDL.Nat8,
     'mobile' : IDL.Text,
     'expectedTreatmentDate' : IDL.Int,
@@ -280,6 +287,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Nat8,
           IDL.Text,
           IDL.Bool,
+          IDL.Text,
         ],
         [IDL.Text],
         [],
@@ -340,6 +348,7 @@ export const idlFactory = ({ IDL }) => {
     'login' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
     'register' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'toggleFollowUpAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
     'updateAppointment' : IDL.Func([IDL.Nat, Appointment], [IDL.Text], []),
     'updateLastSyncTime' : IDL.Func([], [], []),
     'updateLead' : IDL.Func(
@@ -354,6 +363,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Nat8,
           IDL.Text,
           IDL.Bool,
+          IDL.Text,
         ],
         [IDL.Text],
         [],

@@ -99,6 +99,7 @@ export interface Lead {
     addToAppointment: boolean;
     area: string;
     treatmentWanted: string;
+    leadStatus: string;
     rating: number;
     mobile: string;
     expectedTreatmentDate: bigint;
@@ -118,6 +119,7 @@ export interface Appointment {
     notes: string;
     patientName: string;
     mobile: string;
+    isFollowUp: boolean;
 }
 export interface UserProfile {
     username: string;
@@ -144,7 +146,7 @@ export interface backendInterface {
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addAppointment(patientName: string, mobile: string, appointmentTime: bigint, notes: string): Promise<string>;
-    addLead(leadName: string, mobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean): Promise<string>;
+    addLead(leadName: string, mobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     addPatient(image: ExternalBlob | null, name: string, mobile: string, area: string, notes: string): Promise<string>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteAppointment(id: bigint): Promise<string>;
@@ -175,9 +177,10 @@ export interface backendInterface {
     login(username: string, hashedPassword: Uint8Array): Promise<string>;
     register(username: string, hashedPassword: Uint8Array): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    toggleFollowUpAppointment(id: bigint): Promise<string>;
     updateAppointment(id: bigint, updatedAppointment: Appointment): Promise<string>;
     updateLastSyncTime(): Promise<void>;
-    updateLead(mobile: string, leadName: string, newMobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean): Promise<string>;
+    updateLead(mobile: string, leadName: string, newMobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     updatePatient(mobile: string, image: ExternalBlob | null, name: string, newMobile: string, area: string, notes: string): Promise<string>;
 }
 import type { ExternalBlob as _ExternalBlob, Patient as _Patient, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
@@ -295,17 +298,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addLead(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: number, arg7: string, arg8: boolean): Promise<string> {
+    async addLead(arg0: string, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: number, arg7: string, arg8: boolean, arg9: string): Promise<string> {
         if (this.processError) {
             try {
-                const result = await this.actor.addLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                const result = await this.actor.addLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            const result = await this.actor.addLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             return result;
         }
     }
@@ -664,6 +667,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async toggleFollowUpAppointment(arg0: bigint): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.toggleFollowUpAppointment(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.toggleFollowUpAppointment(arg0);
+            return result;
+        }
+    }
     async updateAppointment(arg0: bigint, arg1: Appointment): Promise<string> {
         if (this.processError) {
             try {
@@ -692,17 +709,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateLead(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: bigint, arg6: bigint, arg7: number, arg8: string, arg9: boolean): Promise<string> {
+    async updateLead(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: bigint, arg6: bigint, arg7: number, arg8: string, arg9: boolean, arg10: string): Promise<string> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                const result = await this.actor.updateLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            const result = await this.actor.updateLead(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             return result;
         }
     }
