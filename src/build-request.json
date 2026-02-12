@@ -1,73 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Add lead status dropdown on Lead cards and reduce Lead card height",
+  "title": "Remove Open Widget button and standardize date format to DD/MM/YY",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
+      "text": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "On lead section, in lead patient entry can you put a drop down menu on right side below rating containg option 1 - Ringing, 2 - will call and come, 3 - follow up date given."
+          "Yes remove open widget button."
         ]
       },
       "acceptanceCriteria": [
-        "Each LeadCard shows a dropdown on the right side under the rating, visually aligned with the rating block.",
-        "Dropdown options are exactly: \"Ringing\", \"will call and come\", \"follow up date given\".",
-        "Changing the dropdown value updates the lead locally in the UI without requiring a page refresh (i.e., the lead list reflects the new selected value after the change)."
+        "Settings page no longer renders the button labeled “Open Widget View” (or any equivalent open-widget button).",
+        "The unused click handler (e.g., `handleOpenWidget`) and related imports (e.g., ExternalLink icon) are removed if no longer needed.",
+        "No navigation route or page is required to be deleted; only the Settings open-widget entry point is removed."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "put a drop down menu... containg option 1 - Ringing, 2 - will call and come, 3 - follow up date given."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend Lead data model includes a stored field for lead status.",
-        "Existing leads (created before this change) have a valid default status value after upgrade (no crashes/deserialization errors).",
-        "When a user changes a lead's dropdown value, the change persists after app reload and appears on other devices after the normal sync/refresh behavior.",
-        "React Query leads cache is invalidated/refetched after a successful status change so the UI stays consistent."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
+      "text": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Also reduce height of entry in lead section from 20 to 30 %."
+          "And by default date should be in DD/MM/YY FORMAT"
         ]
       },
       "acceptanceCriteria": [
-        "Lead cards display with visibly reduced vertical padding/spacing compared to current layout (target ~20–30% less height).",
-        "All current lead information remains present (name, mobile, area, treatment, follow-up, expected date, remark if present) and does not overlap.",
-        "Action buttons remain tappable on mobile and are not clipped or pushed off-card."
+        "Any UI that shows a date (e.g., appointment-related messages, Settings “Last Synced”, exports’ date columns) displays the date portion in DD/MM/YY format.",
+        "Places currently using US locale date formatting (e.g., `toLocaleString('en-US'...)`, `toLocaleDateString('en-US'...)`) are updated so the resulting output is DD/MM/YY.",
+        "Places currently using date-fns formats for dates (e.g., `format(date, 'MMM dd, yyyy')` / `format(date, 'MMM dd')`) are updated so displayed dates follow DD/MM/YY (2-digit day, 2-digit month, 2-digit year).",
+        "No user-facing text is changed except as required by the new date format."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
-    "If existing stable state needs transformation for the new lead status field, add/adjust backend/migration.mo following the project’s conditional migration policy.",
-    "Do not edit any files under frontend/src/components/ui or any other immutable paths listed in SYSTEM_CONTEXT; only compose and use those UI components."
+    "Do not edit files under frontend/src/components/ui (shadcn UI sources); compose them instead.",
+    "Do not edit immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
   ],
   "nonGoals": [
-    "Do not add new lead filtering, sorting, or analytics based on the new status (only store and display/update it).",
-    "Do not change unrelated tabs (Schedule, Patients, Settings) or their UI/logic beyond what is necessary for compilation.",
-    "Do not introduce any third-party realtime sync mechanism (e.g., websockets)."
+    "Building a native Android/iOS home-screen widget (not supported in this web app).",
+    "Adding new widget functionality; this change only removes the Settings button that opens the widget view.",
+    "Changing backend data models or stored timestamp formats."
   ],
   "imageRequirements": {
     "required": [],

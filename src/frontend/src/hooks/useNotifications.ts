@@ -1,20 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useGetAppointments } from './useQueries';
 import type { Appointment } from '../backend';
 import { toast } from 'sonner';
 import { formatTimestamp12Hour } from '../lib/utils';
+import { playNotificationSound } from '../utils/notificationSound';
 
 interface ScheduledNotification {
   appointmentTime: bigint;
   timeoutId: NodeJS.Timeout;
 }
 
+export interface ActiveReminder {
+  appointment: Appointment;
+}
+
 export function useNotifications() {
   const { data: appointments = [] } = useGetAppointments();
   const scheduledNotifications = useRef<Map<string, ScheduledNotification>>(new Map());
   const scheduledAlerts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const firedReminders = useRef<Set<string>>(new Set());
   const permissionRequested = useRef(false);
   const notificationSupported = typeof window !== 'undefined' && 'Notification' in window;
+  
+  const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
 
   // Request notification permission
   useEffect(() => {
@@ -24,7 +32,7 @@ export function useNotifications() {
           if (permission === 'granted') {
             toast.success('Notifications enabled for appointment reminders');
           } else if (permission === 'denied') {
-            toast.info('Notifications blocked. You will receive alert reminders instead.');
+            toast.info('Notifications blocked. You will receive in-app reminders instead.');
           }
         });
       } else if (Notification.permission === 'denied') {
@@ -33,6 +41,11 @@ export function useNotifications() {
       permissionRequested.current = true;
     }
   }, [notificationSupported]);
+
+  // Dismiss active reminder
+  const dismissReminder = useCallback(() => {
+    setActiveReminder(null);
+  }, []);
 
   // Schedule notifications or alerts for appointments
   useEffect(() => {
@@ -47,8 +60,9 @@ export function useNotifications() {
     });
     scheduledAlerts.current.clear();
 
-    // Determine if we should use notifications or alerts
+    // Determine if we should use browser notifications or in-app overlay
     const useNotifications = notificationSupported && Notification.permission === 'granted';
+    const isDocumentVisible = () => !document.hidden;
 
     // Schedule new reminders
     appointments.forEach((appointment) => {
@@ -60,15 +74,27 @@ export function useNotifications() {
       // Only schedule if reminder time is in the future
       if (notificationTime > now) {
         const delay = notificationTime - now;
-        const key = `${appointment.patientName}-${appointment.appointmentTime}`;
+        const key = `${appointment.id}-${appointment.appointmentTime}`;
+
+        // Skip if already fired
+        if (firedReminders.current.has(key)) {
+          return;
+        }
 
         const timeString = formatTimestamp12Hour(appointment.appointmentTime);
-
         const reminderMessage = `${appointment.patientName} at ${timeString}${appointment.notes ? ` - ${appointment.notes}` : ''}`;
 
-        if (useNotifications) {
-          // Schedule browser notification
-          const timeoutId = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+          // Mark as fired to prevent duplicates
+          firedReminders.current.add(key);
+
+          // Check if app is in foreground
+          if (isDocumentVisible()) {
+            // Show in-app full-screen overlay with sound
+            playNotificationSound();
+            setActiveReminder({ appointment });
+          } else if (useNotifications) {
+            // Show browser notification when app is in background
             try {
               const notification = new Notification('Upcoming Appointment', {
                 body: reminderMessage,
@@ -90,20 +116,16 @@ export function useNotifications() {
               // Fallback to alert if notification fails
               alert(`Upcoming Appointment:\n${reminderMessage}`);
             }
-          }, delay);
-
-          scheduledNotifications.current.set(key, {
-            appointmentTime: appointment.appointmentTime,
-            timeoutId,
-          });
-        } else {
-          // Schedule alert as fallback
-          const timeoutId = setTimeout(() => {
+          } else {
+            // Fallback to alert
             alert(`Upcoming Appointment:\n${reminderMessage}`);
-          }, delay);
+          }
+        }, delay);
 
-          scheduledAlerts.current.set(key, timeoutId);
-        }
+        scheduledNotifications.current.set(key, {
+          appointmentTime: appointment.appointmentTime,
+          timeoutId,
+        });
       }
     });
 
@@ -124,5 +146,7 @@ export function useNotifications() {
   return {
     notificationPermission: notificationSupported ? Notification.permission : 'default',
     isUsingAlerts: !notificationSupported || Notification.permission !== 'granted',
+    activeReminder,
+    dismissReminder,
   };
 }

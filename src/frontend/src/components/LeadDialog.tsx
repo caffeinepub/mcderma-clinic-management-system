@@ -12,7 +12,7 @@ import { useAddLead, useUpdateLead, useAddAppointment } from '../hooks/useQuerie
 import { toast } from 'sonner';
 import { Loader2, Contact } from 'lucide-react';
 import { useContactPicker } from '../hooks/useContactPicker';
-import { normalizePhoneNumber } from '../utils/phone';
+import { normalizePhone } from '../utils/phone';
 import ContactImportReviewDialog from './ContactImportReviewDialog';
 
 interface LeadDialogProps {
@@ -78,7 +78,7 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
   const handlePickContact = async () => {
     try {
       const contact = await pickContact();
-      const normalizedMobile = normalizePhoneNumber(contact.mobile || '');
+      const normalizedMobile = normalizePhone(contact.mobile || '');
       setPendingContact({
         name: contact.name || '',
         mobile: normalizedMobile,
@@ -215,57 +215,51 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="area">Area (Optional)</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}
                 onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                placeholder="Enter area/location"
+                required
+                placeholder="Enter area"
                 disabled={isPending}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="followUpDate">Follow-up Date *</Label>
-                <Input
-                  id="followUpDate"
-                  type="date"
-                  value={formData.followUpDate}
-                  onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
-                  required
-                  disabled={isPending}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="expectedTreatmentDate">Expected Date *</Label>
-                <Input
-                  id="expectedTreatmentDate"
-                  type="date"
-                  value={formData.expectedTreatmentDate}
-                  onChange={(e) => setFormData({ ...formData, expectedTreatmentDate: e.target.value })}
-                  required
-                  disabled={isPending}
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Rating: {formData.rating}/7</Label>
+              <Label htmlFor="followUpDate">Follow-up Date *</Label>
+              <Input
+                id="followUpDate"
+                type="date"
+                value={formData.followUpDate}
+                onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+                required
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expectedTreatmentDate">Expected Treatment Date *</Label>
+              <Input
+                id="expectedTreatmentDate"
+                type="date"
+                value={formData.expectedTreatmentDate}
+                onChange={(e) => setFormData({ ...formData, expectedTreatmentDate: e.target.value })}
+                required
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Rating: {formData.rating}/10</Label>
               <Slider
                 value={[formData.rating]}
                 onValueChange={(value) => setFormData({ ...formData, rating: value[0] })}
-                min={1}
-                max={7}
+                min={0}
+                max={10}
                 step={1}
-                className="py-4"
                 disabled={isPending}
               />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Low</span>
-                <span>High</span>
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -274,8 +268,8 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
                 id="doctorRemark"
                 value={formData.doctorRemark}
                 onChange={(e) => setFormData({ ...formData, doctorRemark: e.target.value })}
-                placeholder="Enter doctor's remarks or notes"
                 rows={3}
+                placeholder="Enter doctor's remarks"
                 disabled={isPending}
               />
             </div>
@@ -287,8 +281,8 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
                 onCheckedChange={(checked) => setFormData({ ...formData, addToAppointment: checked as boolean })}
                 disabled={isPending}
               />
-              <Label htmlFor="addToAppointment" className="text-sm font-normal cursor-pointer">
-                Add to Appointment Tab
+              <Label htmlFor="addToAppointment" className="cursor-pointer">
+                Add to appointments
               </Label>
             </div>
 
@@ -299,11 +293,13 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
+                ) : lead ? (
+                  'Update'
                 ) : (
-                  'Save Lead'
+                  'Add'
                 )}
               </Button>
             </DialogFooter>

@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-lead-status-dropdown-control-to-each-lead-entry-card-in-the-leads-tab-positioned-on-the-right-side-below-the-existing-rating-display-with-exactly-these-options-1-ringing-2-will-call-and-come-3-follow-up-date-given",
-      "featureTitle": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
+      "featureId": "feature-remove-the-settings-ui-action-that-opens-the-widget-view-the-open-widget-view-open-widget-button-so-users-no-longer-see-or-can-tap-a-widget-opening-button-in-settings",
+      "featureTitle": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
       "files": [
-        "frontend/src/components/LeadCard.tsx"
+        "frontend/src/pages/SettingsTab.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -23,11 +23,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-persist-the-selected-lead-status-for-each-lead-in-backend-storage-and-ensure-it-is-returned-by-the-getleads-query-and-updated-via-an-update-operation",
-      "featureTitle": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
+      "featureId": "feature-change-the-app-s-default-date-display-format-to-dd-mm-yy-wherever-dates-are-shown-to-the-user-including-date-time-strings-date-portion-and-date-only-strings-e-g-exports-keep-time-formatting-in-12-hour-format-with-am-pm-unless-a-screen-is-currently-time-only",
+      "featureTitle": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
       "files": [
-        "frontend/src/components/LeadDialog.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/AppointmentCard.tsx",
+        "frontend/src/components/LeadCard.tsx",
+        "frontend/src/lib/utils.ts",
+        "frontend/src/pages/SettingsTab.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -41,27 +43,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-reduce-the-vertical-height-of-each-lead-entry-card-in-the-leads-section-by-approximately-20-30-while-keeping-all-existing-actions-call-whatsapp-edit-delete-usable-and-readable-on-mobile",
-      "featureTitle": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
-      "files": [
-        "frontend/src/components/LeadCard.tsx"
-      ],
-      "components": [
-        "camera@1.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

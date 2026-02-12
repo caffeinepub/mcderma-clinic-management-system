@@ -1,36 +1,28 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App for managing appointments, patients, and leads across multiple devices, with improved lead entry UI and periodic cross-device data syncing.",
+  "summary": "Web app: remove unsupported home-screen widget UI and standardize date display format.",
   "architectural_notes": [
-    "Implement periodic background refresh every 15 minutes and surface a 'last synced' timestamp in the UI."
+    "Home-screen widgets (1x2, 2x2) are not supported in a web/PWA app; only shortcuts/app icons can be added, so widget-related UI should be removed or replaced."
   ],
   "known_issues": [
-    "New entries created on one device do not appear on other devices until manual refresh."
+    "'Open Widget' button does not work and adds a full app shortcut instead of a 1x2 widget on mobile home screen."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-lead-status-dropdown-control-to-each-lead-entry-card-in-the-leads-tab-positioned-on-the-right-side-below-the-existing-rating-display-with-exactly-these-options-1-ringing-2-will-call-and-come-3-follow-up-date-given",
-      "title": "Add a lead status dropdown control to each lead entry card in the Leads tab, positioned on the right side below the existing rating display, with exactly these options: (1) Ringing, (2) will call and come, (3) follow up date given.",
+      "id": "feature-remove-the-settings-ui-action-that-opens-the-widget-view-the-open-widget-view-open-widget-button-so-users-no-longer-see-or-can-tap-a-widget-opening-button-in-settings",
+      "title": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-persist-the-selected-lead-status-for-each-lead-in-backend-storage-and-ensure-it-is-returned-by-the-getleads-query-and-updated-via-an-update-operation",
-      "title": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
+      "id": "feature-change-the-app-s-default-date-display-format-to-dd-mm-yy-wherever-dates-are-shown-to-the-user-including-date-time-strings-date-portion-and-date-only-strings-e-g-exports-keep-time-formatting-in-12-hour-format-with-am-pm-unless-a-screen-is-currently-time-only",
+      "title": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-reduce-the-vertical-height-of-each-lead-entry-card-in-the-leads-section-by-approximately-20-30-while-keeping-all-existing-actions-call-whatsapp-edit-delete-usable-and-readable-on-mobile",
-      "title": "Reduce the vertical height of each lead entry card in the Leads section by approximately 20–30% while keeping all existing actions (Call, WhatsApp, Edit, Delete) usable and readable on mobile.",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
@@ -38,24 +30,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add automatic data refresh every 15 minutes so new entries sync across devices without manual refresh; display a 'last synced' timestamp.",
+      "summary": "Remove the 'Open Widget' / widget creation button from Settings since home-screen widgets are not supported.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "In Leads section, add a dropdown (below Rating on the right side) for lead status with options: Ringing, will call and come, follow up date given.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Reduce the height of each lead entry in the Leads section by ~20–30%.",
+      "summary": "Set default date format across the app to DD/MM/YY.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add lead status dropdown on Lead cards and reduce Lead card height",
+  "projectName": "Remove Open Widget button and standardize date format to DD/MM/YY",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

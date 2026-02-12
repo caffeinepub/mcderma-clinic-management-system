@@ -1,61 +1,61 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T17:04:14.006Z",
-  "summary": "Diff adds a leadStatus field to the Lead model, introduces a migration to backfill the new field, and updates the LeadCard UI to show a status dropdown under the rating with the required three options while also tightening card padding. However, the migration backfills leadStatus with a value not present in the required dropdown options, and the diff summary does not provide clear evidence that backend getLeads/update endpoints were updated to persist and return leadStatus or that React Query invalidation/refetch happens after status updates.",
+  "generatedAt": "2026-02-12T15:38:44.535Z",
+  "summary": "REQ-1 appears implemented (Settings open-widget entry point removed), but REQ-2 is only partially evidenced: new DD/MM/YY helpers were added and applied in a few components, yet other known date surfaces (e.g., Header last-sync display) were not modified in the diff and may still use the old format. Several unrelated UI/feature changes were introduced (PWA install UI, card layout tweaks, lead status UI).",
   "missing_requirements": [
     {
       "id": "REQ-2",
-      "requirement": "Persist the selected lead status for each lead in backend storage and ensure it is returned by the getLeads query and updated via an update operation.",
-      "reason": "backend/main.mo is truncated and the diff summary does not show any updated getLeads query implementation or a backend update operation that writes leadStatus; only the Lead type definition shows the new field. Without seeing the query/update methods, persistence and return via getLeads cannot be verified from provided evidence.",
+      "requirement": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user (including date+time strings and exports), keeping 12-hour AM/PM time formatting.",
+      "reason": "The diff adds DD/MM/YY formatting utilities and updates some components (AppointmentCard, LeadCard, SettingsTab), but other date-displaying areas called out/known in the repo (e.g., Header’s last sync time display) are not changed in the diff summary, so it’s not evidenced that dates are standardized everywhere.",
       "evidence": [
-        "backend/main.mo (truncated)",
-        "frontend/src/hooks/useQueries.ts (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Existing leads (created before this change) have a valid default status value after upgrade (no crashes/deserialization errors).",
-      "reason": "Migration sets leadStatus to \"New\", but the UI dropdown options are required to be exactly \"Ringing\", \"will call and come\", \"follow up date given\". A migrated lead could have a status value that is not selectable/representable in the dropdown, which violates the implied requirement that stored values align with the defined options.",
-      "evidence": [
-        "backend/migration.mo",
-        "frontend/src/components/LeadCard.tsx"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "React Query leads cache is invalidated/refetched after a successful status change so the UI stays consistent.",
-      "reason": "LeadCard calls a useUpdateLeadStatus mutation, but the provided useQueries.ts content is truncated before any leads/status mutation logic, so invalidation/refetch behavior cannot be confirmed from the evidence shown.",
-      "evidence": [
+        "frontend/src/lib/utils.ts",
+        "frontend/src/components/AppointmentCard.tsx",
         "frontend/src/components/LeadCard.tsx",
-        "frontend/src/hooks/useQueries.ts (truncated)"
+        "frontend/src/pages/SettingsTab.tsx",
+        "frontend-file-summaries.txt (Header.tsx described as displaying last sync time; file not modified)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Migration backfills leadStatus with default value \"New\".",
-      "reason": "BuildRequest requires the dropdown options to be exactly three specific strings and does not request introducing any additional status value. Setting a default of \"New\" introduces an unrequested status outside the specified option set.",
+      "description": "Added/expanded PWA install prompt handling and an install button state in Settings (beforeinstallprompt listener, deferredPrompt, showInstallButton).",
+      "reason": "Not requested; the request explicitly targets removing the open-widget button and standardizing date formats, with non-goal of adding widget functionality.",
       "evidence": [
-        "backend/migration.mo"
+        "frontend/src/pages/SettingsTab.tsx"
       ]
     },
     {
-      "description": "Backend migration module includes commentary/structure about hashedPassword type change (\"Changed from [Nat8] to Blob\").",
-      "reason": "BuildRequest changes are specifically about adding lead status and adjusting Lead card UI height; password representation changes are not requested.",
+      "description": "Significant AppointmentCard UI/layout changes (compact 3-row layout, inline date next to time in Upcoming section, padding/spacing adjustments, Follow Up button behavior).",
+      "reason": "UI layout refactors beyond the requested date formatting and widget-button removal.",
       "evidence": [
-        "backend/migration.mo"
+        "frontend/src/components/AppointmentCard.tsx",
+        "frontend-file-summaries.txt (AppointmentCard description)"
+      ]
+    },
+    {
+      "description": "LeadCard UI/layout changes (20–30% reduced height, status dropdown repositioning and options, optimistic UI updates).",
+      "reason": "Not requested; only date formatting and Settings open-widget entry point removal were requested.",
+      "evidence": [
+        "frontend/src/components/LeadCard.tsx",
+        "frontend-file-summaries.txt (LeadCard description)"
+      ]
+    },
+    {
+      "description": "Project metadata/state updates adding AR-* feature request entries and architectural notes in project_state.json.",
+      "reason": "Not requested as part of product changes; appears to be process/metadata rather than implementing REQ-1/REQ-2.",
+      "evidence": [
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.68,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/AppointmentCard.tsx",
     "frontend/src/components/LeadCard.tsx",
-    "frontend/src/components/LeadDialog.tsx",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/lib/utils.ts",
+    "frontend/src/pages/SettingsTab.tsx",
     "project_state.json"
   ]
 }

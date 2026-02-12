@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import AppointmentCard from '../components/AppointmentCard';
 import AppointmentDialog from '../components/AppointmentDialog';
 import FollowUpDateTimeDialog from '../components/FollowUpDateTimeDialog';
-import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments, useUpdateAppointment } from '../hooks/useQueries';
+import NextAppointmentWidget from '../components/NextAppointmentWidget';
+import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments, useUpdateAppointment, useGetAppointments } from '../hooks/useQueries';
+import { useNow } from '../hooks/useNow';
 import type { Appointment } from '../backend';
 import { toast } from 'sonner';
 
@@ -17,7 +19,11 @@ export default function ScheduleTab() {
   const { data: todaysAppointments = [], isLoading: loadingToday } = useGetTodaysAppointments();
   const { data: tomorrowAppointments = [], isLoading: loadingTomorrow } = useGetTomorrowAppointments();
   const { data: upcomingAppointments = [], isLoading: loadingUpcoming } = useGetUpcomingAppointments();
+  const { data: allAppointments = [] } = useGetAppointments();
   const updateAppointment = useUpdateAppointment();
+  
+  // Get current time that updates every minute
+  const now = useNow(60000);
 
   const handleEdit = (appointment: Appointment) => {
     setEditingAppointment({ appointment, id: appointment.id });
@@ -58,6 +64,9 @@ export default function ScheduleTab() {
 
   return (
     <div className="space-y-6">
+      {/* Next Appointment Widget */}
+      <NextAppointmentWidget appointments={allAppointments} currentTime={now} />
+
       {/* Today's Count Card - Ultra Compact Design */}
       <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-lg px-3 py-1.5 shadow-md">
         <div className="flex items-center justify-between">

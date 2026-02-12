@@ -16,8 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
-import { formatTimestamp12Hour } from '../lib/utils';
+import { formatTimestamp12Hour, formatTimestampDDMMYY } from '../lib/utils';
 import AppointmentFeedbackActions from './AppointmentFeedbackActions';
 
 interface AppointmentCardProps {
@@ -37,10 +36,9 @@ export default function AppointmentCard({
   const addPatient = useAddPatient();
   const deleteAppointment = useDeleteAppointment();
 
-  const date = new Date(Number(appointment.appointmentTime) / 1000000);
   const timeStr = formatTimestamp12Hour(appointment.appointmentTime);
-  const dateStr = format(date, 'MMM dd, yyyy');
-  const shortDateStr = format(date, 'MMM dd');
+  const dateStr = formatTimestampDDMMYY(appointment.appointmentTime);
+  const shortDateStr = formatTimestampDDMMYY(appointment.appointmentTime);
 
   const handleCall = () => {
     window.location.href = `tel:${appointment.mobile}`;

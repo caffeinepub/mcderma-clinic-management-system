@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Download, LogOut, RefreshCw, FileJson, FileSpreadsheet, Network } from 'lucide-react';
+import { Edit2, Download, LogOut, RefreshCw, FileJson, FileSpreadsheet, Network, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,8 @@ import { useLastSync } from '../hooks/useLastSync';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { formatDateTime12Hour } from '@/lib/utils';
+import { formatDateTime12Hour, formatDateTimestamp12Hour, formatTimestampDDMMYY } from '@/lib/utils';
+import { computeLeadAnalytics } from '../utils/leadAnalysis';
 
 export default function SettingsTab() {
   const { clear } = useInternetIdentity();
@@ -177,33 +178,6 @@ export default function SettingsTab() {
     }
   };
 
-  const formatDateStringFromBigInt = (timestamp: bigint): string => {
-    try {
-      // Convert nanoseconds to milliseconds and format in 12-hour AM/PM format
-      const milliseconds = Number(timestamp) / 1_000_000;
-      const date = new Date(milliseconds);
-      return formatDateTime12Hour(date);
-    } catch (error) {
-      console.error('Error formatting date string:', error);
-      return formatDateTime12Hour(new Date());
-    }
-  };
-
-  const formatDateOnlyFromBigInt = (timestamp: bigint): string => {
-    try {
-      // Convert nanoseconds to milliseconds
-      const milliseconds = Number(timestamp) / 1_000_000;
-      return new Date(milliseconds).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return new Date().toLocaleDateString();
-    }
-  };
-
   const handleExport = () => {
     try {
       const currentDate = new Date();
@@ -257,7 +231,7 @@ export default function SettingsTab() {
           appointments.map(a => ({
             patientName: a.patientName,
             mobile: a.mobile,
-            appointmentTime: formatDateStringFromBigInt(a.appointmentTime),
+            appointmentTime: formatDateTimestamp12Hour(a.appointmentTime),
             notes: a.notes,
           })),
           ['patientName', 'mobile', 'appointmentTime', 'notes']
@@ -279,8 +253,8 @@ export default function SettingsTab() {
             mobile: l.mobile,
             treatmentWanted: l.treatmentWanted,
             area: l.area,
-            followUpDate: formatDateOnlyFromBigInt(l.followUpDate),
-            expectedTreatmentDate: formatDateOnlyFromBigInt(l.expectedTreatmentDate),
+            followUpDate: formatTimestampDDMMYY(l.followUpDate),
+            expectedTreatmentDate: formatTimestampDDMMYY(l.expectedTreatmentDate),
             rating: l.rating,
             doctorRemark: l.doctorRemark,
           })),
@@ -331,6 +305,10 @@ export default function SettingsTab() {
   const displaySyncStatus = isSyncing || isManualSyncing;
   const isMainnet = window.location.hostname.includes('.ic0.app') || window.location.hostname.includes('.icp0.io');
   const networkLabel = isMainnet ? 'Mainnet' : 'Local';
+
+  // Compute lead analytics
+  const leadAnalytics = computeLeadAnalytics(leads, appointments);
+  const maxValue = Math.max(...leadAnalytics.map(a => Math.max(a.generated, a.converted)), 1);
 
   return (
     <div className="container max-w-2xl mx-auto p-4 space-y-6">
@@ -400,13 +378,70 @@ export default function SettingsTab() {
             disabled={displaySyncStatus}
             className="w-full"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${displaySyncStatus ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${displaySyncStatus ? 'animate-spin' : ''}`} />
             {displaySyncStatus ? 'Syncing...' : 'Sync Now'}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lead Analysis</CardTitle>
+          <CardDescription>Track lead generation and conversion by treatment type</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {leadAnalytics.map((analytics) => (
+            <div key={analytics.category} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">{analytics.category}</h4>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span>Generated: {analytics.generated}</span>
+                  <span>Converted: {analytics.converted}</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2 h-12">
+                {/* Generated bar */}
+                <div className="flex-1 flex flex-col justify-end">
+                  <div className="text-xs text-center mb-1 text-muted-foreground">Generated</div>
+                  <div 
+                    className="bg-primary/30 rounded-t transition-all duration-300"
+                    style={{ height: `${(analytics.generated / maxValue) * 100}%`, minHeight: analytics.generated > 0 ? '8px' : '0' }}
+                  >
+                    <div className="text-xs text-center font-semibold pt-1">
+                      {analytics.generated > 0 ? analytics.generated : ''}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Converted bar */}
+                <div className="flex-1 flex flex-col justify-end">
+                  <div className="text-xs text-center mb-1 text-muted-foreground">Converted</div>
+                  <div 
+                    className="bg-primary rounded-t transition-all duration-300"
+                    style={{ height: `${(analytics.converted / maxValue) * 100}%`, minHeight: analytics.converted > 0 ? '8px' : '0' }}
+                  >
+                    <div className="text-xs text-center font-semibold text-primary-foreground pt-1">
+                      {analytics.converted > 0 ? analytics.converted : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {analytics.generated > 0 && (
+                <div className="text-xs text-muted-foreground text-center">
+                  Conversion Rate: {Math.round((analytics.converted / analytics.generated) * 100)}%
+                </div>
+              )}
+            </div>
+          ))}
           
-          <p className="text-xs text-muted-foreground">
-            Data syncs automatically every 15 minutes and when you return to the app. Click "Sync Now" for an immediate refresh.
-          </p>
+          {leadAnalytics.every(a => a.generated === 0) && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No lead data available yet</p>
+              <p className="text-xs mt-1">Add leads to see conversion analytics</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -416,16 +451,16 @@ export default function SettingsTab() {
           <CardDescription>Overview of your clinic data</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
               <p className="text-2xl font-bold text-primary">{appointments.length}</p>
               <p className="text-xs text-muted-foreground">Appointments</p>
             </div>
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
+            <div>
               <p className="text-2xl font-bold text-primary">{patients.length}</p>
               <p className="text-xs text-muted-foreground">Patients</p>
             </div>
-            <div className="text-center p-3 bg-muted/50 rounded-lg">
+            <div>
               <p className="text-2xl font-bold text-primary">{leads.length}</p>
               <p className="text-xs text-muted-foreground">Leads</p>
             </div>
@@ -435,11 +470,22 @@ export default function SettingsTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Deployment Info</CardTitle>
-          <CardDescription>Current network and build information</CardDescription>
+          <CardTitle>Progressive Web App</CardTitle>
+          <CardDescription>Install the app for offline access</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+        <CardContent className="space-y-4">
+          {showInstallButton && (
+            <Button onClick={handleInstall} className="w-full">
+              <Smartphone className="mr-2 h-4 w-4" />
+              Install App
+            </Button>
+          )}
+          
+          <Button onClick={handleShare} variant="outline" className="w-full">
+            Share App
+          </Button>
+
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
             <Network className="h-5 w-5 text-primary" />
             <div>
               <p className="text-sm font-medium">Network</p>
@@ -451,33 +497,11 @@ export default function SettingsTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>App Actions</CardTitle>
-          <CardDescription>Share, install, and manage your data</CardDescription>
+          <CardTitle>Export Data</CardTitle>
+          <CardDescription>Download your clinic data</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full justify-start" onClick={handleShare}>
-            <img 
-              src="/assets/generated/share-icon-transparent.dim_24x24.png" 
-              alt="Share" 
-              className="h-4 w-4 mr-2"
-            />
-            Share App
-          </Button>
-
-          {showInstallButton && (
-            <Button variant="outline" className="w-full justify-start" onClick={handleInstall}>
-              <img 
-                src="/assets/generated/add-to-home-icon-transparent.dim_24x24.png" 
-                alt="Add to Home Screen" 
-                className="h-4 w-4 mr-2"
-              />
-              Add to Home Screen
-            </Button>
-          )}
-
-          <Separator className="my-2" />
-
-          <div className="space-y-3">
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
             <Label htmlFor="exportFormat">Export Format</Label>
             <Select value={exportFormat} onValueChange={(value: 'json' | 'csv') => setExportFormat(value)}>
               <SelectTrigger id="exportFormat">
@@ -498,30 +522,41 @@ export default function SettingsTab() {
                 </SelectItem>
               </SelectContent>
             </Select>
-
-            <Button variant="outline" className="w-full justify-start" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Data as {exportFormat.toUpperCase()}
-            </Button>
-            
-            <p className="text-xs text-muted-foreground">
-              {exportFormat === 'json' 
-                ? 'Exports all data in a single JSON file with complete structure.'
-                : 'Exports data as separate CSV files for appointments, patients, and leads.'}
-            </p>
           </div>
 
-          <Separator />
+          <Button onClick={handleExport} className="w-full">
+            <Download className="mr-2 h-4 w-4" />
+            Export Data
+          </Button>
+        </CardContent>
+      </Card>
 
-          <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Manage your account settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleLogout} variant="destructive" className="w-full">
+            <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         </CardContent>
       </Card>
 
-      <div className="text-center text-xs text-muted-foreground py-4">
-        <p>© 2026. Built with ❤️ using <a href="https://caffeine.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">caffeine.ai</a></p>
+      <div className="text-center text-xs text-muted-foreground pb-4">
+        <p>© {new Date().getFullYear()} McDerma Clinic Management</p>
+        <p className="mt-1">
+          Built with ❤️ using{' '}
+          <a
+            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-primary"
+          >
+            caffeine.ai
+          </a>
+        </p>
       </div>
     </div>
   );

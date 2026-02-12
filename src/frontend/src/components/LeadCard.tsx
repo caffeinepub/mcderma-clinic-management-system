@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Lead } from '../backend';
-import { format, isPast } from 'date-fns';
+import { isPast } from 'date-fns';
 import { useDeleteLead, useUpdateLeadStatus } from '../hooks/useQueries';
 import { toast } from 'sonner';
 import {
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { formatTimestampDDMMYY } from '../lib/utils';
 
 interface LeadCardProps {
   lead: Lead;
@@ -69,6 +70,9 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
   const followUpDate = new Date(Number(lead.followUpDate) / 1000000);
   const expectedDate = new Date(Number(lead.expectedTreatmentDate) / 1000000);
   const isOverdue = isPast(followUpDate) && followUpDate.toDateString() !== new Date().toDateString();
+
+  const followUpDateStr = formatTimestampDDMMYY(lead.followUpDate);
+  const expectedDateStr = formatTimestampDDMMYY(lead.expectedTreatmentDate);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -119,7 +123,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
             <Calendar className="h-2.5 w-2.5 text-muted-foreground" />
             <span className="text-muted-foreground">Follow-up:</span>
             <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-              {format(followUpDate, 'MMM dd, yyyy')}
+              {followUpDateStr}
             </span>
             {isOverdue && <Badge variant="destructive" className="text-xs h-4 px-1">Overdue</Badge>}
           </div>
@@ -127,7 +131,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
           <div className="flex items-center gap-1 text-xs">
             <Calendar className="h-2.5 w-2.5 text-muted-foreground" />
             <span className="text-muted-foreground">Expected:</span>
-            <span>{format(expectedDate, 'MMM dd, yyyy')}</span>
+            <span>{expectedDateStr}</span>
           </div>
 
           {lead.doctorRemark && (

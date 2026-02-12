@@ -1,59 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Lead card status dropdown + compact layout",
+  "title": "Remove widget Settings action and standardize dates to DD/MM/YY",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add a per-lead status dropdown on each LeadCard under the rating on the right, and update status locally on change.",
+      "summary": "Remove the Settings action/button that opens the widget view so users can’t launch the widget from Settings.",
       "acceptanceCriteria": [
-        "Each LeadCard shows a dropdown on the right side under the rating, visually aligned with the rating block.",
-        "Dropdown options are exactly: \"Ringing\", \"will call and come\", \"follow up date given\".",
-        "Changing the dropdown value updates the lead locally in the UI without requiring a page refresh (i.e., the lead list reflects the new selected value after the change)."
+        "Settings page no longer renders the button labeled “Open Widget View” (or any equivalent open-widget button).",
+        "The unused click handler (e.g., `handleOpenWidget`) and related imports (e.g., ExternalLink icon) are removed if no longer needed.",
+        "No navigation route or page is required to be deleted; only the Settings open-widget entry point is removed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LeadCard.tsx",
+          "path": "frontend/src/pages/SettingsTab.tsx",
           "operation": "modify",
-          "description": "Add a right-aligned status <select> control below the existing rating display with exactly the three required options; wire its onChange to a new status-update mutation and perform an optimistic React Query cache update so the selected value reflects immediately without refresh."
+          "description": "Remove the Settings UI button that opens the widget view, delete `handleOpenWidget`, and drop any now-unused imports (e.g., `ExternalLink`). Keep the WidgetView route/page intact per requirement."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Wire lead status persistence through existing lead update flow, including React Query invalidation/refetch after status change.",
+      "summary": "Standardize all user-visible date display to DD/MM/YY while keeping 12-hour time (AM/PM) for date+time strings.",
       "acceptanceCriteria": [
-        "Backend Lead data model includes a stored field for lead status.",
-        "Existing leads (created before this change) have a valid default status value after upgrade (no crashes/deserialization errors).",
-        "When a user changes a lead's dropdown value, the change persists after app reload and appears on other devices after the normal sync/refresh behavior.",
-        "React Query leads cache is invalidated/refetched after a successful status change so the UI stays consistent."
+        "Any UI that shows a date (e.g., appointment-related messages, Settings “Last Synced”, exports’ date columns) displays the date portion in DD/MM/YY format.",
+        "Places currently using US locale date formatting (e.g., `toLocaleString('en-US'...)`, `toLocaleDateString('en-US'...)`) are updated so the resulting output is DD/MM/YY.",
+        "Places currently using date-fns formats for dates (e.g., `format(date, 'MMM dd, yyyy')` / `format(date, 'MMM dd')`) are updated so displayed dates follow DD/MM/YY (2-digit day, 2-digit month, 2-digit year).",
+        "No user-facing text is changed except as required by the new date format."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/lib/utils.ts",
           "operation": "modify",
-          "description": "Update lead mutations to include leadStatus in add/update inputs and calls; add a dedicated useUpdateLeadStatus mutation that calls the backend update capability using the existing lead fields plus the new leadStatus, performs optimistic cache updates for ['leads'], and invalidates/refetches ['leads'] (and related last-modified keys) on success."
+          "description": "Update/extend the app’s shared date formatting helpers so date-only strings render as DD/MM/YY and date+time strings render as DD/MM/YY with 12-hour time and AM/PM. Ensure existing callers (e.g., Settings last synced, exports) can use these helpers without changing non-date text."
         },
         {
-          "path": "frontend/src/components/LeadDialog.tsx",
+          "path": "frontend/src/components/AppointmentCard.tsx",
           "operation": "modify",
-          "description": "Include leadStatus in LeadDialog form state with a sensible default and ensure both create and edit submissions pass leadStatus through to useAddLead/useUpdateLead so newly created/edited leads keep a consistent persisted status."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Reduce LeadCard vertical height ~20–30% while keeping all information and actions readable and tappable on mobile.",
-      "acceptanceCriteria": [
-        "Lead cards display with visibly reduced vertical padding/spacing compared to current layout (target ~20–30% less height).",
-        "All current lead information remains present (name, mobile, area, treatment, follow-up, expected date, remark if present) and does not overlap.",
-        "Action buttons remain tappable on mobile and are not clipped or pushed off-card."
-      ],
-      "file_operations": [
+          "description": "Replace date-fns display formats like `MMM dd, yyyy` / `MMM dd` with the standardized DD/MM/YY formatting for any on-screen appointment date strings and any user-visible message strings that include dates (e.g., WhatsApp reminder text)."
+        },
         {
           "path": "frontend/src/components/LeadCard.tsx",
           "operation": "modify",
-          "description": "Tighten layout spacing to reduce overall card height (reduce CardContent padding, tighten vertical margins/spacing between sections, and compact the remark block) while keeping action buttons at usable tap sizes and ensuring no text overlaps/clips on small screens."
+          "description": "Replace date-fns display formats like `MMM dd, yyyy` for follow-up and expected dates with DD/MM/YY formatting."
+        },
+        {
+          "path": "frontend/src/pages/SettingsTab.tsx",
+          "operation": "modify",
+          "description": "Update Settings date formatting to use the standardized DD/MM/YY helpers everywhere dates are shown/exported, including: the “Last Synced” display and all export-related date serialization (CSV date columns and any exported date strings). Also replace any `toLocaleDateString('en-US', ...)` usage so output is DD/MM/YY."
         }
       ]
     }

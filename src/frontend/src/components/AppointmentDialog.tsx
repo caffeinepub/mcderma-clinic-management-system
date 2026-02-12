@@ -11,7 +11,7 @@ import { useAddAppointment, useUpdateAppointment } from '../hooks/useQueries';
 import { toast } from 'sonner';
 import { Loader2, Contact } from 'lucide-react';
 import { useContactPicker } from '../hooks/useContactPicker';
-import { normalizePhoneNumber } from '../utils/phone';
+import { normalizePhone } from '../utils/phone';
 import ContactImportReviewDialog from './ContactImportReviewDialog';
 
 interface AppointmentDialogProps {
@@ -89,7 +89,7 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
   const handlePickContact = async () => {
     try {
       const contact = await pickContact();
-      const normalizedMobile = normalizePhoneNumber(contact.mobile || '');
+      const normalizedMobile = normalizePhone(contact.mobile || '');
       setPendingContact({
         name: contact.name || '',
         mobile: normalizedMobile,

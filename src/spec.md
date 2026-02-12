@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add a lead status dropdown on each Lead card and make Lead cards more compact in the Leads tab.
+**Goal:** Remove the Settings entry point for opening the widget view and standardize all user-facing date displays to DD/MM/YY.
 
 **Planned changes:**
-- Add a lead status dropdown to each Lead card, positioned on the right side below the existing rating display, with options: "Ringing", "will call and come", "follow up date given".
-- Store the selected lead status in the backend Lead model, return it via the existing getLeads query, and update it through a backend update operation (including migration/defaulting for existing leads).
-- Update the Leads UI to persist status changes (update locally immediately, then persist; refetch/invalidate leads cache after success).
-- Reduce Lead card vertical height by ~20–30% by tightening spacing/padding while keeping all existing fields and actions (Call, WhatsApp, Edit, Delete) readable and tappable on mobile.
+- Remove the Settings UI action/button that opens the widget view (e.g., “Open Widget View”) so it no longer renders or can be tapped.
+- Delete the now-unused click handler and related imports used only for the open-widget Settings action.
+- Update all user-facing date formatting across the app so the date portion is displayed as DD/MM/YY (including date-only and date+time strings), while keeping existing 12-hour time formatting with AM/PM where applicable.
 
-**User-visible outcome:** In the Leads tab, each lead shows a status dropdown under the rating; changing it updates instantly and remains saved after reload/sync, and lead cards take up noticeably less vertical space without losing information or usability.
+**User-visible outcome:** Users will no longer see an “Open Widget View” button in Settings, and dates throughout the app will display in DD/MM/YY format.

@@ -6,12 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Patient } from '../backend';
 import { ExternalBlob } from '../backend';
-import { Camera, Upload, Loader2, Contact } from 'lucide-react';
-import { useCamera } from '../camera/useCamera';
 import { useAddPatient, useUpdatePatient } from '../hooks/useQueries';
 import { toast } from 'sonner';
+import { Camera, Image as ImageIcon, Loader2, Contact } from 'lucide-react';
+import { useCamera } from '@/camera/useCamera';
 import { useContactPicker } from '../hooks/useContactPicker';
-import { normalizePhoneNumber } from '../utils/phone';
+import { normalizePhone } from '../utils/phone';
 import ContactImportReviewDialog from './ContactImportReviewDialog';
 
 interface PatientDialogProps {
@@ -30,15 +30,29 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
     mobile: '',
     area: '',
     notes: '',
-    imageBlob: null as ExternalBlob | null,
-    imagePreview: '',
   });
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [pendingContact, setPendingContact] = useState({ name: '', mobile: '' });
 
-  const { isActive, startCamera, stopCamera, capturePhoto, videoRef, canvasRef, error } = useCamera({
-    facingMode: 'user',
+  const {
+    isActive: isCameraActive,
+    isSupported: isCameraSupported,
+    error: cameraError,
+    isLoading: isCameraLoading,
+    startCamera,
+    stopCamera,
+    capturePhoto,
+    videoRef,
+    canvasRef,
+  } = useCamera({
+    facingMode: 'environment',
+    width: 1280,
+    height: 720,
+    quality: 0.9,
   });
 
   useEffect(() => {
@@ -48,32 +62,34 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
         mobile: patient.mobile,
         area: patient.area,
         notes: patient.notes,
-        imageBlob: patient.image || null,
-        imagePreview: patient.image ? patient.image.getDirectURL() : '',
       });
+
+      if (patient.image) {
+        setImagePreview(patient.image.getDirectURL());
+      }
     } else {
       setFormData({
         name: '',
         mobile: '',
         area: '',
         notes: '',
-        imageBlob: null,
-        imagePreview: '',
       });
+      setImageFile(null);
+      setImagePreview(null);
     }
-    setShowCamera(false);
   }, [patient, open]);
 
   useEffect(() => {
-    if (!open && isActive) {
+    if (!open && isCameraActive) {
       stopCamera();
+      setShowCamera(false);
     }
-  }, [open, isActive, stopCamera]);
+  }, [open, isCameraActive, stopCamera]);
 
   const handlePickContact = async () => {
     try {
       const contact = await pickContact();
-      const normalizedMobile = normalizePhoneNumber(contact.mobile || '');
+      const normalizedMobile = normalizePhone(contact.mobile || '');
       setPendingContact({
         name: contact.name || '',
         mobile: normalizedMobile,
@@ -93,14 +109,53 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
     toast.success('Contact added from phonebook');
   };
 
+  const handleOpenCamera = async () => {
+    setShowCamera(true);
+    const success = await startCamera();
+    if (!success) {
+      toast.error('Failed to start camera');
+      setShowCamera(false);
+    }
+  };
+
+  const handleCapturePhoto = async () => {
+    const photo = await capturePhoto();
+    if (photo) {
+      setImageFile(photo);
+      setImagePreview(URL.createObjectURL(photo));
+      await stopCamera();
+      setShowCamera(false);
+      toast.success('Photo captured');
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      toast.success('Image selected');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      let imageBlob: ExternalBlob | null = null;
+
+      if (imageFile) {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        imageBlob = ExternalBlob.fromBytes(uint8Array);
+      } else if (patient?.image) {
+        imageBlob = patient.image;
+      }
+
       if (patient) {
         await updatePatient.mutateAsync({
           mobile: patient.mobile,
-          image: formData.imageBlob,
+          image: imageBlob,
           name: formData.name,
           newMobile: formData.mobile,
           area: formData.area,
@@ -109,7 +164,7 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
         toast.success('Patient updated successfully');
       } else {
         await addPatient.mutateAsync({
-          image: formData.imageBlob,
+          image: imageBlob,
           name: formData.name,
           mobile: formData.mobile,
           area: formData.area,
@@ -117,63 +172,10 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
         });
         toast.success('Patient added successfully');
       }
+
       onOpenChange(false);
-      if (isActive) {
-        stopCamera();
-      }
     } catch (error) {
       toast.error('Failed to save patient');
-    }
-  };
-
-  const handleCameraCapture = async () => {
-    const photo = await capturePhoto();
-    if (photo) {
-      const arrayBuffer = await photo.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ 
-          ...formData, 
-          imageBlob: blob,
-          imagePreview: reader.result as string 
-        });
-        setShowCamera(false);
-        stopCamera();
-        toast.success('Photo captured successfully');
-      };
-      reader.readAsDataURL(photo);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(uint8Array);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ 
-          ...formData, 
-          imageBlob: blob,
-          imagePreview: reader.result as string 
-        });
-        toast.success('Image uploaded successfully');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleStartCamera = async () => {
-    setShowCamera(true);
-    const success = await startCamera();
-    if (!success) {
-      toast.error('Failed to start camera');
-      setShowCamera(false);
     }
   };
 
@@ -201,52 +203,90 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
               </Button>
             </div>
 
-            {/* Image Upload */}
             <div className="space-y-2">
               <Label>Patient Photo</Label>
-              {formData.imagePreview && !showCamera && (
-                <div className="flex justify-center mb-2">
-                  <img src={formData.imagePreview} alt="Patient" className="h-32 w-32 rounded-full object-cover border-4 border-primary/20" />
-                </div>
-              )}
-              {showCamera && (
+              {showCamera ? (
                 <div className="space-y-2">
-                  <div className="relative rounded-lg overflow-hidden bg-black">
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full" />
+                  <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
                     <canvas ref={canvasRef} className="hidden" />
                   </div>
-                  {error && (
-                    <p className="text-sm text-destructive">{error.message}</p>
+                  {cameraError && (
+                    <p className="text-sm text-destructive">{cameraError.message}</p>
                   )}
                   <div className="flex gap-2">
-                    <Button type="button" onClick={handleCameraCapture} disabled={!isActive} className="flex-1">
-                      Capture Photo
+                    <Button
+                      type="button"
+                      onClick={handleCapturePhoto}
+                      disabled={!isCameraActive || isCameraLoading}
+                      className="flex-1"
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Capture
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => { stopCamera(); setShowCamera(false); }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        stopCamera();
+                        setShowCamera(false);
+                      }}
+                      disabled={isCameraLoading}
+                    >
                       Cancel
                     </Button>
                   </div>
                 </div>
-              )}
-              {!showCamera && (
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={handleStartCamera} className="flex-1" disabled={isPending}>
-                    <Camera className="h-4 w-4 mr-2" />
-                    Camera
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => document.getElementById('file-upload')?.click()} className="flex-1" disabled={isPending}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Gallery
-                  </Button>
+              ) : (
+                <div className="space-y-2">
+                  {imagePreview && (
+                    <div className="relative w-32 h-32 mx-auto">
+                      <img
+                        src={imagePreview}
+                        alt="Patient preview"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    {isCameraSupported && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleOpenCamera}
+                        disabled={isPending}
+                        className="flex-1"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Camera
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('imageInput')?.click()}
+                      disabled={isPending}
+                      className="flex-1"
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      Gallery
+                    </Button>
+                  </div>
+                  <input
+                    id="imageInput"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
               )}
-              <input
-                id="file-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
             </div>
 
             <div className="space-y-2">
@@ -275,24 +315,25 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="area">Area</Label>
+              <Label htmlFor="area">Area *</Label>
               <Input
                 id="area"
                 value={formData.area}
                 onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                placeholder="Enter area/location"
+                required
+                placeholder="Enter area"
                 disabled={isPending}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Treatment History / Notes</Label>
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Enter treatment history or notes"
-                rows={4}
+                rows={3}
+                placeholder="Enter notes"
                 disabled={isPending}
               />
             </div>
@@ -304,11 +345,13 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
+                ) : patient ? (
+                  'Update'
                 ) : (
-                  'Save Patient'
+                  'Add'
                 )}
               </Button>
             </DialogFooter>

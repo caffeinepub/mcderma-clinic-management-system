@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
@@ -10,8 +10,10 @@ import ScheduleTab from './pages/ScheduleTab';
 import PatientsTab from './pages/PatientsTab';
 import LeadsTab from './pages/LeadsTab';
 import SettingsTab from './pages/SettingsTab';
+import WidgetView from './pages/WidgetView';
 import LoginPage from './pages/LoginPage';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
+import AppointmentReminderOverlay from './components/AppointmentReminderOverlay';
 import { Toaster } from '@/components/ui/sonner';
 
 const queryClient = new QueryClient({
@@ -29,6 +31,7 @@ function AppContent() {
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const [activeTab, setActiveTab] = useState<TabType>('schedule');
+  const [currentRoute, setCurrentRoute] = useState<string>('');
 
   const isAuthenticated = !!identity;
 
@@ -36,7 +39,19 @@ function AppContent() {
   useBackendAwareSync();
 
   // Initialize notification system for appointment reminders
-  useNotifications();
+  const { activeReminder, dismissReminder } = useNotifications();
+
+  // Simple hash-based routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the '#'
+      setCurrentRoute(hash);
+    };
+
+    handleHashChange(); // Set initial route
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Show loading state while checking authentication
   if (isInitializing) {
@@ -48,6 +63,14 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  // Widget view route - accessible without full app chrome
+  if (currentRoute === '/widget') {
+    if (!isAuthenticated) {
+      return <LoginPage />;
+    }
+    return <WidgetView />;
   }
 
   // Show login page if not authenticated
@@ -74,6 +97,14 @@ function AppContent() {
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {showProfileSetup && <ProfileSetupDialog />}
+      
+      {/* Full-screen appointment reminder overlay */}
+      {activeReminder && (
+        <AppointmentReminderOverlay
+          appointment={activeReminder.appointment}
+          onDismiss={dismissReminder}
+        />
+      )}
     </div>
   );
 }
