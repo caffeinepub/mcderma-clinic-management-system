@@ -1,563 +1,408 @@
-import { useState, useEffect } from 'react';
-import { Edit2, Download, LogOut, RefreshCw, FileJson, FileSpreadsheet, Network, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { Download, RefreshCw, Package, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useSaveCallerUserProfile, useGetAppointments, useGetPatients, useGetLeads, useUpdateLastSyncTime } from '../hooks/useQueries';
-import { useLastSync } from '../hooks/useLastSync';
-import { useSyncStatus } from '../hooks/useSyncStatus';
-import { useQueryClient } from '@tanstack/react-query';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { formatDateTime12Hour, formatDateTimestamp12Hour, formatTimestampDDMMYY } from '@/lib/utils';
+import { useGetCallerUserProfile, useSaveCallerUserProfile, useGetAppointments, useGetPatients, useGetLeads } from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { formatDateDDMMYY } from '../lib/utils';
 import { computeLeadAnalytics } from '../utils/leadAnalysis';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AttendanceSection from '../components/settings/AttendanceSection';
+import WhatsAppTemplatesEditor from '../components/settings/WhatsAppTemplatesEditor';
+import AdminGateDialog from '../components/admin/AdminGateDialog';
+import PermissionsMatrix from '../components/admin/PermissionsMatrix';
+import { exportAttendanceData } from '../utils/attendanceExport';
+import { useGetAllAttendance } from '../hooks/useQueries';
 
 export default function SettingsTab() {
-  const { clear } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { mutate: saveProfile } = useSaveCallerUserProfile();
+  const saveProfile = useSaveCallerUserProfile();
+  const queryClient = useQueryClient();
   const { data: appointments = [] } = useGetAppointments();
   const { data: patients = [] } = useGetPatients();
   const { data: leads = [] } = useGetLeads();
-  const { formattedLastSync, lastSyncTime } = useLastSync();
-  const isSyncing = useSyncStatus();
-  const { mutateAsync: updateSyncTime } = useUpdateLastSyncTime();
-  const queryClient = useQueryClient();
+  const { data: allAttendance = [] } = useGetAllAttendance();
 
-  const [clinicName, setClinicName] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [isManualSyncing, setIsManualSyncing] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json');
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [username, setUsername] = useState(userProfile?.username || '');
+  const [clinicName, setClinicName] = useState(userProfile?.clinicName || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [showAdminGate, setShowAdminGate] = useState(false);
 
-  useEffect(() => {
-    if (userProfile?.clinicName) {
-      setClinicName(userProfile.clinicName);
-    }
-  }, [userProfile]);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
+  const handleSaveProfile = async () => {
+    if (!username.trim() || !clinicName.trim()) {
+      toast.error('Please fill in all fields');
+      return;
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleSaveClinicName = () => {
-    if (!userProfile) return;
-
-    saveProfile(
-      { ...userProfile, clinicName },
-      {
-        onSuccess: () => {
-          toast.success('Clinic name updated successfully');
-          setIsEditing(false);
-        },
-        onError: () => {
-          toast.error('Failed to update clinic name');
-        },
-      }
-    );
+    setIsSaving(true);
+    try {
+      await saveProfile.mutateAsync({ username, clinicName });
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error('Failed to update profile', {
+        description: error.message || 'Please try again',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleManualSync = async () => {
-    setIsManualSyncing(true);
+    toast.info('Syncing data...');
+    await queryClient.invalidateQueries();
+    toast.success('Data synced successfully');
+  };
+
+  const handleExportData = (format: 'json' | 'csv', dataType: 'all' | 'appointments' | 'patients' | 'leads' | 'attendance') => {
     try {
-      // Invalidate and refetch all data queries
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['appointments'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['todaysAppointments'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['patients'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['leads'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['currentUserProfile'], refetchType: 'active' }),
-      ]);
+      let data: any;
+      let filename: string;
 
-      // Update backend sync time
-      await updateSyncTime();
-      
-      toast.success('Data synced successfully');
-    } catch (error) {
-      toast.error('Failed to sync data');
-      console.error('Sync error:', error);
-    } finally {
-      setIsManualSyncing(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await clear();
-    queryClient.clear();
-    toast.success('Logged out successfully');
-  };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: 'McDerma Clinic Management',
-      text: 'Check out this clinic management system!',
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        toast.success('Shared successfully');
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          toast.error('Failed to share');
-        }
+      if (dataType === 'attendance') {
+        const exportData = exportAttendanceData(allAttendance);
+        data = exportData;
+        filename = `attendance-export-${new Date().toISOString().split('T')[0]}`;
+      } else if (dataType === 'all') {
+        data = { appointments, patients, leads };
+        filename = `clinic-data-${new Date().toISOString().split('T')[0]}`;
+      } else if (dataType === 'appointments') {
+        data = appointments;
+        filename = `appointments-${new Date().toISOString().split('T')[0]}`;
+      } else if (dataType === 'patients') {
+        data = patients;
+        filename = `patients-${new Date().toISOString().split('T')[0]}`;
+      } else {
+        data = leads;
+        filename = `leads-${new Date().toISOString().split('T')[0]}`;
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success('Link copied to clipboard');
-      } catch {
-        toast.error('Failed to copy link');
-      }
-    }
-  };
 
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      toast.success('App installed successfully');
-      setShowInstallButton(false);
-    }
-
-    setDeferredPrompt(null);
-  };
-
-  const convertToCSV = (data: any[], headers: string[]): string => {
-    const csvRows: string[] = [];
-    csvRows.push(headers.join(','));
-
-    for (const row of data) {
-      const values = headers.map(header => {
-        const value = row[header];
-        if (value === null || value === undefined) return '';
-        const escaped = ('' + value).replace(/"/g, '""');
-        return `"${escaped}"`;
-      });
-      csvRows.push(values.join(','));
-    }
-
-    return csvRows.join('\n');
-  };
-
-  const sanitizeFilename = (name: string): string => {
-    return name.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'mcderma';
-  };
-
-  const formatDateFromBigInt = (timestamp: bigint): string => {
-    try {
-      // Convert nanoseconds to milliseconds
-      const milliseconds = Number(timestamp) / 1_000_000;
-      return new Date(milliseconds).toISOString();
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return new Date().toISOString();
-    }
-  };
-
-  const handleExport = () => {
-    try {
-      const currentDate = new Date();
-      const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-      const baseFilename = sanitizeFilename(userProfile?.clinicName || 'McDerma');
-      
-      if (exportFormat === 'json') {
-        const data = {
-          clinicName: userProfile?.clinicName || 'McDerma',
-          exportDate: currentDate.toISOString(),
-          appointments: appointments.map(a => ({
-            patientName: a.patientName,
-            mobile: a.mobile,
-            appointmentTime: formatDateFromBigInt(a.appointmentTime),
-            notes: a.notes,
-          })),
-          patients: patients.map(p => ({
-            name: p.name,
-            mobile: p.mobile,
-            area: p.area,
-            notes: p.notes,
-            hasImage: !!p.image,
-          })),
-          leads: leads.map(l => ({
-            leadName: l.leadName,
-            mobile: l.mobile,
-            treatmentWanted: l.treatmentWanted,
-            area: l.area,
-            followUpDate: formatDateFromBigInt(l.followUpDate),
-            expectedTreatmentDate: formatDateFromBigInt(l.expectedTreatmentDate),
-            rating: l.rating,
-            doctorRemark: l.doctorRemark,
-          })),
-        };
-
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
+      if (format === 'json') {
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${baseFilename}-${dateString}.json`;
-        document.body.appendChild(a);
+        a.download = `${filename}.json`;
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
-        toast.success('Data exported successfully as JSON');
       } else {
-        // CSV Export - create separate files for each data type
-        const appointmentsCSV = convertToCSV(
-          appointments.map(a => ({
-            patientName: a.patientName,
-            mobile: a.mobile,
-            appointmentTime: formatDateTimestamp12Hour(a.appointmentTime),
-            notes: a.notes,
-          })),
-          ['patientName', 'mobile', 'appointmentTime', 'notes']
-        );
+        // CSV export
+        let csvContent = '';
+        
+        if (dataType === 'attendance') {
+          // Attendance CSV format
+          csvContent = convertAttendanceToCSV(data);
+        } else if (dataType === 'appointments' || dataType === 'all') {
+          const appointmentsData = dataType === 'all' ? data.appointments : data;
+          csvContent = 'Patient Name,Mobile,Date,Time,Notes,Follow Up\n';
+          appointmentsData.forEach((apt: any) => {
+            const aptDate = new Date(Number(apt.appointmentTime) / 1000000);
+            const date = formatDateDDMMYY(aptDate);
+            const time = aptDate.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true 
+            });
+            csvContent += `"${apt.patientName}","${apt.mobile}","${date}","${time}","${apt.notes}","${apt.isFollowUp ? 'Yes' : 'No'}"\n`;
+          });
+        } else if (dataType === 'patients') {
+          csvContent = 'Name,Mobile,Area,Notes\n';
+          patients.forEach((patient: any) => {
+            csvContent += `"${patient.name}","${patient.mobile}","${patient.area}","${patient.notes}"\n`;
+          });
+        } else if (dataType === 'leads') {
+          csvContent = 'Lead Name,Mobile,Treatment,Area,Follow Up Date,Rating,Status\n';
+          leads.forEach((lead: any) => {
+            const followUpDateObj = new Date(Number(lead.followUpDate) / 1000000);
+            const followUpDate = formatDateDDMMYY(followUpDateObj);
+            csvContent += `"${lead.leadName}","${lead.mobile}","${lead.treatmentWanted}","${lead.area}","${followUpDate}",${lead.rating},"${lead.leadStatus}"\n`;
+          });
+        }
 
-        const patientsCSV = convertToCSV(
-          patients.map(p => ({
-            name: p.name,
-            mobile: p.mobile,
-            area: p.area,
-            notes: p.notes,
-          })),
-          ['name', 'mobile', 'area', 'notes']
-        );
-
-        const leadsCSV = convertToCSV(
-          leads.map(l => ({
-            leadName: l.leadName,
-            mobile: l.mobile,
-            treatmentWanted: l.treatmentWanted,
-            area: l.area,
-            followUpDate: formatTimestampDDMMYY(l.followUpDate),
-            expectedTreatmentDate: formatTimestampDDMMYY(l.expectedTreatmentDate),
-            rating: l.rating,
-            doctorRemark: l.doctorRemark,
-          })),
-          ['leadName', 'mobile', 'treatmentWanted', 'area', 'followUpDate', 'expectedTreatmentDate', 'rating', 'doctorRemark']
-        );
-
-        // Download appointments CSV
-        const appointmentsBlob = new Blob([appointmentsCSV], { type: 'text/csv;charset=utf-8;' });
-        const appointmentsUrl = URL.createObjectURL(appointmentsBlob);
-        const appointmentsLink = document.createElement('a');
-        appointmentsLink.href = appointmentsUrl;
-        appointmentsLink.download = `${baseFilename}-appointments-${dateString}.csv`;
-        document.body.appendChild(appointmentsLink);
-        appointmentsLink.click();
-        document.body.removeChild(appointmentsLink);
-        URL.revokeObjectURL(appointmentsUrl);
-
-        // Download patients CSV
-        const patientsBlob = new Blob([patientsCSV], { type: 'text/csv;charset=utf-8;' });
-        const patientsUrl = URL.createObjectURL(patientsBlob);
-        const patientsLink = document.createElement('a');
-        patientsLink.href = patientsUrl;
-        patientsLink.download = `${baseFilename}-patients-${dateString}.csv`;
-        document.body.appendChild(patientsLink);
-        patientsLink.click();
-        document.body.removeChild(patientsLink);
-        URL.revokeObjectURL(patientsUrl);
-
-        // Download leads CSV
-        const leadsBlob = new Blob([leadsCSV], { type: 'text/csv;charset=utf-8;' });
-        const leadsUrl = URL.createObjectURL(leadsBlob);
-        const leadsLink = document.createElement('a');
-        leadsLink.href = leadsUrl;
-        leadsLink.download = `${baseFilename}-leads-${dateString}.csv`;
-        document.body.appendChild(leadsLink);
-        leadsLink.click();
-        document.body.removeChild(leadsLink);
-        URL.revokeObjectURL(leadsUrl);
-
-        toast.success('Data exported successfully as CSV files');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
+
+      toast.success(`${dataType === 'all' ? 'All data' : dataType.charAt(0).toUpperCase() + dataType.slice(1)} exported successfully`);
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export data. Please try again.');
+      toast.error('Failed to export data');
     }
   };
 
-  const displaySyncStatus = isSyncing || isManualSyncing;
-  const isMainnet = window.location.hostname.includes('.ic0.app') || window.location.hostname.includes('.icp0.io');
-  const networkLabel = isMainnet ? 'Mainnet' : 'Local';
+  const convertAttendanceToCSV = (data: any): string => {
+    let csv = '';
+    
+    // Header
+    csv += 'Staff Name,';
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+    months.forEach(month => {
+      csv += `${month} - Absent Dates,${month} - Present Days,${month} - Absent Days,`;
+    });
+    csv += '\n';
 
-  // Compute lead analytics
-  const leadAnalytics = computeLeadAnalytics(leads, appointments);
-  const maxValue = Math.max(...leadAnalytics.map(a => Math.max(a.generated, a.converted)), 1);
+    // Data rows
+    Object.entries(data).forEach(([staffName, yearData]: [string, any]) => {
+      csv += `"${staffName}",`;
+      months.forEach((_, monthIndex) => {
+        const monthData = yearData.months[monthIndex];
+        if (monthData) {
+          const absentDates = monthData.absentDates.join('; ');
+          csv += `"${absentDates}",${monthData.presentDays},${monthData.absentDays},`;
+        } else {
+          csv += '"",0,0,';
+        }
+      });
+      csv += '\n';
+    });
+
+    return csv;
+  };
+
+  const handleOpenAdmin = () => {
+    setShowAdminGate(true);
+  };
+
+  const handleAdminUnlocked = () => {
+    setAdminUnlocked(true);
+    setShowAdminGate(false);
+  };
+
+  // Lead Analysis Data
+  const leadAnalysisData = computeLeadAnalytics(leads, appointments);
 
   return (
-    <div className="container max-w-2xl mx-auto p-4 space-y-6">
-      <div className="space-y-2">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div>
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <p className="text-muted-foreground">Manage your clinic settings and preferences</p>
+        <p className="text-muted-foreground">Manage your profile and application settings</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Clinic Information</CardTitle>
-          <CardDescription>Update your clinic details</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input id="username" value={userProfile?.username || ''} disabled />
-          </div>
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          <TabsTrigger value="admin">Admin</TabsTrigger>
+          <TabsTrigger value="data">Data</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="clinicName">Clinic Name</Label>
-            <div className="flex gap-2">
-              <Input
-                id="clinicName"
-                value={clinicName}
-                onChange={(e) => setClinicName(e.target.value)}
-                disabled={!isEditing}
-                placeholder="Enter clinic name"
-              />
-              {!isEditing ? (
-                <Button variant="outline" size="icon" onClick={() => setIsEditing(true)}>
-                  <Edit2 className="h-4 w-4" />
+        <TabsContent value="profile" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>Update your personal and clinic information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clinicName">Clinic Name</Label>
+                <Input
+                  id="clinicName"
+                  value={clinicName}
+                  onChange={(e) => setClinicName(e.target.value)}
+                  placeholder="Enter your clinic name"
+                />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistics</CardTitle>
+              <CardDescription>Overview of your clinic data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-primary">{appointments.length}</div>
+                  <div className="text-sm text-muted-foreground">Appointments</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary">{patients.length}</div>
+                  <div className="text-sm text-muted-foreground">Patients</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary">{leads.length}</div>
+                  <div className="text-sm text-muted-foreground">Leads</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead Analysis</CardTitle>
+              <CardDescription>Conversion rates by treatment type</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={leadAnalysisData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="category" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="generated" fill="hsl(var(--primary))" name="Generated" />
+                  <Bar dataKey="converted" fill="hsl(var(--chart-2))" name="Converted" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attendance" className="space-y-4">
+          <AttendanceSection />
+        </TabsContent>
+
+        <TabsContent value="whatsapp" className="space-y-4">
+          <WhatsAppTemplatesEditor />
+        </TabsContent>
+
+        <TabsContent value="admin" className="space-y-4">
+          {!adminUnlocked ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Section</CardTitle>
+                <CardDescription>Manage staff permissions and access control</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleOpenAdmin}>
+                  Unlock Admin Section
                 </Button>
-              ) : (
-                <Button onClick={handleSaveClinicName}>Save</Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <PermissionsMatrix />
+          )}
+        </TabsContent>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Data Synchronization</CardTitle>
-          <CardDescription>Automatic sync with manual refresh option</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <RefreshCw className={`h-5 w-5 text-primary ${displaySyncStatus ? 'animate-spin' : ''}`} />
+        <TabsContent value="data" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Management</CardTitle>
+              <CardDescription>Sync and export your clinic data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <p className="text-sm font-medium">
-                  {displaySyncStatus ? 'Syncing...' : 'Last Synced'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {lastSyncTime ? formatDateTime12Hour(lastSyncTime) : 'Never'}
-                </p>
+                <h3 className="font-medium mb-2">Manual Sync</h3>
+                <Button onClick={handleManualSync} variant="outline" className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Sync Now
+                </Button>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium">{formattedLastSync}</p>
-            </div>
-          </div>
-          
-          <Button 
-            onClick={handleManualSync} 
-            disabled={displaySyncStatus}
-            className="w-full"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${displaySyncStatus ? 'animate-spin' : ''}`} />
-            {displaySyncStatus ? 'Syncing...' : 'Sync Now'}
-          </Button>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lead Analysis</CardTitle>
-          <CardDescription>Track lead generation and conversion by treatment type</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {leadAnalytics.map((analytics) => (
-            <div key={analytics.category} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold">{analytics.category}</h4>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Generated: {analytics.generated}</span>
-                  <span>Converted: {analytics.converted}</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-2 h-12">
-                {/* Generated bar */}
-                <div className="flex-1 flex flex-col justify-end">
-                  <div className="text-xs text-center mb-1 text-muted-foreground">Generated</div>
-                  <div 
-                    className="bg-primary/30 rounded-t transition-all duration-300"
-                    style={{ height: `${(analytics.generated / maxValue) * 100}%`, minHeight: analytics.generated > 0 ? '8px' : '0' }}
-                  >
-                    <div className="text-xs text-center font-semibold pt-1">
-                      {analytics.generated > 0 ? analytics.generated : ''}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Converted bar */}
-                <div className="flex-1 flex flex-col justify-end">
-                  <div className="text-xs text-center mb-1 text-muted-foreground">Converted</div>
-                  <div 
-                    className="bg-primary rounded-t transition-all duration-300"
-                    style={{ height: `${(analytics.converted / maxValue) * 100}%`, minHeight: analytics.converted > 0 ? '8px' : '0' }}
-                  >
-                    <div className="text-xs text-center font-semibold text-primary-foreground pt-1">
-                      {analytics.converted > 0 ? analytics.converted : ''}
-                    </div>
-                  </div>
+              <Separator />
+
+              <div>
+                <h3 className="font-medium mb-3">Export Data</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={() => handleExportData('json', 'all')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    All Data (JSON)
+                  </Button>
+                  <Button onClick={() => handleExportData('csv', 'appointments')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Appointments (CSV)
+                  </Button>
+                  <Button onClick={() => handleExportData('csv', 'patients')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Patients (CSV)
+                  </Button>
+                  <Button onClick={() => handleExportData('csv', 'leads')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Leads (CSV)
+                  </Button>
+                  <Button onClick={() => handleExportData('json', 'attendance')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Attendance (JSON)
+                  </Button>
+                  <Button onClick={() => handleExportData('csv', 'attendance')} variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Attendance (CSV)
+                  </Button>
                 </div>
               </div>
-              
-              {analytics.generated > 0 && (
-                <div className="text-xs text-muted-foreground text-center">
-                  Conversion Rate: {Math.round((analytics.converted / analytics.generated) * 100)}%
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {leadAnalytics.every(a => a.generated === 0) && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No lead data available yet</p>
-              <p className="text-xs mt-1">Add leads to see conversion analytics</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Statistics</CardTitle>
-          <CardDescription>Overview of your clinic data</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">{appointments.length}</p>
-              <p className="text-xs text-muted-foreground">Appointments</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-primary">{patients.length}</p>
-              <p className="text-xs text-muted-foreground">Patients</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-primary">{leads.length}</p>
-              <p className="text-xs text-muted-foreground">Leads</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                PWA Features
+              </CardTitle>
+              <CardDescription>Install this app on your device for offline access</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                This application can be installed on your device. Look for the "Add to Home Screen" or "Install" option in your browser menu.
+              </p>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Progressive Web App</CardTitle>
-          <CardDescription>Install the app for offline access</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {showInstallButton && (
-            <Button onClick={handleInstall} className="w-full">
-              <Smartphone className="mr-2 h-4 w-4" />
-              Install App
-            </Button>
-          )}
-          
-          <Button onClick={handleShare} variant="outline" className="w-full">
-            Share App
-          </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Deployment Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Version:</span>
+                <span className="font-mono">1.0.0</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Environment:</span>
+                <span className="font-mono">{import.meta.env.MODE}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Network className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Network</p>
-              <p className="text-xs text-muted-foreground">{networkLabel}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Data</CardTitle>
-          <CardDescription>Download your clinic data</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="exportFormat">Export Format</Label>
-            <Select value={exportFormat} onValueChange={(value: 'json' | 'csv') => setExportFormat(value)}>
-              <SelectTrigger id="exportFormat">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="json">
-                  <div className="flex items-center gap-2">
-                    <FileJson className="h-4 w-4" />
-                    <span>JSON (Single File)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="csv">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>CSV (Multiple Files)</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button onClick={handleExport} className="w-full">
-            <Download className="mr-2 h-4 w-4" />
-            Export Data
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>Manage your account settings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleLogout} variant="destructive" className="w-full">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="text-center text-xs text-muted-foreground pb-4">
-        <p>© {new Date().getFullYear()} McDerma Clinic Management</p>
-        <p className="mt-1">
-          Built with ❤️ using{' '}
+      <footer className="text-center text-sm text-muted-foreground py-8 border-t">
+        <p>
+          © {new Date().getFullYear()} Built with ❤️ using{' '}
           <a
             href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-primary"
+            className="text-primary hover:underline"
           >
             caffeine.ai
           </a>
         </p>
-      </div>
+      </footer>
+
+      <AdminGateDialog
+        open={showAdminGate}
+        onOpenChange={setShowAdminGate}
+        onUnlocked={handleAdminUnlocked}
+      />
     </div>
   );
 }

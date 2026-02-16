@@ -1,57 +1,269 @@
 {
   "kind": "build_request",
-  "title": "Remove Open Widget button and standardize date format to DD/MM/YY",
+  "title": "Add staff login + attendance + admin role-based access + WhatsApp template editor + collapsible left sidebar",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
+      "text": "Add a collapsible left-side sidebar layout for the authenticated app experience (the main UI currently uses Header + tab content + BottomNav). The sidebar must support collapse/expand and remain usable on mobile screens.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "Yes remove open widget button."
+          "I wand a left side collapseable side bar.",
+          "Yes"
         ]
       },
       "acceptanceCriteria": [
-        "Settings page no longer renders the button labeled “Open Widget View” (or any equivalent open-widget button).",
-        "The unused click handler (e.g., `handleOpenWidget`) and related imports (e.g., ExternalLink icon) are removed if no longer needed.",
-        "No navigation route or page is required to be deleted; only the Settings open-widget entry point is removed."
+        "When authenticated, the app shows a left sidebar that can be collapsed/expanded without breaking existing tab pages.",
+        "On small screens, the sidebar does not cover critical UI permanently (it can overlay and be dismissible)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
+      "text": "In the left sidebar, add two top actions: (1) “Staff Login” and (2) “Auto Attendance”. Both actions must open the staff login/attendance dialog flow described by the user.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "And by default date should be in DD/MM/YY FORMAT"
+          "It should have on top a button staff login and auto attendance button."
         ]
       },
       "acceptanceCriteria": [
-        "Any UI that shows a date (e.g., appointment-related messages, Settings “Last Synced”, exports’ date columns) displays the date portion in DD/MM/YY format.",
-        "Places currently using US locale date formatting (e.g., `toLocaleString('en-US'...)`, `toLocaleDateString('en-US'...)`) are updated so the resulting output is DD/MM/YY.",
-        "Places currently using date-fns formats for dates (e.g., `format(date, 'MMM dd, yyyy')` / `format(date, 'MMM dd')`) are updated so displayed dates follow DD/MM/YY (2-digit day, 2-digit month, 2-digit year).",
-        "No user-facing text is changed except as required by the new date format."
+        "Sidebar top area contains two distinct buttons labeled “Staff Login” and “Auto Attendance”.",
+        "Clicking either button opens the staff login dialog."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement the staff login dialog UI: a dropdown for Staff Name, an auto-populated Role field based on the selected staff member, and a Login button. After successful login/attendance, show a popup/toast message: \"<name> your attendance have been registered.\"",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Use simple login method like Name and front of which it should have drop down menu with staff name.",
+          "Role - which should automatically show as per previously defined role as per name",
+          " login button below. After login pop up msg \" name\" your attendance have been registered."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Dialog includes Staff Name dropdown, Role (read-only) display, and Login button.",
+        "Role updates immediately when a different staff name is selected.",
+        "On login success, a user-visible confirmation message appears with the selected staff name inserted exactly into the sentence."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add backend data models and APIs to manage staff records per clinic (per authenticated Internet Identity user): store staff name and associated role, and expose queries/mutations to list staff and resolve a staff member’s role by name for the staff-login UI.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "drop down menu with staff name.",
+          "Role - which should automatically show as per previously defined role as per name"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend provides a way to persist staff list for the current clinic owner.",
+        "Frontend can fetch staff list to populate the dropdown and fetch/display role for the selected staff name."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Implement attendance registration: when a staff member logs in via the staff login dialog, record an attendance entry with staff name, role, and a timestamp. Ensure duplicate taps do not create unexpected multiple entries (define and implement a reasonable idempotency rule for “today”).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "auto attendance button",
+          "your attendance have been registered."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A login action creates an attendance record with a timestamp.",
+        "Refreshing the app and revisiting attendance shows the recorded entry persists.",
+        "Repeated login attempts for the same staff member on the same day do not create uncontrolled duplicates."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Add an “Attendance” section inside Settings that shows today’s attendance entries as a vertical list, with each row displaying staff name and timestamp (one below another).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "In setting tab attendance tab should show todays attendance details like staff name and time stamp one below another."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings contains a clearly labeled Attendance area/tab/section.",
+        "Today’s attendance entries render in a simple list (one per line/row) showing name and timestamp."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Extend the Settings export UI (currently supports JSON/CSV exports for appointments/patients/leads) to include “Attendance” as an additional export dropdown option. When exporting attendance, generate a month-by-month summary for the current year, per staff member, including: absent dates list per month and present/absent day totals (as described by the user).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "In export button in setting tab add attendance in drop down menu. On exporting attendance it should show staff attendance as per month and current year calender. eg row 1 Name priya. Column 1-January month. Row 2-Absent Date 5,10. Row 3- present 29 days absent 2 days and so on for current year."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings export UI includes an Attendance option in addition to existing exports.",
+        "Exporting Attendance downloads a file (CSV and/or JSON) containing current-year, month-wise attendance summary per staff.",
+        "The exported structure includes absent dates and present/absent counts per month as specified."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Add an “Admin” section in Settings that is locked by a numeric password. On first use, prompt to set the password and set a recovery method using a security question and answer (include the question prompt: “Which is your favorite colour”).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I setting tab add Admin button. Which is locked by num key password. On first time use ask password and recovery method like question and answer ( Ask question which is your favorite colour)."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings shows an Admin entry/button that requires authentication before opening Admin content.",
+        "If no admin password is configured yet, the UI forces first-time setup (numeric password + recovery question/answer).",
+        "If admin password is configured, UI prompts for numeric password to unlock Admin section."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "In the Admin section, implement role-based access configuration as a row/column matrix: rows include Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns represent staff names. Admin can set which staff can access which sections. Persist these permissions in the backend.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "In Admin section, admin can select which part of app can be excessed by which staff.",
+          "Make it row and column arrangement Row 1 Role , Row 2 Appointment tab, Row 3 patient tab, Row 4 lead tab, Row 5 settings, Row 6 Full control COLUMN 1 NAME, COLUMN 2 NAME, SO ON"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin UI renders a matrix/grid with rows for the specified sections and columns for staff names.",
+        "Admin can toggle permissions per staff per section and changes persist after reload.",
+        "Backend stores and returns the access matrix for the clinic owner."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "Enforce staff role-based access in the UI: after staff login, only show/enable the tabs/sections that the admin matrix allows for that staff member; disallow navigation to unauthorized sections.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "LOGIN UNDER WHICH ROLE SHOULD GIVE EXCESS TO THAT SECTION OF APP ONLY",
+          "This will help doctor from staff excessing sensitive and valuable data about patients."
+        ]
+      },
+      "acceptanceCriteria": [
+        "After staff login, unauthorized tabs are hidden or disabled in the navigation (including the existing BottomNav).",
+        "Attempting to access an unauthorized section via UI does not display restricted data."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Add a “Log out” button at the bottom of the left sidebar that logs out the current staff session (staff-mode), without breaking the existing Internet Identity logout flows already present in Header/Settings.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "It should have Log out button at bottom."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Sidebar bottom includes a “Log out” action for staff-mode logout.",
+        "After staff logout, restricted sections are no longer accessible until a staff member logs in again.",
+        "Internet Identity logout remains available and continues to work as before."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "In Settings, add an editor for prefilled WhatsApp message templates (button-wise), including at minimum an “Appointment reminder” message template and an “After appointment feedback” message template, and store these templates in the backend. Update existing WhatsApp sending features to use the saved templates instead of hardcoded strings where applicable (e.g., current feedback message in frontend/src/utils/whatsappFeedback.ts).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Add Edit prefilled WhatsApp button in setting tab. It should have all prefilled WhatsApp msg button wise which can be edited eg appointment reminder msg Below that after appointment feedback msg, and so on."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings includes a WhatsApp Templates editor UI with editable fields for the required templates.",
+        "Templates persist across reloads and devices for the same clinic owner.",
+        "Sending a feedback WhatsApp message uses the stored template rather than the hardcoded FEEDBACK_MESSAGE."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Update backend stable state and add conditional migration (backend/migration.mo) if required so existing users’ stored appointments/patients/leads/profile data remain intact after adding new staff/attendance/admin/template fields.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1",
+          "msg-2"
+        ],
+        "quotes": [
+          "Yes"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Upgrading the canister preserves existing user data.",
+        "New fields (staff, attendance, admin settings, WhatsApp templates, permissions) initialize safely for existing users."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn UI sources); compose them instead.",
-    "Do not edit immutable paths listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx)."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit any frontend files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui; compose these components instead.",
+    "All user-facing text added by this change must be in English."
   ],
   "nonGoals": [
-    "Building a native Android/iOS home-screen widget (not supported in this web app).",
-    "Adding new widget functionality; this change only removes the Settings button that opens the widget view.",
-    "Changing backend data models or stored timestamp formats."
+    "Do not replace Internet Identity authentication with a third-party auth provider.",
+    "Do not implement real-time sync via WebSockets or external databases.",
+    "Do not add GPS/maps/location features.",
+    "Do not implement external messaging/email integrations (Twilio/SendGrid/etc.)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

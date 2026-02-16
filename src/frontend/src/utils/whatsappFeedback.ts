@@ -2,18 +2,19 @@
  * Utility for WhatsApp feedback message generation and validation
  */
 
-const FEEDBACK_MESSAGE = `Loved your visit? Please leave us a quick Google review ⭐
+const DEFAULT_FEEDBACK_MESSAGE = `Loved your visit? Please leave us a quick Google review ⭐
 👉 http://bit.ly/4c8pOFJ
 
 Or
 Scan below barcode for Google Map review and Follow us on Instagram`;
 
 /**
- * Get the feedback message content
+ * Get the feedback message content from template or default
+ * @param template - Optional custom template
  * @returns The feedback message text
  */
-export function getFeedbackMessage(): string {
-  return FEEDBACK_MESSAGE;
+export function getFeedbackMessage(template?: string): string {
+  return template || DEFAULT_FEEDBACK_MESSAGE;
 }
 
 /**
@@ -40,26 +41,29 @@ export function validateMobileForWhatsApp(mobile: string): { isValid: boolean; s
 /**
  * Generates a WhatsApp URL with the feedback message
  * @param mobile - The patient's mobile number
+ * @param template - Optional custom template
  * @returns WhatsApp URL or null if mobile is invalid
  */
-export function generateWhatsAppFeedbackURL(mobile: string): string | null {
+export function generateWhatsAppFeedbackURL(mobile: string, template?: string): string | null {
   const { isValid, sanitized } = validateMobileForWhatsApp(mobile);
 
   if (!isValid) {
     return null;
   }
 
-  const encodedMessage = encodeURIComponent(FEEDBACK_MESSAGE);
+  const message = getFeedbackMessage(template);
+  const encodedMessage = encodeURIComponent(message);
   return `https://wa.me/${sanitized}?text=${encodedMessage}`;
 }
 
 /**
  * Opens WhatsApp with the feedback message
  * @param mobile - The patient's mobile number
+ * @param template - Optional custom template
  * @returns true if successful, false if mobile is invalid
  */
-export function openWhatsAppFeedback(mobile: string): boolean {
-  const url = generateWhatsAppFeedbackURL(mobile);
+export function openWhatsAppFeedback(mobile: string, template?: string): boolean {
+  const url = generateWhatsAppFeedbackURL(mobile, template);
 
   if (!url) {
     return false;

@@ -4,8 +4,8 @@ import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useBackendAwareSync } from './hooks/useBackendAwareSync';
 import { useNotifications } from './hooks/useNotifications';
-import Header from './components/Header';
-import BottomNav from './components/BottomNav';
+import { useStaffSession } from './staff/useStaffSession';
+import AuthenticatedShell from './components/AuthenticatedShell';
 import ScheduleTab from './pages/ScheduleTab';
 import PatientsTab from './pages/PatientsTab';
 import LeadsTab from './pages/LeadsTab';
@@ -32,6 +32,7 @@ function AppContent() {
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const [activeTab, setActiveTab] = useState<TabType>('schedule');
   const [currentRoute, setCurrentRoute] = useState<string>('');
+  const { staffSession, canAccessTab } = useStaffSession();
 
   const isAuthenticated = !!identity;
 
@@ -52,6 +53,18 @@ function AppContent() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  // Enforce staff permissions - redirect to first allowed tab if current tab is restricted
+  useEffect(() => {
+    if (staffSession && !canAccessTab(activeTab)) {
+      // Find first allowed tab
+      const allowedTabs: TabType[] = ['schedule', 'patients', 'leads', 'settings'];
+      const firstAllowed = allowedTabs.find(tab => canAccessTab(tab));
+      if (firstAllowed) {
+        setActiveTab(firstAllowed);
+      }
+    }
+  }, [staffSession, activeTab, canAccessTab]);
 
   // Show loading state while checking authentication
   if (isInitializing) {
@@ -81,20 +94,19 @@ function AppContent() {
   // Show profile setup if user is authenticated but has no profile
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      <Header />
-      
-      <main className="flex-1 overflow-y-auto pb-20">
-        <div className="container mx-auto px-4 py-6">
-          {activeTab === 'schedule' && <ScheduleTab />}
-          {activeTab === 'patients' && <PatientsTab />}
-          {activeTab === 'leads' && <LeadsTab />}
-          {activeTab === 'settings' && <SettingsTab />}
-        </div>
-      </main>
+  // Get allowed tabs for staff mode
+  const allowedTabs: TabType[] = staffSession
+    ? (['schedule', 'patients', 'leads', 'settings'] as TabType[]).filter(tab => canAccessTab(tab))
+    : ['schedule', 'patients', 'leads', 'settings'];
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+  return (
+    <AuthenticatedShell activeTab={activeTab} onTabChange={setActiveTab} allowedTabs={allowedTabs}>
+      <div className="container mx-auto px-4 py-6">
+        {activeTab === 'schedule' && canAccessTab('schedule') && <ScheduleTab />}
+        {activeTab === 'patients' && canAccessTab('patients') && <PatientsTab />}
+        {activeTab === 'leads' && canAccessTab('leads') && <LeadsTab />}
+        {activeTab === 'settings' && canAccessTab('settings') && <SettingsTab />}
+      </div>
 
       {showProfileSetup && <ProfileSetupDialog />}
       
@@ -105,7 +117,7 @@ function AppContent() {
           onDismiss={dismissReminder}
         />
       )}
-    </div>
+    </AuthenticatedShell>
   );
 }
 

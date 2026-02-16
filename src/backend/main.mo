@@ -11,9 +11,9 @@ import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -59,6 +59,36 @@ actor {
     clinicName : Text;
   };
 
+  type Staff = {
+    name : Text;
+    role : Text;
+  };
+
+  type Attendance = {
+    name : Text;
+    role : Text;
+    timestamp : Int;
+  };
+
+  type AdminConfig = {
+    hashedPassword : ?Blob;
+    securityQuestion : Text;
+    hashedSecurityAnswer : ?Blob;
+  };
+
+  type StaffPermissions = {
+    canAccessAppointments : Bool;
+    canAccessPatients : Bool;
+    canAccessLeads : Bool;
+    canAccessSettings : Bool;
+    hasFullControl : Bool;
+  };
+
+  type WhatsAppTemplate = {
+    templateName : Text;
+    messageContent : Text;
+  };
+
   type UserData = {
     profile : UserProfile;
     hashedPassword : Blob;
@@ -66,17 +96,22 @@ actor {
     appointmentIdCounter : Nat;
     patients : Map.Map<Text, Patient>;
     leads : Map.Map<Text, Lead>;
+    staff : Map.Map<Text, Staff>;
+    attendance : Map.Map<Text, Attendance>;
+    attendanceIdCounter : Nat;
+    adminConfig : AdminConfig;
+    staffPermissions : Map.Map<Text, StaffPermissions>;
+    whatsappTemplates : Map.Map<Text, WhatsAppTemplate>;
     appointmentsLastModified : Time.Time;
     patientsLastModified : Time.Time;
     leadsLastModified : Time.Time;
+    staffLastModified : Time.Time;
     profileLastModified : Time.Time;
   };
 
   let userData = Map.empty<Principal, UserData>();
   let usernameToPrincipal = Map.empty<Text, Principal>();
   let syncData = Map.empty<Principal, Time.Time>();
-
-  // Helper function to safely get or initialize user data
   func getOrInitializeUserData(caller : Principal) : UserData {
     switch (userData.get(caller)) {
       case (?existingData) {
@@ -93,9 +128,20 @@ actor {
           appointmentIdCounter = 0;
           patients = Map.empty<Text, Patient>();
           leads = Map.empty<Text, Lead>();
+          staff = Map.empty<Text, Staff>();
+          attendance = Map.empty<Text, Attendance>();
+          attendanceIdCounter = 0;
+          adminConfig = {
+            hashedPassword = null;
+            securityQuestion = "Which is your favorite colour";
+            hashedSecurityAnswer = null;
+          };
+          staffPermissions = Map.empty<Text, StaffPermissions>();
+          whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
           appointmentsLastModified = Time.now();
           patientsLastModified = Time.now();
           leadsLastModified = Time.now();
+          staffLastModified = Time.now();
           profileLastModified = Time.now();
         };
         userData.add(caller, newUserData);
@@ -104,7 +150,6 @@ actor {
     };
   };
 
-  // Public function - no authentication required for registration
   public shared ({ caller }) func register(username : Text, hashedPassword : Blob) : async Text {
     switch (usernameToPrincipal.get(username)) {
       case (?_) {
@@ -122,9 +167,20 @@ actor {
           appointmentIdCounter = 0;
           patients = Map.empty<Text, Patient>();
           leads = Map.empty<Text, Lead>();
+          staff = Map.empty<Text, Staff>();
+          attendance = Map.empty<Text, Attendance>();
+          attendanceIdCounter = 0;
+          adminConfig = {
+            hashedPassword = null;
+            securityQuestion = "Which is your favorite colour";
+            hashedSecurityAnswer = null;
+          };
+          staffPermissions = Map.empty<Text, StaffPermissions>();
+          whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
           appointmentsLastModified = currentTime;
           patientsLastModified = currentTime;
           leadsLastModified = currentTime;
+          staffLastModified = currentTime;
           profileLastModified = currentTime;
         };
 
@@ -137,7 +193,6 @@ actor {
     };
   };
 
-  // Public function - no authentication required for login
   public shared ({ caller }) func login(username : Text, hashedPassword : Blob) : async Text {
     switch (usernameToPrincipal.get(username)) {
       case (?userPrincipal) {
@@ -204,9 +259,16 @@ actor {
           appointmentIdCounter = data.appointmentIdCounter;
           patients = data.patients;
           leads = data.leads;
+          staff = data.staff;
+          attendance = data.attendance;
+          attendanceIdCounter = data.attendanceIdCounter;
+          adminConfig = data.adminConfig;
+          staffPermissions = data.staffPermissions;
+          whatsappTemplates = data.whatsappTemplates;
           appointmentsLastModified = data.appointmentsLastModified;
           patientsLastModified = data.patientsLastModified;
           leadsLastModified = data.leadsLastModified;
+          staffLastModified = data.staffLastModified;
           profileLastModified = currentTime;
         };
         userData.add(caller, updatedData);
@@ -219,9 +281,20 @@ actor {
           appointmentIdCounter = 0;
           patients = Map.empty<Text, Patient>();
           leads = Map.empty<Text, Lead>();
+          staff = Map.empty<Text, Staff>();
+          attendance = Map.empty<Text, Attendance>();
+          attendanceIdCounter = 0;
+          adminConfig = {
+            hashedPassword = null;
+            securityQuestion = "Which is your favorite colour";
+            hashedSecurityAnswer = null;
+          };
+          staffPermissions = Map.empty<Text, StaffPermissions>();
+          whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
           appointmentsLastModified = currentTime;
           patientsLastModified = currentTime;
           leadsLastModified = currentTime;
+          staffLastModified = currentTime;
           profileLastModified = currentTime;
         };
         userData.add(caller, newData);
@@ -260,9 +333,16 @@ actor {
       appointmentIdCounter = user.appointmentIdCounter + 1;
       patients = user.patients;
       leads = user.leads;
+      staff = user.staff;
+      attendance = user.attendance;
+      attendanceIdCounter = user.attendanceIdCounter;
+      adminConfig = user.adminConfig;
+      staffPermissions = user.staffPermissions;
+      whatsappTemplates = user.whatsappTemplates;
       appointmentsLastModified = Time.now();
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = user.leadsLastModified;
+      staffLastModified = user.staffLastModified;
       profileLastModified = user.profileLastModified;
     };
 
@@ -397,9 +477,16 @@ actor {
             appointmentIdCounter = data.appointmentIdCounter;
             patients = data.patients;
             leads = data.leads;
+            staff = data.staff;
+            attendance = data.attendance;
+            attendanceIdCounter = data.attendanceIdCounter;
+            adminConfig = data.adminConfig;
+            staffPermissions = data.staffPermissions;
+            whatsappTemplates = data.whatsappTemplates;
             appointmentsLastModified = Time.now();
             patientsLastModified = data.patientsLastModified;
             leadsLastModified = data.leadsLastModified;
+            staffLastModified = data.staffLastModified;
             profileLastModified = data.profileLastModified;
           };
 
@@ -435,9 +522,16 @@ actor {
               appointmentIdCounter = data.appointmentIdCounter;
               patients = data.patients;
               leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
               appointmentsLastModified = Time.now();
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = data.leadsLastModified;
+              staffLastModified = data.staffLastModified;
               profileLastModified = data.profileLastModified;
             };
 
@@ -469,9 +563,16 @@ actor {
             appointmentIdCounter = data.appointmentIdCounter;
             patients = data.patients;
             leads = data.leads;
+            staff = data.staff;
+            attendance = data.attendance;
+            attendanceIdCounter = data.attendanceIdCounter;
+            adminConfig = data.adminConfig;
+            staffPermissions = data.staffPermissions;
+            whatsappTemplates = data.whatsappTemplates;
             appointmentsLastModified = Time.now();
             patientsLastModified = data.patientsLastModified;
             leadsLastModified = data.leadsLastModified;
+            staffLastModified = data.staffLastModified;
             profileLastModified = data.profileLastModified;
           };
 
@@ -511,9 +612,16 @@ actor {
       appointmentIdCounter = user.appointmentIdCounter;
       patients = updatedPatients;
       leads = user.leads;
+      staff = user.staff;
+      attendance = user.attendance;
+      attendanceIdCounter = user.attendanceIdCounter;
+      adminConfig = user.adminConfig;
+      staffPermissions = user.staffPermissions;
+      whatsappTemplates = user.whatsappTemplates;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = currentTime;
       leadsLastModified = user.leadsLastModified;
+      staffLastModified = user.staffLastModified;
       profileLastModified = user.profileLastModified;
     };
 
@@ -559,9 +667,16 @@ actor {
               appointmentIdCounter = data.appointmentIdCounter;
               patients = data.patients;
               leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = Time.now();
               leadsLastModified = data.leadsLastModified;
+              staffLastModified = data.staffLastModified;
               profileLastModified = data.profileLastModified;
             };
             data.patients.add(newMobile, updatedPatient);
@@ -593,9 +708,16 @@ actor {
               appointmentIdCounter = data.appointmentIdCounter;
               patients = data.patients;
               leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = Time.now();
               leadsLastModified = data.leadsLastModified;
+              staffLastModified = data.staffLastModified;
               profileLastModified = data.profileLastModified;
             };
             userData.add(caller, updatedData);
@@ -650,9 +772,16 @@ actor {
       appointmentIdCounter = user.appointmentIdCounter;
       patients = user.patients;
       leads = updatedLeads;
+      staff = user.staff;
+      attendance = user.attendance;
+      attendanceIdCounter = user.attendanceIdCounter;
+      adminConfig = user.adminConfig;
+      staffPermissions = user.staffPermissions;
+      whatsappTemplates = user.whatsappTemplates;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = currentTime;
+      staffLastModified = user.staffLastModified;
       profileLastModified = user.profileLastModified;
     };
 
@@ -715,9 +844,16 @@ actor {
               appointmentIdCounter = data.appointmentIdCounter;
               patients = data.patients;
               leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = Time.now();
+              staffLastModified = data.staffLastModified;
               profileLastModified = data.profileLastModified;
             };
             data.leads.add(newMobile, updatedLead);
@@ -749,9 +885,16 @@ actor {
               appointmentIdCounter = data.appointmentIdCounter;
               patients = data.patients;
               leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = Time.now();
+              staffLastModified = data.staffLastModified;
               profileLastModified = data.profileLastModified;
             };
             userData.add(caller, updatedData);

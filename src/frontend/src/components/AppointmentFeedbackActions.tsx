@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { validateMobileForWhatsApp, generateWhatsAppFeedbackURL } from '../utils/whatsappFeedback';
+import { validateMobileForWhatsApp, generateWhatsAppFeedbackURL, getFeedbackMessage } from '../utils/whatsappFeedback';
 import WhatsAppFeedbackPreviewDialog from './WhatsAppFeedbackPreviewDialog';
+import { useGetWhatsAppTemplates } from '../hooks/useQueries';
 
 interface AppointmentFeedbackActionsProps {
   mobile: string;
@@ -14,6 +15,9 @@ interface AppointmentFeedbackActionsProps {
 export default function AppointmentFeedbackActions({ mobile, patientName, compact = false }: AppointmentFeedbackActionsProps) {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [sanitizedMobile, setSanitizedMobile] = useState('');
+  const { data: templates = {} } = useGetWhatsAppTemplates();
+
+  const feedbackTemplate = templates['after_appointment_feedback']?.messageContent;
 
   const handleFeedbackClick = () => {
     const { isValid, sanitized } = validateMobileForWhatsApp(mobile);
@@ -30,7 +34,7 @@ export default function AppointmentFeedbackActions({ mobile, patientName, compac
   };
 
   const handleConfirmSend = () => {
-    const url = generateWhatsAppFeedbackURL(mobile);
+    const url = generateWhatsAppFeedbackURL(mobile, feedbackTemplate);
     if (url) {
       window.open(url, '_blank');
     }
@@ -54,6 +58,7 @@ export default function AppointmentFeedbackActions({ mobile, patientName, compac
           sanitizedMobile={sanitizedMobile}
           patientName={patientName}
           onConfirmSend={handleConfirmSend}
+          message={getFeedbackMessage(feedbackTemplate)}
         />
       </>
     );
@@ -76,6 +81,7 @@ export default function AppointmentFeedbackActions({ mobile, patientName, compac
         sanitizedMobile={sanitizedMobile}
         patientName={patientName}
         onConfirmSend={handleConfirmSend}
+        message={getFeedbackMessage(feedbackTemplate)}
       />
     </>
   );

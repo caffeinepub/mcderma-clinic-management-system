@@ -1,54 +1,222 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T15:38:44.538Z",
+  "generatedAt": "2026-02-16T10:56:11.698Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 13,
+    "implemented": 11,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
+        "summary": "Add a collapsible left-side sidebar layout for the authenticated app experience (the main UI currently uses Header + tab content + BottomNav). The sidebar must support collapse/expand and remain usable on mobile screens.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/components/AuthenticatedShell.tsx",
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AuthenticatedShell.tsx",
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-10",
+        "summary": "Enforce staff role-based access in the UI: after staff login, only show/enable the tabs/sections that the admin matrix allows for that staff member; disallow navigation to unauthorized sections.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/staff/useStaffPermissions.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/components/BottomNav.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/staff/useStaffPermissions.ts",
+          "frontend/src/App.tsx",
+          "frontend/src/components/BottomNav.tsx"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Add a “Log out” button at the bottom of the left sidebar that logs out the current staff session (staff-mode), without breaking the existing Internet Identity logout flows already present in Header/Settings.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/staff/useStaffSession.ts",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/staff/useStaffSession.ts",
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-12",
+        "summary": "In Settings, add an editor for prefilled WhatsApp message templates (button-wise), including at minimum an “Appointment reminder” message template and an “After appointment feedback” message template, and store these templates in the backend. Update existing WhatsApp sending features to use the saved templates instead of hardcoded strings where applicable (e.g., current feedback message in frontend/src/utils/whatsappFeedback.ts).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/utils/whatsappFeedback.ts",
+          "frontend/src/components/AppointmentFeedbackActions.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/utils/whatsappFeedback.ts",
+          "frontend/src/components/AppointmentFeedbackActions.tsx"
+        ]
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Update backend stable state and add conditional migration (backend/migration.mo) if required so existing users’ stored appointments/patients/leads/profile data remain intact after adding new staff/attendance/admin/template fields.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "In the left sidebar, add two top actions: (1) “Staff Login” and (2) “Auto Attendance”. Both actions must open the staff login/attendance dialog flow described by the user.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LeftSidebar.tsx",
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/App.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement the staff login dialog UI: a dropdown for Staff Name, an auto-populated Role field based on the selected staff member, and a Login button. After successful login/attendance, show a popup/toast message: \"<name> your attendance have been registered.\"",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add backend data models and APIs to manage staff records per clinic (per authenticated Internet Identity user): store staff name and associated role, and expose queries/mutations to list staff and resolve a staff member’s role by name for the staff-login UI.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Implement attendance registration: when a staff member logs in via the staff login dialog, record an attendance entry with staff name, role, and a timestamp. Ensure duplicate taps do not create unexpected multiple entries (define and implement a reasonable idempotency rule for “today”).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/staff/useStaffSession.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/StaffLoginDialog.tsx",
+          "frontend/src/staff/useStaffSession.ts"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Add an “Attendance” section inside Settings that shows today’s attendance entries as a vertical list, with each row displaying staff name and timestamp (one below another).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/settings/AttendanceSection.tsx",
           "frontend/src/pages/SettingsTab.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/components/settings/AttendanceSection.tsx",
           "frontend/src/pages/SettingsTab.tsx"
         ]
       },
       {
-        "id": "REQ-2",
-        "summary": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
+        "id": "REQ-7",
+        "summary": "Extend the Settings export UI (currently supports JSON/CSV exports for appointments/patients/leads) to include “Attendance” as an additional export dropdown option. When exporting attendance, generate a month-by-month summary for the current year, per staff member, including: absent dates list per month and present/absent day totals (as described by the user).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/utils.ts",
-          "frontend/src/components/AppointmentCard.tsx",
-          "frontend/src/components/LeadCard.tsx",
+          "frontend/src/utils/attendanceExport.ts",
           "frontend/src/pages/SettingsTab.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/utils.ts",
-          "frontend/src/components/AppointmentCard.tsx",
-          "frontend/src/components/LeadCard.tsx",
+          "frontend/src/utils/attendanceExport.ts",
           "frontend/src/pages/SettingsTab.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Add an “Admin” section in Settings that is locked by a numeric password. On first use, prompt to set the password and set a recovery method using a security question and answer (include the question prompt: “Which is your favorite colour”).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/AdminGateDialog.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/AdminGateDialog.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "In the Admin section, implement role-based access configuration as a row/column matrix: rows include Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns represent staff names. Admin can set which staff can access which sections. Persist these permissions in the backend.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/PermissionsMatrix.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/PermissionsMatrix.tsx",
+          "frontend/src/pages/SettingsTab.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/AppointmentCard.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AppointmentFeedbackActions.tsx",
+    "frontend/src/components/AuthenticatedShell.tsx",
+    "frontend/src/components/BottomNav.tsx",
+    "frontend/src/components/Header.tsx",
     "frontend/src/components/LeadCard.tsx",
-    "frontend/src/lib/utils.ts",
+    "frontend/src/components/LeftSidebar.tsx",
+    "frontend/src/components/StaffLoginDialog.tsx",
+    "frontend/src/components/WhatsAppFeedbackPreviewDialog.tsx",
+    "frontend/src/components/admin/AdminGateDialog.tsx",
+    "frontend/src/components/admin/PermissionsMatrix.tsx",
+    "frontend/src/components/settings/AttendanceSection.tsx",
+    "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/SettingsTab.tsx",
+    "frontend/src/staff/useStaffPermissions.ts",
+    "frontend/src/staff/useStaffSession.ts",
+    "frontend/src/utils/attendanceExport.ts",
+    "frontend/src/utils/whatsappFeedback.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

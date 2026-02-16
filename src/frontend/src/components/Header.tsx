@@ -1,4 +1,4 @@
-import { LogOut, User, RefreshCw } from 'lucide-react';
+import { LogOut, User, RefreshCw, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,7 +15,11 @@ import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export default function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export default function Header({ onToggleSidebar }: HeaderProps) {
   const { clear } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
   const { formattedLastSync } = useLastSync();
@@ -35,6 +39,16 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
+          {onToggleSidebar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSidebar}
+              className="md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
           <img 
             src="/assets/generated/clinic-icon-transparent.dim_64x64.png" 
             alt="Clinic Icon" 

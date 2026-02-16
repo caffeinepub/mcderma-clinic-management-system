@@ -1,7 +1,6 @@
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, X } from 'lucide-react';
-import { getFeedbackMessage } from '../utils/whatsappFeedback';
+import { MessageCircle } from 'lucide-react';
 
 interface WhatsAppFeedbackPreviewDialogProps {
   open: boolean;
@@ -9,6 +8,7 @@ interface WhatsAppFeedbackPreviewDialogProps {
   sanitizedMobile: string;
   patientName: string;
   onConfirmSend: () => void;
+  message: string;
 }
 
 export default function WhatsAppFeedbackPreviewDialog({
@@ -17,9 +17,8 @@ export default function WhatsAppFeedbackPreviewDialog({
   sanitizedMobile,
   patientName,
   onConfirmSend,
+  message,
 }: WhatsAppFeedbackPreviewDialogProps) {
-  const feedbackMessage = getFeedbackMessage();
-
   const handleSend = () => {
     onConfirmSend();
     onOpenChange(false);
@@ -27,44 +26,36 @@ export default function WhatsAppFeedbackPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-green-600" />
             Send Feedback Request
           </DialogTitle>
           <DialogDescription>
-            Preview the message before sending to {patientName}
+            Review the message before sending to {patientName}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Destination Number:</p>
-            <p className="text-base font-semibold">+{sanitizedMobile}</p>
+            <p className="text-sm font-medium mb-1">Sending to:</p>
+            <p className="text-sm text-muted-foreground">+{sanitizedMobile}</p>
           </div>
 
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Message Preview:</p>
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm whitespace-pre-wrap">{feedbackMessage}</p>
+            <p className="text-sm font-medium mb-2">Message:</p>
+            <div className="p-3 rounded-lg bg-muted text-sm whitespace-pre-wrap">
+              {message}
             </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSend}
-            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-          >
+          <Button onClick={handleSend} className="gap-2">
             <MessageCircle className="h-4 w-4" />
             Send via WhatsApp
           </Button>

@@ -1,53 +1,287 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Remove widget Settings action and standardize dates to DD/MM/YY",
+  "title": "Staff-mode sidebar shell, attendance, admin lock + RBAC gating, WhatsApp template editor",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Remove the Settings action/button that opens the widget view so users can’t launch the widget from Settings.",
+      "summary": "Introduce an authenticated app shell with a collapsible left sidebar that works on desktop and mobile without breaking existing tab pages.",
       "acceptanceCriteria": [
-        "Settings page no longer renders the button labeled “Open Widget View” (or any equivalent open-widget button).",
-        "The unused click handler (e.g., `handleOpenWidget`) and related imports (e.g., ExternalLink icon) are removed if no longer needed.",
-        "No navigation route or page is required to be deleted; only the Settings open-widget entry point is removed."
+        "When authenticated, the app shows a left sidebar that can be collapsed/expanded without breaking existing tab pages.",
+        "On small screens, the sidebar does not cover critical UI permanently (it can overlay and be dismissible)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/SettingsTab.tsx",
+          "path": "frontend/src/components/AuthenticatedShell.tsx",
+          "operation": "create",
+          "description": "Create an authenticated layout shell that composes the existing Header, tab content area, BottomNav, and a responsive left sidebar container with collapse/expand and mobile overlay behavior. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/LeftSidebar.tsx",
+          "operation": "create",
+          "description": "Create the left sidebar UI (collapsible, mobile overlay/dismissible) to host top actions and bottom logout while remaining usable on small screens. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
           "operation": "modify",
-          "description": "Remove the Settings UI button that opens the widget view, delete `handleOpenWidget`, and drop any now-unused imports (e.g., `ExternalLink`). Keep the WidgetView route/page intact per requirement."
+          "description": "Wire a sidebar toggle control into the existing authenticated header so mobile users can open/close the sidebar without losing access to critical UI. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wrap authenticated tab rendering with the new AuthenticatedShell while preserving existing tab components, BottomNav behavior, and the /widget route behavior."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Standardize all user-visible date display to DD/MM/YY while keeping 12-hour time (AM/PM) for date+time strings.",
+      "summary": "Add “Staff Login” and “Auto Attendance” actions at the top of the left sidebar that open the staff login dialog flow.",
       "acceptanceCriteria": [
-        "Any UI that shows a date (e.g., appointment-related messages, Settings “Last Synced”, exports’ date columns) displays the date portion in DD/MM/YY format.",
-        "Places currently using US locale date formatting (e.g., `toLocaleString('en-US'...)`, `toLocaleDateString('en-US'...)`) are updated so the resulting output is DD/MM/YY.",
-        "Places currently using date-fns formats for dates (e.g., `format(date, 'MMM dd, yyyy')` / `format(date, 'MMM dd')`) are updated so displayed dates follow DD/MM/YY (2-digit day, 2-digit month, 2-digit year).",
-        "No user-facing text is changed except as required by the new date format."
+        "Sidebar top area contains two distinct buttons labeled “Staff Login” and “Auto Attendance”.",
+        "Clicking either button opens the staff login dialog."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/utils.ts",
+          "path": "frontend/src/components/LeftSidebar.tsx",
           "operation": "modify",
-          "description": "Update/extend the app’s shared date formatting helpers so date-only strings render as DD/MM/YY and date+time strings render as DD/MM/YY with 12-hour time and AM/PM. Ensure existing callers (e.g., Settings last synced, exports) can use these helpers without changing non-date text."
+          "description": "Add two top action buttons labeled “Staff Login” and “Auto Attendance”; both trigger opening the shared staff login/attendance dialog. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/AppointmentCard.tsx",
-          "operation": "modify",
-          "description": "Replace date-fns display formats like `MMM dd, yyyy` / `MMM dd` with the standardized DD/MM/YY formatting for any on-screen appointment date strings and any user-visible message strings that include dates (e.g., WhatsApp reminder text)."
+          "path": "frontend/src/components/StaffLoginDialog.tsx",
+          "operation": "create",
+          "description": "Create the dialog component that the sidebar actions open (shared flow for Staff Login and Auto Attendance). Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/LeadCard.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Replace date-fns display formats like `MMM dd, yyyy` for follow-up and expected dates with DD/MM/YY formatting."
+          "description": "Wire sidebar action callbacks to open/close the StaffLoginDialog from the authenticated app shell."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Implement staff login dialog UI with staff dropdown, auto-populated role display, and a Login button that shows a success toast after registration.",
+      "acceptanceCriteria": [
+        "Dialog includes Staff Name dropdown, Role (read-only) display, and Login button.",
+        "Role updates immediately when a different staff name is selected.",
+        "On login success, a user-visible confirmation message appears with the selected staff name inserted exactly into the sentence."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/StaffLoginDialog.tsx",
+          "operation": "modify",
+          "description": "Implement dialog UI: staff name Select, read-only Role field that updates on selection, and Login button; on success show toast exactly: \"<name> your attendance have been registered.\" Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add React Query hooks for fetching staff list and resolving/displaying a staff member role by name for the StaffLoginDialog (calling new backend capabilities once available)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Register attendance on staff login and prevent uncontrolled duplicates for the same staff member on the same day.",
+      "acceptanceCriteria": [
+        "A login action creates an attendance record with a timestamp.",
+        "Refreshing the app and revisiting attendance shows the recorded entry persists.",
+        "Repeated login attempts for the same staff member on the same day do not create uncontrolled duplicates."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add React Query mutation hook for attendance registration plus query hooks for reading today’s attendance list (calling new backend capabilities once available)."
+        },
+        {
+          "path": "frontend/src/components/StaffLoginDialog.tsx",
+          "operation": "modify",
+          "description": "On Login, call attendance registration mutation; disable the Login button while pending to reduce double-taps and show user-friendly error toasts when backend reports already-registered-for-today behavior. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/staff/useStaffSession.ts",
+          "operation": "create",
+          "description": "Create a small staff-session store (staff name, role, and optional permission snapshot) using React state + localStorage/sessionStorage to persist staff-mode across reloads (without affecting Internet Identity)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Add an Attendance section inside Settings that lists today’s attendance entries (name + timestamp).",
+      "acceptanceCriteria": [
+        "Settings contains a clearly labeled Attendance area/tab/section.",
+        "Today’s attendance entries render in a simple list (one per line/row) showing name and timestamp."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/settings/AttendanceSection.tsx",
+          "operation": "create",
+          "description": "Create a Settings sub-section component that queries today’s attendance and renders a vertical list with staff name and formatted timestamp (one below another). Verify the component's usage instructions before implementing."
         },
         {
           "path": "frontend/src/pages/SettingsTab.tsx",
           "operation": "modify",
-          "description": "Update Settings date formatting to use the standardized DD/MM/YY helpers everywhere dates are shown/exported, including: the “Last Synced” display and all export-related date serialization (CSV date columns and any exported date strings). Also replace any `toLocaleDateString('en-US', ...)` usage so output is DD/MM/YY."
+          "description": "Wire AttendanceSection into Settings with a clear label and ensure it is shown within the existing Settings page structure."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Extend Settings export UI to include Attendance export and generate current-year month-by-month attendance summaries per staff.",
+      "acceptanceCriteria": [
+        "Settings export UI includes an Attendance option in addition to existing exports.",
+        "Exporting Attendance downloads a file (CSV and/or JSON) containing current-year, month-wise attendance summary per staff.",
+        "The exported structure includes absent dates and present/absent counts per month as specified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/attendanceExport.ts",
+          "operation": "create",
+          "description": "Implement frontend-only aggregation helpers to compute current-year month-wise summaries per staff from attendance entries, including absent date lists and present/absent totals per month."
+        },
+        {
+          "path": "frontend/src/pages/SettingsTab.tsx",
+          "operation": "modify",
+          "description": "Update the existing Export Data UI to include an “Attendance” option in its dropdown flow and, when selected, download Attendance export in JSON and/or CSV using the computed summary format."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Add an Admin section in Settings protected by a numeric password with first-time setup and recovery question/answer.",
+      "acceptanceCriteria": [
+        "Settings shows an Admin entry/button that requires authentication before opening Admin content.",
+        "If no admin password is configured yet, the UI forces first-time setup (numeric password + recovery question/answer).",
+        "If admin password is configured, UI prompts for numeric password to unlock Admin section."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/AdminGateDialog.tsx",
+          "operation": "create",
+          "description": "Create the Admin gate dialog flow: first-time setup (numeric password + recovery question/answer with prompt exactly: “Which is your favorite colour”), and subsequent unlock via numeric password. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/SettingsTab.tsx",
+          "operation": "modify",
+          "description": "Add a clearly labeled “Admin” entry/button in Settings that opens AdminGateDialog and conditionally renders Admin content only when unlocked."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add hooks to read/write admin lock configuration (password + recovery QA) via new backend capabilities once available, and to cache unlocked state only locally for the current browser session."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Provide an Admin permissions matrix UI (rows = sections, columns = staff names) to configure access per staff and persist changes via backend.",
+      "acceptanceCriteria": [
+        "Admin UI renders a matrix/grid with rows for the specified sections and columns for staff names.",
+        "Admin can toggle permissions per staff per section and changes persist after reload.",
+        "Backend stores and returns the access matrix for the clinic owner."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/PermissionsMatrix.tsx",
+          "operation": "create",
+          "description": "Create the row/column permissions matrix UI with rows: Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns: staff names; allow toggling and saving. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/SettingsTab.tsx",
+          "operation": "modify",
+          "description": "Wire PermissionsMatrix into the unlocked Admin section and ensure it is not accessible before Admin unlock."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add hooks to fetch and update the access matrix (and staff list if needed) using new backend capabilities once available; ensure queries invalidate correctly after changes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Enforce staff permissions in the UI by hiding/disabling unauthorized tabs and preventing navigation to restricted sections after staff login.",
+      "acceptanceCriteria": [
+        "After staff login, unauthorized tabs are hidden or disabled in the navigation (including the existing BottomNav).",
+        "Attempting to access an unauthorized section via UI does not display restricted data."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/staff/useStaffPermissions.ts",
+          "operation": "create",
+          "description": "Create a permissions resolver for staff-mode that maps the admin matrix into allowed tabs/sections and provides helpers like canAccessSchedule/canAccessPatients/canAccessLeads/canAccessSettings."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Enforce access at the composition level: when staff-mode is active, only render allowed tab pages; if current tab is not allowed, redirect/choose the first allowed tab; ensure restricted data is not rendered."
+        },
+        {
+          "path": "frontend/src/components/BottomNav.tsx",
+          "operation": "modify",
+          "description": "Update BottomNav to accept allowed/disabled tabs (or equivalent) so unauthorized tabs are hidden or disabled for staff-mode while preserving current behavior for clinic owner usage."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Add a staff-mode “Log out” button at the bottom of the left sidebar that does not affect Internet Identity logout.",
+      "acceptanceCriteria": [
+        "Sidebar bottom includes a “Log out” action for staff-mode logout.",
+        "After staff logout, restricted sections are no longer accessible until a staff member logs in again.",
+        "Internet Identity logout remains available and continues to work as before."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LeftSidebar.tsx",
+          "operation": "modify",
+          "description": "Add a bottom “Log out” action that clears only the staff-mode session (not Internet Identity), and updates UI state accordingly. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/staff/useStaffSession.ts",
+          "operation": "modify",
+          "description": "Add a clearStaffSession/logout function that resets staff-mode state and removes any persisted staff session data."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure staff-mode logout triggers a UI refresh of permissions and navigation state so restricted sections become inaccessible immediately."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Add WhatsApp template editor in Settings and update feedback sending to use stored templates instead of hardcoded strings.",
+      "acceptanceCriteria": [
+        "Settings includes a WhatsApp Templates editor UI with editable fields for the required templates.",
+        "Templates persist across reloads and devices for the same clinic owner.",
+        "Sending a feedback WhatsApp message uses the stored template rather than the hardcoded FEEDBACK_MESSAGE."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
+          "operation": "create",
+          "description": "Create a Settings editor UI for WhatsApp templates with at minimum “Appointment reminder” and “After appointment feedback”; allow editing and saving via backend. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/SettingsTab.tsx",
+          "operation": "modify",
+          "description": "Wire WhatsAppTemplatesEditor into Settings with English labels and ensure it loads/saves templates for the current clinic owner."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add hooks to fetch/save WhatsApp templates via new backend capabilities once available; ensure cached templates invalidate after save."
+        },
+        {
+          "path": "frontend/src/utils/whatsappFeedback.ts",
+          "operation": "modify",
+          "description": "Refactor WhatsApp message helpers to support generating URLs from a provided template string (keeping validation), so the feedback flow can use stored templates rather than a hardcoded constant."
+        },
+        {
+          "path": "frontend/src/components/AppointmentFeedbackActions.tsx",
+          "operation": "modify",
+          "description": "Update feedback sending to read the saved “After appointment feedback” template (via a query hook) and use it when generating/opening WhatsApp URLs, replacing use of the hardcoded FEEDBACK_MESSAGE. Verify the component's usage instructions before implementing."
         }
       ]
     }

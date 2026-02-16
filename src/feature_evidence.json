@@ -2,10 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-remove-the-settings-ui-action-that-opens-the-widget-view-the-open-widget-view-open-widget-button-so-users-no-longer-see-or-can-tap-a-widget-opening-button-in-settings",
-      "featureTitle": "Remove the Settings UI action that opens the widget view (the “Open Widget View” / open widget button) so users no longer see or can tap a widget-opening button in Settings.",
+      "featureId": "feature-add-a-collapsible-left-side-sidebar-layout-for-the-authenticated-app-experience-the-main-ui-currently-uses-header-tab-content-bottomnav-the-sidebar-must-support-collapse-expand-and-remain-usable-on-mobile-screens",
+      "featureTitle": "Add a collapsible left-side sidebar layout for the authenticated app experience (the main UI currently uses Header + tab content + BottomNav). The sidebar must support collapse/expand and remain usable on mobile screens.",
       "files": [
-        "frontend/src/pages/SettingsTab.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/AuthenticatedShell.tsx",
+        "frontend/src/components/Header.tsx",
+        "frontend/src/components/LeftSidebar.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -23,13 +26,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-change-the-app-s-default-date-display-format-to-dd-mm-yy-wherever-dates-are-shown-to-the-user-including-date-time-strings-date-portion-and-date-only-strings-e-g-exports-keep-time-formatting-in-12-hour-format-with-am-pm-unless-a-screen-is-currently-time-only",
-      "featureTitle": "Change the app’s default date display format to DD/MM/YY wherever dates are shown to the user, including date+time strings (date portion) and date-only strings (e.g., exports). Keep time formatting in 12-hour format with AM/PM unless a screen is currently time-only.",
+      "featureId": "feature-in-the-left-sidebar-add-two-top-actions-1-staff-login-and-2-auto-attendance-both-actions-must-open-the-staff-login-attendance-dialog-flow-described-by-the-user",
+      "featureTitle": "In the left sidebar, add two top actions: (1) “Staff Login” and (2) “Auto Attendance”. Both actions must open the staff login/attendance dialog flow described by the user.",
       "files": [
-        "frontend/src/components/AppointmentCard.tsx",
-        "frontend/src/components/LeadCard.tsx",
-        "frontend/src/lib/utils.ts",
-        "frontend/src/pages/SettingsTab.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/LeftSidebar.tsx",
+        "frontend/src/components/StaffLoginDialog.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -43,6 +45,212 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-the-staff-login-dialog-ui-a-dropdown-for-staff-name-an-auto-populated-role-field-based-on-the-selected-staff-member-and-a-login-button-after-successful-login-attendance-show-a-popup-toast-message-name-your-attendance-have-been-registered",
+      "featureTitle": "Implement the staff login dialog UI: a dropdown for Staff Name, an auto-populated Role field based on the selected staff member, and a Login button. After successful login/attendance, show a popup/toast message: \"<name> your attendance have been registered.\"",
+      "files": [
+        "frontend/src/components/StaffLoginDialog.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-attendance-registration-when-a-staff-member-logs-in-via-the-staff-login-dialog-record-an-attendance-entry-with-staff-name-role-and-a-timestamp-ensure-duplicate-taps-do-not-create-unexpected-multiple-entries-define-and-implement-a-reasonable-idempotency-rule-for-today",
+      "featureTitle": "Implement attendance registration: when a staff member logs in via the staff login dialog, record an attendance entry with staff name, role, and a timestamp. Ensure duplicate taps do not create unexpected multiple entries (define and implement a reasonable idempotency rule for “today”).",
+      "files": [
+        "frontend/src/components/StaffLoginDialog.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/staff/useStaffSession.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-attendance-section-inside-settings-that-shows-today-s-attendance-entries-as-a-vertical-list-with-each-row-displaying-staff-name-and-timestamp-one-below-another",
+      "featureTitle": "Add an “Attendance” section inside Settings that shows today’s attendance entries as a vertical list, with each row displaying staff name and timestamp (one below another).",
+      "files": [
+        "frontend/src/components/settings/AttendanceSection.tsx",
+        "frontend/src/pages/SettingsTab.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-extend-the-settings-export-ui-currently-supports-json-csv-exports-for-appointments-patients-leads-to-include-attendance-as-an-additional-export-dropdown-option-when-exporting-attendance-generate-a-month-by-month-summary-for-the-current-year-per-staff-member-including-absent-dates-list-per-month-and-present-absent-day-totals-as-described-by-the-user",
+      "featureTitle": "Extend the Settings export UI (currently supports JSON/CSV exports for appointments/patients/leads) to include “Attendance” as an additional export dropdown option. When exporting attendance, generate a month-by-month summary for the current year, per staff member, including: absent dates list per month and present/absent day totals (as described by the user).",
+      "files": [
+        "frontend/src/pages/SettingsTab.tsx",
+        "frontend/src/utils/attendanceExport.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-admin-section-in-settings-that-is-locked-by-a-numeric-password-on-first-use-prompt-to-set-the-password-and-set-a-recovery-method-using-a-security-question-and-answer-include-the-question-prompt-which-is-your-favorite-colour",
+      "featureTitle": "Add an “Admin” section in Settings that is locked by a numeric password. On first use, prompt to set the password and set a recovery method using a security question and answer (include the question prompt: “Which is your favorite colour”).",
+      "files": [
+        "frontend/src/components/admin/AdminGateDialog.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/SettingsTab.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-admin-section-implement-role-based-access-configuration-as-a-row-column-matrix-rows-include-role-appointment-tab-patient-tab-lead-tab-settings-full-control-columns-represent-staff-names-admin-can-set-which-staff-can-access-which-sections-persist-these-permissions-in-the-backend",
+      "featureTitle": "In the Admin section, implement role-based access configuration as a row/column matrix: rows include Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns represent staff names. Admin can set which staff can access which sections. Persist these permissions in the backend.",
+      "files": [
+        "frontend/src/components/admin/PermissionsMatrix.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/SettingsTab.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-enforce-staff-role-based-access-in-the-ui-after-staff-login-only-show-enable-the-tabs-sections-that-the-admin-matrix-allows-for-that-staff-member-disallow-navigation-to-unauthorized-sections",
+      "featureTitle": "Enforce staff role-based access in the UI: after staff login, only show/enable the tabs/sections that the admin matrix allows for that staff member; disallow navigation to unauthorized sections.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/BottomNav.tsx",
+        "frontend/src/staff/useStaffPermissions.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-log-out-button-at-the-bottom-of-the-left-sidebar-that-logs-out-the-current-staff-session-staff-mode-without-breaking-the-existing-internet-identity-logout-flows-already-present-in-header-settings",
+      "featureTitle": "Add a “Log out” button at the bottom of the left sidebar that logs out the current staff session (staff-mode), without breaking the existing Internet Identity logout flows already present in Header/Settings.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/LeftSidebar.tsx",
+        "frontend/src/staff/useStaffSession.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-settings-add-an-editor-for-prefilled-whatsapp-message-templates-button-wise-including-at-minimum-an-appointment-reminder-message-template-and-an-after-appointment-feedback-message-template-and-store-these-templates-in-the-backend-update-existing-whatsapp-sending-features-to-use-the-saved-templates-instead-of-hardcoded-strings-where-applicable-e-g-current-feedback-message-in-frontend-src-utils-whatsappfeedback-ts",
+      "featureTitle": "In Settings, add an editor for prefilled WhatsApp message templates (button-wise), including at minimum an “Appointment reminder” message template and an “After appointment feedback” message template, and store these templates in the backend. Update existing WhatsApp sending features to use the saved templates instead of hardcoded strings where applicable (e.g., current feedback message in frontend/src/utils/whatsappFeedback.ts).",
+      "files": [
+        "frontend/src/components/AppointmentFeedbackActions.tsx",
+        "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/SettingsTab.tsx",
+        "frontend/src/utils/whatsappFeedback.ts"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-12"
       ],
       "confidence": "high"
     }

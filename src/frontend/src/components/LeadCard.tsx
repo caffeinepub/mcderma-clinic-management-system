@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import type { Lead } from '../backend';
 import { isPast } from 'date-fns';
-import { useDeleteLead, useUpdateLeadStatus } from '../hooks/useQueries';
+import { useDeleteLead, useUpdateLead, useGetLeads } from '../hooks/useQueries';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -33,7 +33,8 @@ interface LeadCardProps {
 
 export default function LeadCard({ lead, onEdit }: LeadCardProps) {
   const deleteLead = useDeleteLead();
-  const updateLeadStatus = useUpdateLeadStatus();
+  const updateLead = useUpdateLead();
+  const { data: leads = [] } = useGetLeads();
 
   const handleCall = () => {
     window.location.href = `tel:${lead.mobile}`;
@@ -57,8 +58,17 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
 
   const handleStatusChange = async (newStatus: string) => {
     try {
-      await updateLeadStatus.mutateAsync({
+      await updateLead.mutateAsync({
         mobile: lead.mobile,
+        leadName: lead.leadName,
+        newMobile: lead.mobile,
+        treatmentWanted: lead.treatmentWanted,
+        area: lead.area,
+        followUpDate: lead.followUpDate,
+        expectedTreatmentDate: lead.expectedTreatmentDate,
+        rating: lead.rating,
+        doctorRemark: lead.doctorRemark,
+        addToAppointment: lead.addToAppointment,
         leadStatus: newStatus,
       });
       toast.success('Status updated');
@@ -99,7 +109,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
             <Select 
               value={lead.leadStatus || 'Ringing'} 
               onValueChange={handleStatusChange}
-              disabled={updateLeadStatus.isPending}
+              disabled={updateLead.isPending}
             >
               <SelectTrigger className="h-6 text-xs w-[110px] px-2">
                 <SelectValue />
@@ -108,6 +118,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
                 <SelectItem value="Ringing">Ringing</SelectItem>
                 <SelectItem value="will call and come">will call and come</SelectItem>
                 <SelectItem value="follow up date given">follow up date given</SelectItem>
+                <SelectItem value="Visited">Visited</SelectItem>
               </SelectContent>
             </Select>
           </div>

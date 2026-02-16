@@ -92,7 +92,6 @@ export function useGetAppointments() {
     queryFn: async () => {
       if (!actor) return [];
       const appointments = await actor.getAppointments();
-      // Sort appointments by appointmentTime in ascending order (earliest first)
       return appointments.sort((a, b) => {
         const timeA = Number(a.appointmentTime);
         const timeB = Number(b.appointmentTime);
@@ -112,9 +111,7 @@ export function useGetTodaysAppointments() {
     queryKey: ['todaysAppointments'],
     queryFn: async () => {
       if (!actor) return [];
-      // Use the sorted backend endpoint
       const appointments = await actor.getTodaysAppointmentsSorted();
-      // Additional frontend sorting for consistency (backend already sorts)
       return appointments.sort((a, b) => {
         const timeA = Number(a.appointmentTime);
         const timeB = Number(b.appointmentTime);
@@ -134,9 +131,7 @@ export function useGetTomorrowAppointments() {
     queryKey: ['tomorrowAppointments'],
     queryFn: async () => {
       if (!actor) return [];
-      // Use the sorted backend endpoint
       const appointments = await actor.getTomorrowAppointmentsSorted();
-      // Additional frontend sorting for consistency (backend already sorts)
       return appointments.sort((a, b) => {
         const timeA = Number(a.appointmentTime);
         const timeB = Number(b.appointmentTime);
@@ -156,9 +151,7 @@ export function useGetUpcomingAppointments() {
     queryKey: ['upcomingAppointments'],
     queryFn: async () => {
       if (!actor) return [];
-      // Use the sorted backend endpoint
       const appointments = await actor.getUpcomingAppointmentsSorted();
-      // Additional frontend sorting for consistency (backend already sorts)
       return appointments.sort((a, b) => {
         const timeA = Number(a.appointmentTime);
         const timeB = Number(b.appointmentTime);
@@ -319,7 +312,8 @@ export function useGetLeads() {
     queryKey: ['leads'],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getLeads();
+      const leads = await actor.getLeads();
+      return leads.sort((a, b) => Number(a.followUpDate) - Number(b.followUpDate));
     },
     enabled: !!actor && !actorFetching,
     refetchOnWindowFocus: false,
@@ -405,71 +399,6 @@ export function useUpdateLead() {
   });
 }
 
-export function useUpdateLeadStatus() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { mobile: string; leadStatus: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      
-      // Fetch the current lead data
-      const leads = await actor.getLeads();
-      const currentLead = leads.find((l) => l.mobile === data.mobile);
-      
-      if (!currentLead) {
-        throw new Error('Lead not found');
-      }
-
-      // Update the lead with the new status
-      return actor.updateLead(
-        data.mobile,
-        currentLead.leadName,
-        currentLead.mobile,
-        currentLead.treatmentWanted,
-        currentLead.area,
-        currentLead.followUpDate,
-        currentLead.expectedTreatmentDate,
-        currentLead.rating,
-        currentLead.doctorRemark,
-        currentLead.addToAppointment,
-        data.leadStatus
-      );
-    },
-    onMutate: async (data) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['leads'] });
-
-      // Snapshot the previous value
-      const previousLeads = queryClient.getQueryData<Lead[]>(['leads']);
-
-      // Optimistically update to the new value
-      if (previousLeads) {
-        queryClient.setQueryData<Lead[]>(
-          ['leads'],
-          previousLeads.map((lead) =>
-            lead.mobile === data.mobile ? { ...lead, leadStatus: data.leadStatus } : lead
-          )
-        );
-      }
-
-      // Return a context object with the snapshotted value
-      return { previousLeads };
-    },
-    onError: (_err, _data, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousLeads) {
-        queryClient.setQueryData(['leads'], context.previousLeads);
-      }
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure we're in sync
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['lastModified'] });
-    },
-  });
-}
-
 export function useDeleteLead() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -482,6 +411,210 @@ export function useDeleteLead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['lastModified'] });
+    },
+  });
+}
+
+// Staff Management Queries (Placeholder - backend functions needed)
+export function useGetStaff() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Array<{ name: string; role: string }>>({
+    queryKey: ['staff'],
+    queryFn: async () => {
+      if (!actor) return [];
+      // TODO: Backend function needed: actor.getStaff()
+      // For now, return empty array
+      return [];
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useAddStaff() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; role: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.addStaff(name, role)
+      throw new Error('Backend function not implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+    },
+  });
+}
+
+// Attendance Queries (Placeholder - backend functions needed)
+export function useRegisterAttendance() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; role: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.registerAttendance(name, role)
+      throw new Error('Backend function not implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todaysAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['allAttendance'] });
+    },
+  });
+}
+
+export function useGetTodaysAttendance() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Array<{ name: string; role: string; timestamp: bigint }>>({
+    queryKey: ['todaysAttendance'],
+    queryFn: async () => {
+      if (!actor) return [];
+      // TODO: Backend function needed: actor.getTodaysAttendance()
+      return [];
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useGetAllAttendance() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Array<{ name: string; role: string; timestamp: bigint }>>({
+    queryKey: ['allAttendance'],
+    queryFn: async () => {
+      if (!actor) return [];
+      // TODO: Backend function needed: actor.getAllAttendance()
+      return [];
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+// Admin Config Queries (Placeholder - backend functions needed)
+export function useGetAdminConfig() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<{ hashedPassword: Uint8Array | null; securityQuestion: string; hashedSecurityAnswer: Uint8Array | null }>({
+    queryKey: ['adminConfig'],
+    queryFn: async () => {
+      if (!actor) return { hashedPassword: null, securityQuestion: 'Which is your favorite colour', hashedSecurityAnswer: null };
+      // TODO: Backend function needed: actor.getAdminConfig()
+      return { hashedPassword: null, securityQuestion: 'Which is your favorite colour', hashedSecurityAnswer: null };
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useSaveAdminConfig() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { hashedPassword: Uint8Array; securityQuestion: string; hashedSecurityAnswer: Uint8Array }) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.saveAdminConfig(config)
+      throw new Error('Backend function not implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminConfig'] });
+    },
+  });
+}
+
+// Staff Permissions Queries (Placeholder - backend functions needed)
+export function useGetStaffPermissions() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Record<string, {
+    canAccessAppointments: boolean;
+    canAccessPatients: boolean;
+    canAccessLeads: boolean;
+    canAccessSettings: boolean;
+    hasFullControl: boolean;
+  }>>({
+    queryKey: ['staffPermissions'],
+    queryFn: async () => {
+      if (!actor) return {};
+      // TODO: Backend function needed: actor.getStaffPermissions()
+      return {};
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useSaveStaffPermissions() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      staffName: string;
+      permissions: {
+        canAccessAppointments: boolean;
+        canAccessPatients: boolean;
+        canAccessLeads: boolean;
+        canAccessSettings: boolean;
+        hasFullControl: boolean;
+      };
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.saveStaffPermissions(staffName, permissions)
+      throw new Error('Backend function not implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staffPermissions'] });
+    },
+  });
+}
+
+// WhatsApp Templates Queries (Placeholder - backend functions needed)
+export function useGetWhatsAppTemplates() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Record<string, { templateName: string; messageContent: string }>>({
+    queryKey: ['whatsappTemplates'],
+    queryFn: async () => {
+      if (!actor) return {};
+      // TODO: Backend function needed: actor.getWhatsAppTemplates()
+      return {};
+    },
+    enabled: !!actor && !actorFetching,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useSaveWhatsAppTemplate() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { templateName: string; messageContent: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.saveWhatsAppTemplate(template)
+      throw new Error('Backend function not implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsappTemplates'] });
+    },
+  });
+}
+
+export function useGetWhatsAppTemplate() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useMutation({
+    mutationFn: async (templateName: string) => {
+      if (!actor) throw new Error('Actor not available');
+      // TODO: Backend function needed: actor.getWhatsAppTemplate(templateName)
+      throw new Error('Backend function not implemented');
     },
   });
 }
