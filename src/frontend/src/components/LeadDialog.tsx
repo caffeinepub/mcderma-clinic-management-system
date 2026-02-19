@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
-import type { Lead } from '../backend';
+import type { Lead } from '../hooks/useQueries';
 import { format } from 'date-fns';
 import { useAddLead, useUpdateLead, useAddAppointment } from '../hooks/useQueries';
 import { toast } from 'sonner';
@@ -108,16 +108,18 @@ export default function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps
       if (lead) {
         await updateLead.mutateAsync({
           mobile: lead.mobile,
-          leadName: formData.name,
-          newMobile: formData.mobile,
-          treatmentWanted: formData.treatmentWanted,
-          area: formData.area,
-          followUpDate: BigInt(followUpDateTime),
-          expectedTreatmentDate: BigInt(expectedDateTime),
-          rating: formData.rating,
-          doctorRemark: formData.doctorRemark,
-          addToAppointment: formData.addToAppointment,
-          leadStatus: formData.leadStatus,
+          lead: {
+            leadName: formData.name,
+            mobile: formData.mobile,
+            treatmentWanted: formData.treatmentWanted,
+            area: formData.area,
+            followUpDate: BigInt(followUpDateTime),
+            expectedTreatmentDate: BigInt(expectedDateTime),
+            rating: formData.rating,
+            doctorRemark: formData.doctorRemark,
+            addToAppointment: formData.addToAppointment,
+            leadStatus: formData.leadStatus,
+          },
         });
         toast.success('Lead updated successfully');
       } else {

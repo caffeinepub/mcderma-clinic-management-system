@@ -1,164 +1,33 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App update to add a collapsible left sidebar with staff login + auto attendance registration, role-based access controls via an admin section, attendance viewing/export, and editable prefilled WhatsApp message templates in Settings.",
-  "architectural_notes": [
-    "Staff identity is selected via dropdown name; role is derived from pre-defined staff records; permissions enforced via role-based access rules configured in Admin.",
-    "Attendance is recorded on login (timestamped) and displayed daily; exports provide current-year, per-month summaries including absent dates and present/absent counts."
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Lead entry form shows 'Failed to save lead' error",
+    "Admin setup password shows 'backend function not implemented' error"
   ],
-  "known_issues": [],
-  "isFixRequest": false,
-  "existing_features": [
-    {
-      "id": "feature-add-a-collapsible-left-side-sidebar-layout-for-the-authenticated-app-experience-the-main-ui-currently-uses-header-tab-content-bottomnav-the-sidebar-must-support-collapse-expand-and-remain-usable-on-mobile-screens",
-      "title": "Add a collapsible left-side sidebar layout for the authenticated app experience (the main UI currently uses Header + tab content + BottomNav). The sidebar must support collapse/expand and remain usable on mobile screens.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-the-left-sidebar-add-two-top-actions-1-staff-login-and-2-auto-attendance-both-actions-must-open-the-staff-login-attendance-dialog-flow-described-by-the-user",
-      "title": "In the left sidebar, add two top actions: (1) “Staff Login” and (2) “Auto Attendance”. Both actions must open the staff login/attendance dialog flow described by the user.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-the-staff-login-dialog-ui-a-dropdown-for-staff-name-an-auto-populated-role-field-based-on-the-selected-staff-member-and-a-login-button-after-successful-login-attendance-show-a-popup-toast-message-name-your-attendance-have-been-registered",
-      "title": "Implement the staff login dialog UI: a dropdown for Staff Name, an auto-populated Role field based on the selected staff member, and a Login button. After successful login/attendance, show a popup/toast message: \"<name> your attendance have been registered.\"",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-attendance-registration-when-a-staff-member-logs-in-via-the-staff-login-dialog-record-an-attendance-entry-with-staff-name-role-and-a-timestamp-ensure-duplicate-taps-do-not-create-unexpected-multiple-entries-define-and-implement-a-reasonable-idempotency-rule-for-today",
-      "title": "Implement attendance registration: when a staff member logs in via the staff login dialog, record an attendance entry with staff name, role, and a timestamp. Ensure duplicate taps do not create unexpected multiple entries (define and implement a reasonable idempotency rule for “today”).",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-attendance-section-inside-settings-that-shows-today-s-attendance-entries-as-a-vertical-list-with-each-row-displaying-staff-name-and-timestamp-one-below-another",
-      "title": "Add an “Attendance” section inside Settings that shows today’s attendance entries as a vertical list, with each row displaying staff name and timestamp (one below another).",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-extend-the-settings-export-ui-currently-supports-json-csv-exports-for-appointments-patients-leads-to-include-attendance-as-an-additional-export-dropdown-option-when-exporting-attendance-generate-a-month-by-month-summary-for-the-current-year-per-staff-member-including-absent-dates-list-per-month-and-present-absent-day-totals-as-described-by-the-user",
-      "title": "Extend the Settings export UI (currently supports JSON/CSV exports for appointments/patients/leads) to include “Attendance” as an additional export dropdown option. When exporting attendance, generate a month-by-month summary for the current year, per staff member, including: absent dates list per month and present/absent day totals (as described by the user).",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-admin-section-in-settings-that-is-locked-by-a-numeric-password-on-first-use-prompt-to-set-the-password-and-set-a-recovery-method-using-a-security-question-and-answer-include-the-question-prompt-which-is-your-favorite-colour",
-      "title": "Add an “Admin” section in Settings that is locked by a numeric password. On first use, prompt to set the password and set a recovery method using a security question and answer (include the question prompt: “Which is your favorite colour”).",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-the-admin-section-implement-role-based-access-configuration-as-a-row-column-matrix-rows-include-role-appointment-tab-patient-tab-lead-tab-settings-full-control-columns-represent-staff-names-admin-can-set-which-staff-can-access-which-sections-persist-these-permissions-in-the-backend",
-      "title": "In the Admin section, implement role-based access configuration as a row/column matrix: rows include Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns represent staff names. Admin can set which staff can access which sections. Persist these permissions in the backend.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-enforce-staff-role-based-access-in-the-ui-after-staff-login-only-show-enable-the-tabs-sections-that-the-admin-matrix-allows-for-that-staff-member-disallow-navigation-to-unauthorized-sections",
-      "title": "Enforce staff role-based access in the UI: after staff login, only show/enable the tabs/sections that the admin matrix allows for that staff member; disallow navigation to unauthorized sections.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-log-out-button-at-the-bottom-of-the-left-sidebar-that-logs-out-the-current-staff-session-staff-mode-without-breaking-the-existing-internet-identity-logout-flows-already-present-in-header-settings",
-      "title": "Add a “Log out” button at the bottom of the left sidebar that logs out the current staff session (staff-mode), without breaking the existing Internet Identity logout flows already present in Header/Settings.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-settings-add-an-editor-for-prefilled-whatsapp-message-templates-button-wise-including-at-minimum-an-appointment-reminder-message-template-and-an-after-appointment-feedback-message-template-and-store-these-templates-in-the-backend-update-existing-whatsapp-sending-features-to-use-the-saved-templates-instead-of-hardcoded-strings-where-applicable-e-g-current-feedback-message-in-frontend-src-utils-whatsappfeedback-ts",
-      "title": "In Settings, add an editor for prefilled WhatsApp message templates (button-wise), including at minimum an “Appointment reminder” message template and an “After appointment feedback” message template, and store these templates in the backend. Update existing WhatsApp sending features to use the saved templates instead of hardcoded strings where applicable (e.g., current feedback message in frontend/src/utils/whatsappFeedback.ts).",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    }
-  ],
+  "isFixRequest": true,
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add collapsible left-side sidebar with top buttons for Staff Login and Auto Attendance, plus bottom Log Out button",
-      "reqIds": [],
+      "summary": "Fix the 'Failed to save lead' error in the lead entry form by implementing or correcting the backend addLead function to properly store lead data with all fields (name, mobile, treatment, followUpDate, consultationDate, rating, remarks, status)",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Implement simple staff login: select staff name (dropdown), auto-display role by selected name, and login button; show popup confirming attendance registered on login",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add Attendance tab in Settings to show today's attendance entries (staff name + timestamp list)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add Attendance export option in Settings export dropdown; export attendance by month for current year (per staff: absent dates list, present/absent counts)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Add Admin section in Settings protected by numeric password; first-time setup requires password + recovery question/answer",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Admin can configure role-based access per staff for app sections (Appointments, Patients, Leads, Settings, Full control) using a row/column matrix; login role restricts accessible sections accordingly",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Add Settings feature to edit prefilled WhatsApp message templates (e.g., appointment reminder, post-appointment feedback)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-11",
-      "summary": "Add backend data models and APIs to manage staff records per clinic (per authenticated Internet Identity user): store staff name and associated role, and expose queries/mutations to list staff and resolve a staff member’s role by name for the staff-login UI.",
+      "summary": "Fix the 'backend function not implemented' error in admin password setup by implementing the missing backend functions for admin password management (setAdminPassword, unlockAdmin, or equivalent functions referenced by AdminGateDialog)",
       "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-20",
-      "summary": "Update backend stable state and add conditional migration (backend/migration.mo) if required so existing users’ stored appointments/patients/leads/profile data remain intact after adding new staff/attendance/admin/template fields.",
-      "reqIds": [
-        "REQ-13"
+        "REQ-2"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Add staff login + attendance + admin role-based access + WhatsApp template editor + collapsible left sidebar",
+  "projectName": "Fix lead save failure and admin password backend errors",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

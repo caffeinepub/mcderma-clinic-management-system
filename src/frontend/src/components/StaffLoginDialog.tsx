@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { useGetStaff, useRegisterAttendance } from '../hooks/useQueries';
 import { useStaffSession } from '../staff/useStaffSession';
+import { toast } from 'sonner';
 
 interface StaffLoginDialogProps {
   open: boolean;
@@ -14,56 +13,49 @@ interface StaffLoginDialogProps {
 }
 
 export default function StaffLoginDialog({ open, onOpenChange }: StaffLoginDialogProps) {
-  const [selectedStaffName, setSelectedStaffName] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  
-  const { data: staffList = [], isLoading: staffLoading } = useGetStaff();
+  const { data: staff = [], isLoading } = useGetStaff();
   const registerAttendance = useRegisterAttendance();
   const { setStaffSession } = useStaffSession();
+  const [selectedStaffName, setSelectedStaffName] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('');
 
-  // Update role when staff name changes
+  // Auto-populate role when staff is selected
   useEffect(() => {
     if (selectedStaffName) {
-      const staff = staffList.find(s => s.name === selectedStaffName);
-      if (staff) {
-        setSelectedRole(staff.role);
+      const staffMember = staff.find(s => s.name === selectedStaffName);
+      if (staffMember) {
+        setSelectedRole(staffMember.role);
       }
-    } else {
-      setSelectedRole('');
     }
-  }, [selectedStaffName, staffList]);
+  }, [selectedStaffName, staff]);
 
   const handleLogin = async () => {
-    if (!selectedStaffName) {
+    if (!selectedStaffName || !selectedRole) {
       toast.error('Please select a staff member');
       return;
     }
 
     try {
+      // Register attendance
       await registerAttendance.mutateAsync({
         name: selectedStaffName,
         role: selectedRole,
       });
 
-      // Set staff session
+      // Login staff session
       setStaffSession({
         name: selectedStaffName,
         role: selectedRole,
       });
 
-      toast.success(`${selectedStaffName} your attendance have been registered.`);
+      toast.success(`Welcome, ${selectedStaffName}!`);
       onOpenChange(false);
       setSelectedStaffName('');
+      setSelectedRole('');
     } catch (error: any) {
-      if (error.message?.includes('already registered')) {
-        toast.error('Already registered', {
-          description: `${selectedStaffName} has already registered attendance today.`,
-        });
-      } else {
-        toast.error('Failed to register attendance', {
-          description: error.message || 'Please try again.',
-        });
-      }
+      toast.error('Failed to register attendance', {
+        description: error.message || 'Please try again',
+      });
     }
   };
 
@@ -79,20 +71,24 @@ export default function StaffLoginDialog({ open, onOpenChange }: StaffLoginDialo
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="staff-name">Staff Name</Label>
+            <Label htmlFor="staffName">Staff Name</Label>
             <Select value={selectedStaffName} onValueChange={setSelectedStaffName}>
-              <SelectTrigger id="staff-name">
-                <SelectValue placeholder="Select staff member" />
+              <SelectTrigger id="staffName">
+                <SelectValue placeholder="Select your name" />
               </SelectTrigger>
               <SelectContent>
-                {staffLoading ? (
-                  <SelectItem value="loading" disabled>Loading...</SelectItem>
-                ) : staffList.length === 0 ? (
-                  <SelectItem value="none" disabled>No staff members found</SelectItem>
+                {isLoading ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : staff.length === 0 ? (
+                  <SelectItem value="empty" disabled>
+                    No staff members found
+                  </SelectItem>
                 ) : (
-                  staffList.map((staff) => (
-                    <SelectItem key={staff.name} value={staff.name}>
-                      {staff.name}
+                  staff.map((s) => (
+                    <SelectItem key={s.name} value={s.name}>
+                      {s.name}
                     </SelectItem>
                   ))
                 )}
@@ -102,23 +98,19 @@ export default function StaffLoginDialog({ open, onOpenChange }: StaffLoginDialo
 
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Input
-              id="role"
-              value={selectedRole}
-              readOnly
-              placeholder="Role will appear here"
-              className="bg-muted"
-            />
+            <div className="px-3 py-2 bg-muted rounded-md text-sm">
+              {selectedRole || 'Select a staff member first'}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleLogin} 
-            disabled={!selectedStaffName || registerAttendance.isPending}
+          <Button
+            onClick={handleLogin}
+            disabled={!selectedStaffName || !selectedRole || registerAttendance.isPending}
           >
             {registerAttendance.isPending ? 'Logging in...' : 'Login'}
           </Button>

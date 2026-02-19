@@ -1,4 +1,4 @@
-import { Phone, MessageCircle, Edit, Trash2, UserPlus, CalendarClock } from 'lucide-react';
+import { Phone, MessageCircle, Edit, Trash2, UserPlus, CalendarClock, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,13 +24,15 @@ interface AppointmentCardProps {
   onEdit: (appointment: Appointment) => void;
   section?: 'today' | 'tomorrow' | 'upcoming';
   onFollowUp?: (appointment: Appointment) => void;
+  onPrescription?: (appointment: Appointment) => void;
 }
 
 export default function AppointmentCard({ 
   appointment, 
   onEdit, 
   section,
-  onFollowUp 
+  onFollowUp,
+  onPrescription
 }: AppointmentCardProps) {
   const { data: patients = [] } = useGetPatients();
   const addPatient = useAddPatient();
@@ -60,7 +62,7 @@ export default function AppointmentCard({
 
     try {
       await addPatient.mutateAsync({
-        image: null,
+        image: undefined,
         name: appointment.patientName,
         mobile: appointment.mobile,
         area: '',
@@ -84,6 +86,12 @@ export default function AppointmentCard({
   const handleFollowUpClick = () => {
     if (onFollowUp) {
       onFollowUp(appointment);
+    }
+  };
+
+  const handlePrescriptionClick = () => {
+    if (onPrescription) {
+      onPrescription(appointment);
     }
   };
 
@@ -161,6 +169,17 @@ export default function AppointmentCard({
                 title="Follow Up"
               >
                 <CalendarClock className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {section === 'today' && onPrescription && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={handlePrescriptionClick}
+                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                title="Prescription"
+              >
+                <FileText className="h-3.5 w-3.5" />
               </Button>
             )}
             <AlertDialog>

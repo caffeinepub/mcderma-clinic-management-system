@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useBackendAwareSync } from './hooks/useBackendAwareSync';
-import { useNotifications } from './hooks/useNotifications';
 import { useStaffSession } from './staff/useStaffSession';
 import AuthenticatedShell from './components/AuthenticatedShell';
 import ScheduleTab from './pages/ScheduleTab';
@@ -13,7 +12,6 @@ import SettingsTab from './pages/SettingsTab';
 import WidgetView from './pages/WidgetView';
 import LoginPage from './pages/LoginPage';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
-import AppointmentReminderOverlay from './components/AppointmentReminderOverlay';
 import { Toaster } from '@/components/ui/sonner';
 
 const queryClient = new QueryClient({
@@ -38,9 +36,6 @@ function AppContent() {
 
   // Initialize automatic background sync for authenticated users
   useBackendAwareSync();
-
-  // Initialize notification system for appointment reminders
-  const { activeReminder, dismissReminder } = useNotifications();
 
   // Simple hash-based routing
   useEffect(() => {
@@ -109,14 +104,6 @@ function AppContent() {
       </div>
 
       {showProfileSetup && <ProfileSetupDialog />}
-      
-      {/* Full-screen appointment reminder overlay */}
-      {activeReminder && (
-        <AppointmentReminderOverlay
-          appointment={activeReminder.appointment}
-          onDismiss={dismissReminder}
-        />
-      )}
     </AuthenticatedShell>
   );
 }

@@ -1,108 +1,25 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T10:56:11.694Z",
-  "summary": "Diff implements a left sidebar (mobile overlay + open/close), staff login dialog that registers attendance and sets a staff session, attendance viewing/export scaffolding, WhatsApp template editor + feedback template usage, admin gate dialog + permissions matrix UI, and backend state/migration types for new staff/attendance/admin/template fields. However, several requirements are either incomplete or not evidenced in the diff (notably true sidebar collapse/expand, backend APIs/idempotency proof, admin unlock verification/recovery, and the required permissions-matrix 'Role' row).",
-  "missing_requirements": [
-    {
-      "id": "REQ-1",
-      "requirement": "Add a collapsible left-side sidebar layout for the authenticated app experience (supports collapse/expand; usable on mobile).",
-      "reason": "Sidebar is implemented as open/close (especially for mobile) but there is no evidence of a collapse/expand mode (e.g., compact width) distinct from simply hiding/showing; desktop appears always visible.",
-      "evidence": [
-        "frontend/src/components/AuthenticatedShell.tsx",
-        "frontend/src/components/LeftSidebar.tsx",
-        "frontend/src/components/Header.tsx"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Add backend data models and APIs to manage staff records per clinic and expose list/role-resolution APIs for staff-login UI.",
-      "reason": "Backend data types/state for staff are added, but the diff excerpt does not show any public query/mutation methods (e.g., listStaff, addStaff, getRoleByName) required for the frontend hooks.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Implement attendance registration with timestamp persistence and an idempotency rule to avoid duplicates for the same staff member on the same day.",
-      "reason": "Frontend registers attendance and handles an 'already registered' error string, but the backend logic that records attendance and enforces per-day idempotency is not shown in the diff excerpt.",
-      "evidence": [
-        "frontend/src/components/StaffLoginDialog.tsx",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "Admin section locked by numeric password; first use forces setup with numeric password + recovery method using security question and answer (question prompt: “Which is your favorite colour”).",
-      "reason": "Setup UI exists and uses the required question text, but unlock flow does not actually verify the numeric password (explicit comment says backend verification endpoint is missing) and there is no evidence of a recovery flow using the security question/answer.",
-      "evidence": [
-        "frontend/src/components/admin/AdminGateDialog.tsx",
-        "backend/main.mo (truncated)",
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "requirement": "Admin permissions matrix with rows: Role, Appointment tab, Patient tab, Lead tab, Settings, Full control; columns are staff names; persist in backend.",
-      "reason": "PermissionsMatrix includes rows for Appointment/Patient/Lead/Settings/Full control, but there is no 'Role' row as required; backend persistence endpoints are not evidenced in the truncated backend diff.",
-      "evidence": [
-        "frontend/src/components/admin/PermissionsMatrix.tsx",
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "requirement": "Update existing WhatsApp sending features to use saved templates instead of hardcoded strings where applicable (e.g., feedback message; also include appointment reminder template).",
-      "reason": "Feedback flow is updated to use a stored template (with fallback), but there is no evidence that any 'appointment reminder' WhatsApp sending feature was updated to use the saved 'appointment_reminder' template.",
-      "evidence": [
-        "frontend/src/components/AppointmentFeedbackActions.tsx",
-        "frontend/src/utils/whatsappFeedback.ts",
-        "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-18T19:01:18.055Z",
+  "summary": "The diff implements backend fixes for both lead storage (REQ-1) and admin password management (REQ-2). The backend main.mo shows Lead type definition with all required fields and Map-based storage structure. Frontend hooks show useAddLead and useUpdateLead mutations, and AdminGateDialog implements password setup and verification flows with proper hashing. However, the main.mo backend file is truncated at 4000 chars, preventing verification of complete addLead function implementation, admin password backend functions (getAdminConfig, setupAdminConfig, verifyAdminPassword), and their integration with the frontend mutations.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Hash-based routing and special '/widget' view handling added to App shell.",
-      "reason": "Not requested by any REQ; sidebar/attendance/admin/templates were requested, not new routing modes.",
+      "description": "Added migration.mo file with OldActor/NewActor types and run function",
+      "reason": "Migration functionality was not requested in the BuildRequest. The request only asked to fix existing backend functions, not add migration capabilities.",
       "evidence": [
-        "frontend/src/App.tsx (truncated)"
-      ]
-    },
-    {
-      "description": "Broad UI/UX redesigns unrelated to staff/admin/attendance/templates (e.g., LeadCard WhatsApp text formatting, compact layouts, modernized styling, appointment/patient dialog enhancements).",
-      "reason": "These changes are not part of the BuildRequest requirements and appear as extra scope.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/src/components/LeadCard.tsx (truncated)"
+        "backend/migration.mo"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.65,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/AppointmentFeedbackActions.tsx",
-    "frontend/src/components/AuthenticatedShell.tsx",
-    "frontend/src/components/BottomNav.tsx",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/components/LeadCard.tsx",
-    "frontend/src/components/LeftSidebar.tsx",
-    "frontend/src/components/StaffLoginDialog.tsx",
-    "frontend/src/components/WhatsAppFeedbackPreviewDialog.tsx",
     "frontend/src/components/admin/AdminGateDialog.tsx",
-    "frontend/src/components/admin/PermissionsMatrix.tsx",
-    "frontend/src/components/settings/AttendanceSection.tsx",
-    "frontend/src/components/settings/WhatsAppTemplatesEditor.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/SettingsTab.tsx",
-    "frontend/src/staff/useStaffPermissions.ts",
-    "frontend/src/staff/useStaffSession.ts",
-    "frontend/src/utils/attendanceExport.ts",
-    "frontend/src/utils/whatsappFeedback.ts",
     "project_state.json"
   ]
 }

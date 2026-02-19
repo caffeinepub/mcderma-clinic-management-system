@@ -10,6 +10,11 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AdminConfig {
+  'hashedSecurityAnswer' : [] | [Uint8Array],
+  'securityQuestion' : string,
+  'hashedPassword' : [] | [Uint8Array],
+}
 export interface Appointment {
   'id' : bigint,
   'appointmentTime' : bigint,
@@ -17,6 +22,11 @@ export interface Appointment {
   'patientName' : string,
   'mobile' : string,
   'isFollowUp' : boolean,
+}
+export interface Attendance {
+  'name' : string,
+  'role' : string,
+  'timestamp' : bigint,
 }
 export type ExternalBlob = Uint8Array;
 export interface Lead {
@@ -37,6 +47,26 @@ export interface Patient {
   'notes' : string,
   'image' : [] | [ExternalBlob],
   'mobile' : string,
+}
+export interface Prescription {
+  'doctorNotes' : string,
+  'prescriptionData' : { 'typed' : string } |
+    { 'freehand' : ExternalBlob } |
+    { 'camera' : ExternalBlob },
+  'followUp' : [] | [string],
+  'prescriptionType' : { 'typed' : null } |
+    { 'freehand' : null } |
+    { 'camera' : null },
+  'medicalHistory' : [] | [string],
+  'timestamp' : bigint,
+  'patientName' : string,
+  'symptoms' : [] | [string],
+  'mobile' : string,
+  'clinicName' : string,
+  'allergies' : [] | [string],
+  'appointmentId' : [] | [bigint],
+  'consultationType' : { 'telemedicine' : null } |
+    { 'inPerson' : null },
 }
 export type Time = bigint;
 export interface UserProfile { 'username' : string, 'clinicName' : string }
@@ -92,29 +122,22 @@ export interface _SERVICE {
     string
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'createAttendance' : ActorMethod<[string, string], boolean>,
   'deleteAppointment' : ActorMethod<[bigint], string>,
   'deleteLead' : ActorMethod<[string], string>,
   'deletePatient' : ActorMethod<[string], string>,
+  'deletePrescription' : ActorMethod<[string, bigint], string>,
+  'getAdminConfig' : ActorMethod<[], [] | [AdminConfig]>,
+  'getAllPrescriptions' : ActorMethod<[], Array<Prescription>>,
   'getAppointments' : ActorMethod<[], Array<Appointment>>,
+  'getAttendance' : ActorMethod<[], Array<Attendance>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getLastModified' : ActorMethod<[], [] | [Time]>,
-  'getLastModifiedAppointments' : ActorMethod<[], [] | [Time]>,
-  'getLastModifiedLeads' : ActorMethod<[], [] | [Time]>,
-  'getLastModifiedPatients' : ActorMethod<[], [] | [Time]>,
-  'getLastModifiedProfile' : ActorMethod<[], [] | [Time]>,
-  'getLastModifiedTimes' : ActorMethod<
-    [],
-    {
-      'leads' : [] | [Time],
-      'appointments' : [] | [Time],
-      'patients' : [] | [Time],
-      'profile' : [] | [Time],
-    }
-  >,
-  'getLastSyncTime' : ActorMethod<[], [] | [Time]>,
   'getLeads' : ActorMethod<[], Array<Lead>>,
   'getPatients' : ActorMethod<[], Array<Patient>>,
+  'getPrescriptionById' : ActorMethod<[string, bigint], [] | [Prescription]>,
+  'getPrescriptions' : ActorMethod<[string], Array<Prescription>>,
+  'getPrescriptionsLastModified' : ActorMethod<[], [] | [Time]>,
   'getTodaysAppointmentsSorted' : ActorMethod<[], Array<Appointment>>,
   'getTomorrowAppointmentsSorted' : ActorMethod<[], Array<Appointment>>,
   'getUpcomingAppointmentsSorted' : ActorMethod<[], Array<Appointment>>,
@@ -122,10 +145,14 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'login' : ActorMethod<[string, Uint8Array], string>,
   'register' : ActorMethod<[string, Uint8Array], string>,
+  'resetAdminPassword' : ActorMethod<[Uint8Array, Uint8Array], string>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'savePrescription' : ActorMethod<[Prescription], string>,
+  'setAdminPassword' : ActorMethod<[Uint8Array, string, Uint8Array], string>,
   'toggleFollowUpAppointment' : ActorMethod<[bigint], string>,
+  'unlockAdmin' : ActorMethod<[Uint8Array], boolean>,
   'updateAppointment' : ActorMethod<[bigint, Appointment], string>,
-  'updateLastSyncTime' : ActorMethod<[], undefined>,
+  'updateAttendance' : ActorMethod<[string, string, string], boolean>,
   'updateLead' : ActorMethod<
     [
       string,
@@ -146,6 +173,7 @@ export interface _SERVICE {
     [string, [] | [ExternalBlob], string, string, string, string],
     string
   >,
+  'verifyAdminPassword' : ActorMethod<[Uint8Array], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

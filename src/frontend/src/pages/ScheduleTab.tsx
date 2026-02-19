@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import AppointmentCard from '../components/AppointmentCard';
 import AppointmentDialog from '../components/AppointmentDialog';
 import FollowUpDateTimeDialog from '../components/FollowUpDateTimeDialog';
+import PrescriptionEditorDialog from '../components/PrescriptionEditorDialog';
 import NextAppointmentWidget from '../components/NextAppointmentWidget';
 import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments, useUpdateAppointment, useGetAppointments } from '../hooks/useQueries';
 import { useNow } from '../hooks/useNow';
@@ -15,6 +16,8 @@ export default function ScheduleTab() {
   const [editingAppointment, setEditingAppointment] = useState<{ appointment: Appointment; id: bigint } | undefined>(undefined);
   const [isFollowUpDialogOpen, setIsFollowUpDialogOpen] = useState(false);
   const [followUpAppointment, setFollowUpAppointment] = useState<Appointment | null>(null);
+  const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
+  const [prescriptionAppointment, setPrescriptionAppointment] = useState<Appointment | null>(null);
 
   const { data: todaysAppointments = [], isLoading: loadingToday } = useGetTodaysAppointments();
   const { data: tomorrowAppointments = [], isLoading: loadingTomorrow } = useGetTomorrowAppointments();
@@ -60,6 +63,11 @@ export default function ScheduleTab() {
     }
   };
 
+  const handlePrescription = (appointment: Appointment) => {
+    setPrescriptionAppointment(appointment);
+    setIsPrescriptionDialogOpen(true);
+  };
+
   const isLoading = loadingToday || loadingTomorrow || loadingUpcoming;
 
   return (
@@ -100,6 +108,7 @@ export default function ScheduleTab() {
                 onEdit={handleEdit}
                 section="today"
                 onFollowUp={handleFollowUp}
+                onPrescription={handlePrescription}
               />
             ))}
           </div>
@@ -187,6 +196,15 @@ export default function ScheduleTab() {
         onConfirm={handleFollowUpConfirm}
         isPending={updateAppointment.isPending}
       />
+
+      {/* Prescription Editor Dialog */}
+      {prescriptionAppointment && (
+        <PrescriptionEditorDialog
+          open={isPrescriptionDialogOpen}
+          onOpenChange={setIsPrescriptionDialogOpen}
+          appointment={prescriptionAppointment}
+        />
+      )}
     </div>
   );
 }

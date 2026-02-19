@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { useGetAdminConfig, useSaveAdminConfig } from '../../hooks/useQueries';
+import { useGetAdminConfig, useSetupAdminConfig, useVerifyAdminPassword } from '../../hooks/useQueries';
 import { Lock, Key } from 'lucide-react';
 
 interface AdminGateDialogProps {
@@ -15,7 +15,8 @@ interface AdminGateDialogProps {
 
 export default function AdminGateDialog({ open, onOpenChange, onUnlocked }: AdminGateDialogProps) {
   const { data: adminConfig, isLoading } = useGetAdminConfig();
-  const saveConfig = useSaveAdminConfig();
+  const saveConfig = useSetupAdminConfig();
+  const verifyPassword = useVerifyAdminPassword();
 
   const [mode, setMode] = useState<'setup' | 'unlock'>('unlock');
   const [password, setPassword] = useState('');
@@ -59,7 +60,7 @@ export default function AdminGateDialog({ open, onOpenChange, onUnlocked }: Admi
 
       await saveConfig.mutateAsync({
         hashedPassword,
-        securityQuestion: 'Which is your favorite colour',
+        securityQuestion: adminConfig?.securityQuestion || 'Which is your favorite colour',
         hashedSecurityAnswer: hashedAnswer,
       });
 
@@ -82,19 +83,29 @@ export default function AdminGateDialog({ open, onOpenChange, onUnlocked }: Admi
       return;
     }
 
+    if (!/^\d+$/.test(password)) {
+      toast.error('Password must contain only numbers');
+      return;
+    }
+
     try {
       const hashedPassword = await hashPassword(password);
-      
-      // Verify password (backend should provide verification endpoint)
-      // For now, we'll assume success if config exists
-      if (adminConfig?.hashedPassword) {
+      const isValid = await verifyPassword.mutateAsync(hashedPassword);
+
+      if (isValid) {
         onUnlocked();
         onOpenChange(false);
         setPassword('');
         toast.success('Admin section unlocked');
+      } else {
+        toast.error('Invalid password', {
+          description: 'The password you entered is incorrect',
+        });
       }
     } catch (error: any) {
-      toast.error('Invalid password');
+      toast.error('Invalid password', {
+        description: error.message || 'The password you entered is incorrect',
+      });
     }
   };
 
@@ -147,7 +158,7 @@ export default function AdminGateDialog({ open, onOpenChange, onUnlocked }: Admi
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="security-answer">Which is your favorite colour</Label>
+                <Label htmlFor="security-answer">{adminConfig?.securityQuestion || 'Which is your favorite colour'}</Label>
                 <Input
                   id="security-answer"
                   type="text"
@@ -188,9 +199,9 @@ export default function AdminGateDialog({ open, onOpenChange, onUnlocked }: Admi
                 <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleUnlock} className="flex-1 gap-2">
+                <Button onClick={handleUnlock} disabled={verifyPassword.isPending} className="flex-1 gap-2">
                   <Key className="h-4 w-4" />
-                  Unlock
+                  {verifyPassword.isPending ? 'Verifying...' : 'Unlock'}
                 </Button>
               </div>
             </>

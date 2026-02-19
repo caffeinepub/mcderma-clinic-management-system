@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, RefreshCw, Package, Info } from 'lucide-react';
+import { Download, RefreshCw, Package, Info, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,8 @@ import AdminGateDialog from '../components/admin/AdminGateDialog';
 import PermissionsMatrix from '../components/admin/PermissionsMatrix';
 import { exportAttendanceData } from '../utils/attendanceExport';
 import { useGetAllAttendance } from '../hooks/useQueries';
+
+const SHARE_URL = 'https://mcderma-lef.caffeine.xyz/#caffeineAdminToken=f52248428fdf7d827891a887a39c0be1795c9577a6a77e47acaffdf8bea3de98';
 
 export default function SettingsTab() {
   const { data: userProfile } = useGetCallerUserProfile();
@@ -50,6 +52,38 @@ export default function SettingsTab() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleShareApp = async () => {
+    // Try native Web Share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'McDerma Clinic App',
+          text: 'Install the McDerma Clinic app on your device',
+          url: SHARE_URL,
+        });
+        toast.success('Shared successfully');
+      } catch (error: any) {
+        // User cancelled or error occurred
+        if (error.name !== 'AbortError') {
+          // Fallback to clipboard
+          handleCopyToClipboard();
+        }
+      }
+    } else {
+      // Fallback to clipboard
+      handleCopyToClipboard();
+    }
+  };
+
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(SHARE_URL);
+      toast.success('Link copied to clipboard');
+    } catch (error) {
+      toast.error('Failed to copy link');
     }
   };
 
@@ -231,6 +265,19 @@ export default function SettingsTab() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Share App</CardTitle>
+              <CardDescription>Share the app installation link with others</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleShareApp} className="w-full" variant="outline">
+                <Share2 className="h-4 w-4 mr-2" />
+                Share App
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Statistics</CardTitle>
               <CardDescription>Overview of your clinic data</CardDescription>
             </CardHeader>
@@ -251,26 +298,6 @@ export default function SettingsTab() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Lead Analysis</CardTitle>
-              <CardDescription>Conversion rates by treatment type</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={leadAnalysisData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="generated" fill="hsl(var(--primary))" name="Generated" />
-                  <Bar dataKey="converted" fill="hsl(var(--chart-2))" name="Converted" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
@@ -286,7 +313,7 @@ export default function SettingsTab() {
             <Card>
               <CardHeader>
                 <CardTitle>Admin Section</CardTitle>
-                <CardDescription>Manage staff permissions and access control</CardDescription>
+                <CardDescription>Manage staff permissions and system settings</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button onClick={handleOpenAdmin}>
@@ -295,21 +322,53 @@ export default function SettingsTab() {
               </CardContent>
             </Card>
           ) : (
-            <PermissionsMatrix />
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Staff Permissions</CardTitle>
+                  <CardDescription>Manage staff access and permissions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PermissionsMatrix />
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 
         <TabsContent value="data" className="space-y-4">
           <Card>
             <CardHeader>
+              <CardTitle>Lead Analysis</CardTitle>
+              <CardDescription>Conversion analysis by treatment category</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={leadAnalysisData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="generated" fill="hsl(var(--primary))" name="Generated" />
+                    <Bar dataKey="converted" fill="hsl(var(--chart-2))" name="Converted" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Data Management</CardTitle>
-              <CardDescription>Sync and export your clinic data</CardDescription>
+              <CardDescription>Export and sync your clinic data</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Manual Sync</h3>
-                <Button onClick={handleManualSync} variant="outline" className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
+                <h3 className="text-sm font-medium mb-2">Manual Sync</h3>
+                <Button onClick={handleManualSync} variant="outline" className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Sync Now
                 </Button>
               </div>
@@ -317,92 +376,81 @@ export default function SettingsTab() {
               <Separator />
 
               <div>
-                <h3 className="font-medium mb-3">Export Data</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={() => handleExportData('json', 'all')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    All Data (JSON)
-                  </Button>
-                  <Button onClick={() => handleExportData('csv', 'appointments')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Appointments (CSV)
-                  </Button>
-                  <Button onClick={() => handleExportData('csv', 'patients')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Patients (CSV)
-                  </Button>
-                  <Button onClick={() => handleExportData('csv', 'leads')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Leads (CSV)
-                  </Button>
-                  <Button onClick={() => handleExportData('json', 'attendance')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Attendance (JSON)
-                  </Button>
-                  <Button onClick={() => handleExportData('csv', 'attendance')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Attendance (CSV)
-                  </Button>
+                <h3 className="text-sm font-medium mb-2">Export Data</h3>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExportData('json', 'all')} variant="outline" className="flex-1">
+                      <Download className="h-4 w-4 mr-2" />
+                      All Data (JSON)
+                    </Button>
+                    <Button onClick={() => handleExportData('csv', 'all')} variant="outline" className="flex-1">
+                      <Download className="h-4 w-4 mr-2" />
+                      All Data (CSV)
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExportData('csv', 'appointments')} variant="outline" className="flex-1">
+                      Appointments
+                    </Button>
+                    <Button onClick={() => handleExportData('csv', 'patients')} variant="outline" className="flex-1">
+                      Patients
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExportData('csv', 'leads')} variant="outline" className="flex-1">
+                      Leads
+                    </Button>
+                    <Button onClick={() => handleExportData('csv', 'attendance')} variant="outline" className="flex-1">
+                      Attendance
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              <Separator />
+
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <p>
+                  Your data is automatically synced in the background. Use manual sync if you need to refresh immediately.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                PWA Features
-              </CardTitle>
-              <CardDescription>Install this app on your device for offline access</CardDescription>
+              <CardTitle>About</CardTitle>
+              <CardDescription>Application information</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                This application can be installed on your device. Look for the "Add to Home Screen" or "Install" option in your browser menu.
+            <CardContent className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Version 1.0.0</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Built with love using{' '}
+                <a
+                  href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  caffeine.ai
+                </a>
               </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                Deployment Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Version:</span>
-                <span className="font-mono">1.0.0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Environment:</span>
-                <span className="font-mono">{import.meta.env.MODE}</span>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <footer className="text-center text-sm text-muted-foreground py-8 border-t">
-        <p>
-          © {new Date().getFullYear()} Built with ❤️ using{' '}
-          <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            caffeine.ai
-          </a>
-        </p>
-      </footer>
-
-      <AdminGateDialog
-        open={showAdminGate}
-        onOpenChange={setShowAdminGate}
-        onUnlocked={handleAdminUnlocked}
-      />
+      {showAdminGate && (
+        <AdminGateDialog
+          open={showAdminGate}
+          onOpenChange={setShowAdminGate}
+          onUnlocked={handleAdminUnlocked}
+        />
+      )}
     </div>
   );
 }

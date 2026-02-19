@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { TabType } from '../App';
-import { useGetStaffPermissions } from '../hooks/useQueries';
+import { useGetPermissionsMatrix } from '../hooks/useQueries';
 
 interface StaffSession {
   name: string;
@@ -19,7 +19,7 @@ export function useStaffSession() {
     }
   });
 
-  const { data: allPermissions = {} } = useGetStaffPermissions();
+  const { data: allPermissions = {} } = useGetPermissionsMatrix();
 
   // Persist to sessionStorage
   useEffect(() => {

@@ -142,7 +142,7 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
     e.preventDefault();
 
     try {
-      let imageBlob: ExternalBlob | null = null;
+      let imageBlob: ExternalBlob | undefined = undefined;
 
       if (imageFile) {
         const arrayBuffer = await imageFile.arrayBuffer();
@@ -154,12 +154,14 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
 
       if (patient) {
         await updatePatient.mutateAsync({
-          mobile: patient.mobile,
-          image: imageBlob,
-          name: formData.name,
-          newMobile: formData.mobile,
-          area: formData.area,
-          notes: formData.notes,
+          oldMobile: patient.mobile,
+          patient: {
+            image: imageBlob,
+            name: formData.name,
+            mobile: formData.mobile,
+            area: formData.area,
+            notes: formData.notes,
+          },
         });
         toast.success('Patient updated successfully');
       } else {
@@ -205,89 +207,102 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
 
             <div className="space-y-2">
               <Label>Patient Photo</Label>
-              {showCamera ? (
-                <div className="space-y-2">
-                  <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-                    <canvas ref={canvasRef} className="hidden" />
-                  </div>
-                  {cameraError && (
-                    <p className="text-sm text-destructive">{cameraError.message}</p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      onClick={handleCapturePhoto}
-                      disabled={!isCameraActive || isCameraLoading}
-                      className="flex-1"
-                    >
-                      <Camera className="mr-2 h-4 w-4" />
-                      Capture
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        stopCamera();
-                        setShowCamera(false);
-                      }}
-                      disabled={isCameraLoading}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {imagePreview && (
-                    <div className="relative w-32 h-32 mx-auto">
-                      <img
-                        src={imagePreview}
-                        alt="Patient preview"
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    {isCameraSupported && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleOpenCamera}
-                        disabled={isPending}
-                        className="flex-1"
-                      >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Camera
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('imageInput')?.click()}
-                      disabled={isPending}
-                      className="flex-1"
-                    >
-                      <ImageIcon className="mr-2 h-4 w-4" />
-                      Gallery
-                    </Button>
-                  </div>
-                  <input
-                    id="imageInput"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenCamera}
+                  disabled={isPending || isCameraLoading}
+                  className="flex-1"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {isCameraLoading ? 'Starting...' : 'Camera'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  disabled={isPending}
+                  className="flex-1"
+                >
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Gallery
+                </Button>
+                <input
+                  id="file-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+              {imagePreview && (
+                <div className="mt-2 relative">
+                  <img
+                    src={imagePreview}
+                    alt="Patient preview"
+                    className="w-full h-48 object-cover rounded-lg"
                   />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2"
+                  >
+                    Remove
+                  </Button>
                 </div>
               )}
             </div>
+
+            {showCamera && (
+              <div className="space-y-2">
+                <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <canvas ref={canvasRef} className="hidden" />
+                  {cameraError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-4 text-center">
+                      <div>
+                        <p className="font-semibold mb-2">Camera Error</p>
+                        <p className="text-sm">{cameraError.message}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleCapturePhoto}
+                    disabled={!isCameraActive}
+                    className="flex-1"
+                  >
+                    Capture
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      stopCamera();
+                      setShowCamera(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
@@ -296,7 +311,6 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                placeholder="Enter patient name"
                 disabled={isPending}
               />
             </div>
@@ -309,19 +323,16 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                 required
-                placeholder="Enter mobile number"
                 disabled={isPending}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="area">Area *</Label>
+              <Label htmlFor="area">Area</Label>
               <Input
                 id="area"
                 value={formData.area}
                 onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                required
-                placeholder="Enter area"
                 disabled={isPending}
               />
             </div>
@@ -333,7 +344,6 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                placeholder="Enter notes"
                 disabled={isPending}
               />
             </div>

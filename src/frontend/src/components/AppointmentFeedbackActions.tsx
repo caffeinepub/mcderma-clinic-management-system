@@ -17,7 +17,7 @@ export default function AppointmentFeedbackActions({ mobile, patientName, compac
   const [sanitizedMobile, setSanitizedMobile] = useState('');
   const { data: templates = {} } = useGetWhatsAppTemplates();
 
-  const feedbackTemplate = templates['after_appointment_feedback']?.messageContent;
+  const feedbackTemplate = templates['after_appointment_feedback'];
 
   const handleFeedbackClick = () => {
     const { isValid, sanitized } = validateMobileForWhatsApp(mobile);

@@ -1,7 +1,11 @@
-import { Phone, MessageCircle, Edit, Trash2, Calendar, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Phone, MessageCircle, Edit, Trash2, Star } from 'lucide-react';
+import { formatDateDDMMYY } from '../lib/utils';
+import type { Lead } from '../hooks/useQueries';
+import { useDeleteLead, useUpdateLead, useGetWhatsAppTemplates } from '../hooks/useQueries';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -9,22 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Lead } from '../backend';
-import { isPast } from 'date-fns';
-import { useDeleteLead, useUpdateLead, useGetLeads } from '../hooks/useQueries';
-import { toast } from 'sonner';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { formatTimestampDDMMYY } from '../lib/utils';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { getLeadInitialContactMessage, openWhatsAppWithLeadMessage } from '../utils/whatsappTemplates';
 
 interface LeadCardProps {
   lead: Lead;
@@ -34,25 +31,20 @@ interface LeadCardProps {
 export default function LeadCard({ lead, onEdit }: LeadCardProps) {
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
-  const { data: leads = [] } = useGetLeads();
-
-  const handleCall = () => {
-    window.location.href = `tel:${lead.mobile}`;
-  };
-
-  const handleWhatsApp = () => {
-    const message = encodeURIComponent(
-      `Hello ${lead.leadName}, this is a follow-up regarding ${lead.treatmentWanted}. ${lead.doctorRemark ? `Note: ${lead.doctorRemark}` : ''}`
-    );
-    window.open(`https://wa.me/${lead.mobile}?text=${message}`, '_blank');
-  };
+  const { data: templates = [] } = useGetWhatsAppTemplates();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<'initial' | 'followup' | 'appointment'>('initial');
 
   const handleDelete = async () => {
     try {
       await deleteLead.mutateAsync(lead.mobile);
       toast.success('Lead deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete lead');
+      setShowDeleteDialog(false);
+    } catch (error: any) {
+      toast.error('Failed to delete lead', {
+        description: error.message || 'Please try again',
+      });
     }
   };
 
@@ -60,136 +52,208 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
     try {
       await updateLead.mutateAsync({
         mobile: lead.mobile,
-        leadName: lead.leadName,
-        newMobile: lead.mobile,
-        treatmentWanted: lead.treatmentWanted,
-        area: lead.area,
-        followUpDate: lead.followUpDate,
-        expectedTreatmentDate: lead.expectedTreatmentDate,
-        rating: lead.rating,
-        doctorRemark: lead.doctorRemark,
-        addToAppointment: lead.addToAppointment,
-        leadStatus: newStatus,
+        lead: {
+          ...lead,
+          leadStatus: newStatus,
+        },
       });
-      toast.success('Status updated');
-    } catch (error) {
-      toast.error('Failed to update status');
+      toast.success('Status updated successfully');
+    } catch (error: any) {
+      toast.error('Failed to update status', {
+        description: error.message || 'Please try again',
+      });
+    }
+  };
+
+  const handleCall = () => {
+    window.location.href = `tel:${lead.mobile}`;
+  };
+
+  const handleWhatsApp = () => {
+    setShowTemplateDialog(true);
+  };
+
+  const handleSendTemplate = () => {
+    const leadInitialTemplate = templates.find(t => t.templateName === 'lead-initial-contact');
+    const leadFollowUpTemplate = templates.find(t => t.templateName === 'lead-follow-up');
+    const leadAppointmentTemplate = templates.find(t => t.templateName === 'lead-appointment-scheduling');
+
+    let message = '';
+    const leadData = {
+      leadName: lead.leadName,
+      mobile: lead.mobile,
+      treatmentWanted: lead.treatmentWanted,
+    };
+
+    if (selectedTemplate === 'initial') {
+      message = getLeadInitialContactMessage(leadData, leadInitialTemplate?.messageContent);
+    } else if (selectedTemplate === 'followup') {
+      message = getLeadInitialContactMessage(leadData, leadFollowUpTemplate?.messageContent);
+    } else if (selectedTemplate === 'appointment') {
+      message = getLeadInitialContactMessage(leadData, leadAppointmentTemplate?.messageContent);
+    }
+
+    const success = openWhatsAppWithLeadMessage(lead.mobile, message);
+    if (success) {
+      toast.success('Opening WhatsApp...');
+      setShowTemplateDialog(false);
+    } else {
+      toast.error('Failed to open WhatsApp');
     }
   };
 
   const followUpDate = new Date(Number(lead.followUpDate) / 1000000);
   const expectedDate = new Date(Number(lead.expectedTreatmentDate) / 1000000);
-  const isOverdue = isPast(followUpDate) && followUpDate.toDateString() !== new Date().toDateString();
-
-  const followUpDateStr = formatTimestampDDMMYY(lead.followUpDate);
-  const expectedDateStr = formatTimestampDDMMYY(lead.expectedTreatmentDate);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm mb-0.5 truncate leading-tight">{lead.leadName}</h3>
-            <button 
-              onClick={handleCall}
-              className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
-            >
-              <Phone className="h-2.5 w-2.5" />
-              <span className="underline">{lead.mobile}</span>
-            </button>
-            {lead.area && (
-              <p className="text-xs text-muted-foreground truncate mt-0.5">📍 {lead.area}</p>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-0.5">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-semibold">{lead.rating}/7</span>
+    <>
+      <Card className="hover:shadow-md transition-shadow">
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            {/* Header Row */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">{lead.leadName}</h3>
+                <p className="text-sm text-muted-foreground">{lead.mobile}</p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-1 text-amber-500">
+                  {Array.from({ length: lead.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
+                </div>
+                <Select value={lead.leadStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ringing">Ringing</SelectItem>
+                    <SelectItem value="Not Picked">Not Picked</SelectItem>
+                    <SelectItem value="Callback">Callback</SelectItem>
+                    <SelectItem value="Converted">Converted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Select 
-              value={lead.leadStatus || 'Ringing'} 
-              onValueChange={handleStatusChange}
-              disabled={updateLead.isPending}
+
+            {/* Details */}
+            <div className="space-y-1 text-sm">
+              <p>
+                <span className="font-medium">Treatment:</span> {lead.treatmentWanted}
+              </p>
+              <p>
+                <span className="font-medium">Area:</span> {lead.area}
+              </p>
+              <p>
+                <span className="font-medium">Follow-up:</span> {formatDateDDMMYY(followUpDate)}
+              </p>
+              <p>
+                <span className="font-medium">Expected Date:</span> {formatDateDDMMYY(expectedDate)}
+              </p>
+              {lead.doctorRemark && (
+                <p>
+                  <span className="font-medium">Remark:</span> {lead.doctorRemark}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <Button size="sm" variant="outline" onClick={handleCall} className="flex-1 gap-2">
+                <Phone className="h-4 w-4" />
+                Call
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleWhatsApp} className="flex-1 gap-2">
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => onEdit(lead)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Lead</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this lead? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLead.isPending}
             >
-              <SelectTrigger className="h-6 text-xs w-[110px] px-2">
+              {deleteLead.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp Template Selection Dialog */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select WhatsApp Template</DialogTitle>
+            <DialogDescription>
+              Choose a message template to send to {lead.leadName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as any)}>
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Ringing">Ringing</SelectItem>
-                <SelectItem value="will call and come">will call and come</SelectItem>
-                <SelectItem value="follow up date given">follow up date given</SelectItem>
-                <SelectItem value="Visited">Visited</SelectItem>
+                <SelectItem value="initial">Initial Contact</SelectItem>
+                <SelectItem value="followup">Follow-up</SelectItem>
+                <SelectItem value="appointment">Appointment Scheduling</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-
-        <div className="mt-1.5 space-y-0.5">
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-muted-foreground">Treatment:</span>
-            <Badge variant="secondary" className="text-xs h-4 px-1.5">{lead.treatmentWanted}</Badge>
-          </div>
-          
-          <div className="flex items-center gap-1 text-xs">
-            <Calendar className="h-2.5 w-2.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Follow-up:</span>
-            <span className={isOverdue ? 'text-destructive font-medium' : ''}>
-              {followUpDateStr}
-            </span>
-            {isOverdue && <Badge variant="destructive" className="text-xs h-4 px-1">Overdue</Badge>}
-          </div>
-
-          <div className="flex items-center gap-1 text-xs">
-            <Calendar className="h-2.5 w-2.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Expected:</span>
-            <span>{expectedDateStr}</span>
-          </div>
-
-          {lead.doctorRemark && (
-            <div className="text-xs bg-muted/50 rounded-md p-1.5 mt-1">
-              <p className="text-muted-foreground text-xs mb-0.5">Remark:</p>
-              <p className="text-xs line-clamp-2">{lead.doctorRemark}</p>
+            <div className="p-3 bg-muted rounded-md text-sm">
+              <p className="font-medium mb-2">Preview:</p>
+              <p className="text-muted-foreground">
+                {selectedTemplate === 'initial' &&
+                  getLeadInitialContactMessage({
+                    leadName: lead.leadName,
+                    mobile: lead.mobile,
+                    treatmentWanted: lead.treatmentWanted,
+                  })}
+                {selectedTemplate === 'followup' &&
+                  `Hi ${lead.leadName}, following up on your inquiry about ${lead.treatmentWanted}. Are you still interested? We have some great options available for you.`}
+                {selectedTemplate === 'appointment' &&
+                  `Hello ${lead.leadName}! We are ready to schedule your appointment for ${lead.treatmentWanted}. Please let us know your preferred date and time.`}
+              </p>
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-1 mt-1.5">
-          <Button size="sm" variant="outline" onClick={handleCall} className="h-6 text-xs px-2 py-0">
-            <Phone className="h-2.5 w-2.5 mr-1" />
-            Call
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleWhatsApp} className="h-6 text-xs px-2 py-0">
-            <MessageCircle className="h-2.5 w-2.5 mr-1" />
-            WhatsApp
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => onEdit(lead)} className="h-6 text-xs px-2 py-0">
-            <Edit className="h-2.5 w-2.5 mr-1" />
-            Edit
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline" className="h-6 text-xs px-2 py-0 text-destructive hover:text-destructive">
-                <Trash2 className="h-2.5 w-2.5 mr-1" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Lead</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this lead? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendTemplate} className="gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Send via WhatsApp
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -25,6 +25,37 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const AdminConfig = IDL.Record({
+  'hashedSecurityAnswer' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  'securityQuestion' : IDL.Text,
+  'hashedPassword' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+});
+export const Prescription = IDL.Record({
+  'doctorNotes' : IDL.Text,
+  'prescriptionData' : IDL.Variant({
+    'typed' : IDL.Text,
+    'freehand' : ExternalBlob,
+    'camera' : ExternalBlob,
+  }),
+  'followUp' : IDL.Opt(IDL.Text),
+  'prescriptionType' : IDL.Variant({
+    'typed' : IDL.Null,
+    'freehand' : IDL.Null,
+    'camera' : IDL.Null,
+  }),
+  'medicalHistory' : IDL.Opt(IDL.Text),
+  'timestamp' : IDL.Int,
+  'patientName' : IDL.Text,
+  'symptoms' : IDL.Opt(IDL.Text),
+  'mobile' : IDL.Text,
+  'clinicName' : IDL.Text,
+  'allergies' : IDL.Opt(IDL.Text),
+  'appointmentId' : IDL.Opt(IDL.Nat),
+  'consultationType' : IDL.Variant({
+    'telemedicine' : IDL.Null,
+    'inPerson' : IDL.Null,
+  }),
+});
 export const Appointment = IDL.Record({
   'id' : IDL.Nat,
   'appointmentTime' : IDL.Nat,
@@ -33,11 +64,15 @@ export const Appointment = IDL.Record({
   'mobile' : IDL.Text,
   'isFollowUp' : IDL.Bool,
 });
+export const Attendance = IDL.Record({
+  'name' : IDL.Text,
+  'role' : IDL.Text,
+  'timestamp' : IDL.Int,
+});
 export const UserProfile = IDL.Record({
   'username' : IDL.Text,
   'clinicName' : IDL.Text,
 });
-export const Time = IDL.Int;
 export const Lead = IDL.Record({
   'doctorRemark' : IDL.Text,
   'leadName' : IDL.Text,
@@ -57,6 +92,7 @@ export const Patient = IDL.Record({
   'image' : IDL.Opt(ExternalBlob),
   'mobile' : IDL.Text,
 });
+export const Time = IDL.Int;
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -113,32 +149,26 @@ export const idlService = IDL.Service({
       [],
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'createAttendance' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'deleteAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
   'deleteLead' : IDL.Func([IDL.Text], [IDL.Text], []),
   'deletePatient' : IDL.Func([IDL.Text], [IDL.Text], []),
+  'deletePrescription' : IDL.Func([IDL.Text, IDL.Nat], [IDL.Text], []),
+  'getAdminConfig' : IDL.Func([], [IDL.Opt(AdminConfig)], ['query']),
+  'getAllPrescriptions' : IDL.Func([], [IDL.Vec(Prescription)], ['query']),
   'getAppointments' : IDL.Func([], [IDL.Vec(Appointment)], ['query']),
+  'getAttendance' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-  'getLastModifiedAppointments' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-  'getLastModifiedLeads' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-  'getLastModifiedPatients' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-  'getLastModifiedProfile' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-  'getLastModifiedTimes' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'leads' : IDL.Opt(Time),
-          'appointments' : IDL.Opt(Time),
-          'patients' : IDL.Opt(Time),
-          'profile' : IDL.Opt(Time),
-        }),
-      ],
-      ['query'],
-    ),
-  'getLastSyncTime' : IDL.Func([], [IDL.Opt(Time)], ['query']),
   'getLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
   'getPatients' : IDL.Func([], [IDL.Vec(Patient)], ['query']),
+  'getPrescriptionById' : IDL.Func(
+      [IDL.Text, IDL.Nat],
+      [IDL.Opt(Prescription)],
+      ['query'],
+    ),
+  'getPrescriptions' : IDL.Func([IDL.Text], [IDL.Vec(Prescription)], ['query']),
+  'getPrescriptionsLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
   'getTodaysAppointmentsSorted' : IDL.Func(
       [],
       [IDL.Vec(Appointment)],
@@ -162,10 +192,22 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'login' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
   'register' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
+  'resetAdminPassword' : IDL.Func(
+      [IDL.Vec(IDL.Nat8), IDL.Vec(IDL.Nat8)],
+      [IDL.Text],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'savePrescription' : IDL.Func([Prescription], [IDL.Text], []),
+  'setAdminPassword' : IDL.Func(
+      [IDL.Vec(IDL.Nat8), IDL.Text, IDL.Vec(IDL.Nat8)],
+      [IDL.Text],
+      [],
+    ),
   'toggleFollowUpAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
+  'unlockAdmin' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   'updateAppointment' : IDL.Func([IDL.Nat, Appointment], [IDL.Text], []),
-  'updateLastSyncTime' : IDL.Func([], [], []),
+  'updateAttendance' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
   'updateLead' : IDL.Func(
       [
         IDL.Text,
@@ -188,6 +230,7 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'verifyAdminPassword' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
 });
 
 export const idlInitArgs = [];
@@ -210,6 +253,37 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const AdminConfig = IDL.Record({
+    'hashedSecurityAnswer' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'securityQuestion' : IDL.Text,
+    'hashedPassword' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  });
+  const Prescription = IDL.Record({
+    'doctorNotes' : IDL.Text,
+    'prescriptionData' : IDL.Variant({
+      'typed' : IDL.Text,
+      'freehand' : ExternalBlob,
+      'camera' : ExternalBlob,
+    }),
+    'followUp' : IDL.Opt(IDL.Text),
+    'prescriptionType' : IDL.Variant({
+      'typed' : IDL.Null,
+      'freehand' : IDL.Null,
+      'camera' : IDL.Null,
+    }),
+    'medicalHistory' : IDL.Opt(IDL.Text),
+    'timestamp' : IDL.Int,
+    'patientName' : IDL.Text,
+    'symptoms' : IDL.Opt(IDL.Text),
+    'mobile' : IDL.Text,
+    'clinicName' : IDL.Text,
+    'allergies' : IDL.Opt(IDL.Text),
+    'appointmentId' : IDL.Opt(IDL.Nat),
+    'consultationType' : IDL.Variant({
+      'telemedicine' : IDL.Null,
+      'inPerson' : IDL.Null,
+    }),
+  });
   const Appointment = IDL.Record({
     'id' : IDL.Nat,
     'appointmentTime' : IDL.Nat,
@@ -218,11 +292,15 @@ export const idlFactory = ({ IDL }) => {
     'mobile' : IDL.Text,
     'isFollowUp' : IDL.Bool,
   });
+  const Attendance = IDL.Record({
+    'name' : IDL.Text,
+    'role' : IDL.Text,
+    'timestamp' : IDL.Int,
+  });
   const UserProfile = IDL.Record({
     'username' : IDL.Text,
     'clinicName' : IDL.Text,
   });
-  const Time = IDL.Int;
   const Lead = IDL.Record({
     'doctorRemark' : IDL.Text,
     'leadName' : IDL.Text,
@@ -242,6 +320,7 @@ export const idlFactory = ({ IDL }) => {
     'image' : IDL.Opt(ExternalBlob),
     'mobile' : IDL.Text,
   });
+  const Time = IDL.Int;
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -298,32 +377,30 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'createAttendance' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'deleteAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
     'deleteLead' : IDL.Func([IDL.Text], [IDL.Text], []),
     'deletePatient' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'deletePrescription' : IDL.Func([IDL.Text, IDL.Nat], [IDL.Text], []),
+    'getAdminConfig' : IDL.Func([], [IDL.Opt(AdminConfig)], ['query']),
+    'getAllPrescriptions' : IDL.Func([], [IDL.Vec(Prescription)], ['query']),
     'getAppointments' : IDL.Func([], [IDL.Vec(Appointment)], ['query']),
+    'getAttendance' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-    'getLastModifiedAppointments' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-    'getLastModifiedLeads' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-    'getLastModifiedPatients' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-    'getLastModifiedProfile' : IDL.Func([], [IDL.Opt(Time)], ['query']),
-    'getLastModifiedTimes' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'leads' : IDL.Opt(Time),
-            'appointments' : IDL.Opt(Time),
-            'patients' : IDL.Opt(Time),
-            'profile' : IDL.Opt(Time),
-          }),
-        ],
-        ['query'],
-      ),
-    'getLastSyncTime' : IDL.Func([], [IDL.Opt(Time)], ['query']),
     'getLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
     'getPatients' : IDL.Func([], [IDL.Vec(Patient)], ['query']),
+    'getPrescriptionById' : IDL.Func(
+        [IDL.Text, IDL.Nat],
+        [IDL.Opt(Prescription)],
+        ['query'],
+      ),
+    'getPrescriptions' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(Prescription)],
+        ['query'],
+      ),
+    'getPrescriptionsLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
     'getTodaysAppointmentsSorted' : IDL.Func(
         [],
         [IDL.Vec(Appointment)],
@@ -347,10 +424,26 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'login' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
     'register' : IDL.Func([IDL.Text, IDL.Vec(IDL.Nat8)], [IDL.Text], []),
+    'resetAdminPassword' : IDL.Func(
+        [IDL.Vec(IDL.Nat8), IDL.Vec(IDL.Nat8)],
+        [IDL.Text],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'savePrescription' : IDL.Func([Prescription], [IDL.Text], []),
+    'setAdminPassword' : IDL.Func(
+        [IDL.Vec(IDL.Nat8), IDL.Text, IDL.Vec(IDL.Nat8)],
+        [IDL.Text],
+        [],
+      ),
     'toggleFollowUpAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
+    'unlockAdmin' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
     'updateAppointment' : IDL.Func([IDL.Nat, Appointment], [IDL.Text], []),
-    'updateLastSyncTime' : IDL.Func([], [], []),
+    'updateAttendance' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'updateLead' : IDL.Func(
         [
           IDL.Text,
@@ -380,6 +473,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
+    'verifyAdminPassword' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   });
 };
 

@@ -1,23 +1,18 @@
 import { useState } from 'react';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import LeadCard from '../components/LeadCard';
 import LeadDialog from '../components/LeadDialog';
 import { useGetLeads } from '../hooks/useQueries';
-import type { Lead } from '../backend';
+import type { Lead } from '../hooks/useQueries';
 
 export default function LeadsTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: leads = [], isLoading } = useGetLeads();
-
-  // Sort leads by follow-up date (nearest first)
-  const sortedLeads = [...leads].sort((a, b) => {
-    const dateA = Number(a.followUpDate);
-    const dateB = Number(b.followUpDate);
-    return dateA - dateB;
-  });
 
   const handleEdit = (lead: Lead) => {
     setEditingLead(lead);
@@ -29,53 +24,59 @@ export default function LeadsTab() {
     setEditingLead(undefined);
   };
 
+  const filteredLeads = leads.filter((lead) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      lead.leadName.toLowerCase().includes(query) ||
+      lead.mobile.includes(query) ||
+      lead.treatmentWanted.toLowerCase().includes(query) ||
+      lead.area.toLowerCase().includes(query)
+    );
+  });
+
+  // Sort leads by follow-up date
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    return Number(a.followUpDate - b.followUpDate);
+  });
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Leads</h2>
-        <div className="text-sm text-muted-foreground">
-          {leads.length} {leads.length === 1 ? 'lead' : 'leads'}
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
+        <Button onClick={() => setIsDialogOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Lead
+        </Button>
       </div>
 
-      {/* Lead List */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search leads..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-8 text-muted-foreground">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p>Loading leads...</p>
         </div>
       ) : sortedLeads.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No leads added yet</p>
+        <div className="text-center py-8 text-muted-foreground">
+          <p>{searchQuery ? 'No leads found matching your search' : 'No leads yet. Add your first lead!'}</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedLeads.map((lead, index) => (
-            <LeadCard
-              key={index}
-              lead={lead}
-              onEdit={handleEdit}
-            />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {sortedLeads.map((lead) => (
+            <LeadCard key={lead.mobile} lead={lead} onEdit={handleEdit} />
           ))}
         </div>
       )}
 
-      {/* Floating Add Button */}
-      <Button
-        onClick={() => setIsDialogOpen(true)}
-        size="lg"
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
-
-      {/* Add/Edit Lead Dialog */}
-      <LeadDialog
-        open={isDialogOpen}
-        onOpenChange={handleCloseDialog}
-        lead={editingLead}
-      />
+      <LeadDialog open={isDialogOpen} onOpenChange={handleCloseDialog} lead={editingLead} />
     </div>
   );
 }
