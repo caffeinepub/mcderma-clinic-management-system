@@ -11,12 +11,11 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
+
   include MixinStorage();
 
   type Credentials = {
@@ -39,6 +38,16 @@ actor {
     mobile : Text;
     area : Text;
     notes : Text;
+    prescriptionHistory : List.List<Prescription>;
+  };
+
+  type PatientView = {
+    image : ?Storage.ExternalBlob;
+    name : Text;
+    mobile : Text;
+    area : Text;
+    notes : Text;
+    prescriptionHistory : [Prescription];
   };
 
   type Lead = {
@@ -93,14 +102,21 @@ actor {
     patientName : Text;
     mobile : Text;
     clinicName : Text;
-    prescriptionType : { #typed; #freehand; #camera };
+    prescriptionType : {
+      #typed;
+      #freehand;
+      #camera;
+    };
     prescriptionData : {
       #typed : Text;
       #freehand : Storage.ExternalBlob;
       #camera : Storage.ExternalBlob;
     };
     doctorNotes : Text;
-    consultationType : { #telemedicine; #inPerson };
+    consultationType : {
+      #telemedicine;
+      #inPerson;
+    };
     appointmentId : ?Nat;
     timestamp : Int;
     symptoms : ?Text;
@@ -122,7 +138,6 @@ actor {
     adminConfig : AdminConfig;
     staffPermissions : Map.Map<Text, StaffPermissions>;
     whatsappTemplates : Map.Map<Text, WhatsAppTemplate>;
-    prescriptions : List.List<Prescription>;
     appointmentsLastModified : Time.Time;
     patientsLastModified : Time.Time;
     leadsLastModified : Time.Time;
@@ -159,7 +174,6 @@ actor {
           };
           staffPermissions = Map.empty<Text, StaffPermissions>();
           whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
-          prescriptions = List.empty<Prescription>();
           appointmentsLastModified = Time.now();
           patientsLastModified = Time.now();
           leadsLastModified = Time.now();
@@ -200,7 +214,6 @@ actor {
           };
           staffPermissions = Map.empty<Text, StaffPermissions>();
           whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
-          prescriptions = List.empty<Prescription>();
           appointmentsLastModified = currentTime;
           patientsLastModified = currentTime;
           leadsLastModified = currentTime;
@@ -290,7 +303,6 @@ actor {
           adminConfig = data.adminConfig;
           staffPermissions = data.staffPermissions;
           whatsappTemplates = data.whatsappTemplates;
-          prescriptions = data.prescriptions;
           appointmentsLastModified = data.appointmentsLastModified;
           patientsLastModified = data.patientsLastModified;
           leadsLastModified = data.leadsLastModified;
@@ -318,7 +330,6 @@ actor {
           };
           staffPermissions = Map.empty<Text, StaffPermissions>();
           whatsappTemplates = Map.empty<Text, WhatsAppTemplate>();
-          prescriptions = List.empty<Prescription>();
           appointmentsLastModified = currentTime;
           patientsLastModified = currentTime;
           leadsLastModified = currentTime;
@@ -358,7 +369,6 @@ actor {
       adminConfig = updatedAdminConfig;
       staffPermissions = user.staffPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = user.leadsLastModified;
@@ -447,7 +457,6 @@ actor {
                 adminConfig = updatedAdminConfig;
                 staffPermissions = data.staffPermissions;
                 whatsappTemplates = data.whatsappTemplates;
-                prescriptions = data.prescriptions;
                 appointmentsLastModified = data.appointmentsLastModified;
                 patientsLastModified = data.patientsLastModified;
                 leadsLastModified = data.leadsLastModified;
@@ -473,14 +482,20 @@ actor {
     };
   };
 
-  // PRESCRIPTION WORKFLOW
-  public shared ({ caller }) func savePrescription(prescription : Prescription) : async Text {
+  // STAFF MANAGEMENT
+  public shared ({ caller }) func addStaff(name : Text, role : Text, permissions : StaffPermissions) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save prescriptions");
+      Runtime.trap("Unauthorized: Only users can add staff members");
     };
 
     let user = getOrInitializeUserData(caller);
-    user.prescriptions.add(prescription);
+    let staff : Staff = { name; role };
+
+    let updatedStaff = user.staff.clone();
+    updatedStaff.add(name, staff);
+
+    let updatedPermissions = user.staffPermissions.clone();
+    updatedPermissions.add(name, permissions);
 
     let updatedData : UserData = {
       profile = user.profile;
@@ -489,23 +504,219 @@ actor {
       appointmentIdCounter = user.appointmentIdCounter;
       patients = user.patients;
       leads = user.leads;
-      staff = user.staff;
+      staff = updatedStaff;
       attendance = user.attendance;
       attendanceIdCounter = user.attendanceIdCounter;
       adminConfig = user.adminConfig;
-      staffPermissions = user.staffPermissions;
+      staffPermissions = updatedPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = user.leadsLastModified;
-      staffLastModified = user.staffLastModified;
+      staffLastModified = Time.now();
       profileLastModified = user.profileLastModified;
-      prescriptionsLastModified = Time.now();
+      prescriptionsLastModified = user.prescriptionsLastModified;
     };
 
     userData.add(caller, updatedData);
-    "Prescription saved successfully!";
+    "Staff member added successfully";
+  };
+
+  public query ({ caller }) func getStaff() : async [Staff] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view staff");
+    };
+
+    switch (userData.get(caller)) {
+      case (?data) {
+        data.staff.values().toArray();
+      };
+      case (null) { [] };
+    };
+  };
+
+  public query ({ caller }) func getStaffPermissions(staffName : Text) : async ?StaffPermissions {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view staff permissions");
+    };
+
+    switch (userData.get(caller)) {
+      case (?data) {
+        data.staffPermissions.get(staffName);
+      };
+      case (null) { null };
+    };
+  };
+
+  public shared ({ caller }) func updateStaffPermissions(staffName : Text, permissions : StaffPermissions) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update staff permissions");
+    };
+
+    switch (userData.get(caller)) {
+      case (?data) {
+        switch (data.staff.get(staffName)) {
+          case (?_) {
+            let updatedPermissions = data.staffPermissions.clone();
+            updatedPermissions.add(staffName, permissions);
+
+            let updatedData : UserData = {
+              profile = data.profile;
+              hashedPassword = data.hashedPassword;
+              appointments = data.appointments;
+              appointmentIdCounter = data.appointmentIdCounter;
+              patients = data.patients;
+              leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = updatedPermissions;
+              whatsappTemplates = data.whatsappTemplates;
+              appointmentsLastModified = data.appointmentsLastModified;
+              patientsLastModified = data.patientsLastModified;
+              leadsLastModified = data.leadsLastModified;
+              staffLastModified = Time.now();
+              profileLastModified = data.profileLastModified;
+              prescriptionsLastModified = data.prescriptionsLastModified;
+            };
+
+            userData.add(caller, updatedData);
+            "Staff permissions updated successfully";
+          };
+          case (null) { Runtime.trap("Staff member not found") };
+        };
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
+  };
+
+  public shared ({ caller }) func deleteStaff(staffName : Text) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete staff members");
+    };
+
+    switch (userData.get(caller)) {
+      case (?data) {
+        switch (data.staff.get(staffName)) {
+          case (?_) {
+            data.staff.remove(staffName);
+            data.staffPermissions.remove(staffName);
+
+            let updatedData : UserData = {
+              profile = data.profile;
+              hashedPassword = data.hashedPassword;
+              appointments = data.appointments;
+              appointmentIdCounter = data.appointmentIdCounter;
+              patients = data.patients;
+              leads = data.leads;
+              staff = data.staff;
+              attendance = data.attendance;
+              attendanceIdCounter = data.attendanceIdCounter;
+              adminConfig = data.adminConfig;
+              staffPermissions = data.staffPermissions;
+              whatsappTemplates = data.whatsappTemplates;
+              appointmentsLastModified = data.appointmentsLastModified;
+              patientsLastModified = data.patientsLastModified;
+              leadsLastModified = data.leadsLastModified;
+              staffLastModified = Time.now();
+              profileLastModified = data.profileLastModified;
+              prescriptionsLastModified = data.prescriptionsLastModified;
+            };
+
+            userData.add(caller, updatedData);
+            "Staff member deleted successfully";
+          };
+          case (null) { Runtime.trap("Staff member not found") };
+        };
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
+  };
+
+  // PRESCRIPTION WORKFLOW
+  public shared ({ caller }) func savePrescription(prescription : Prescription) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save prescriptions");
+    };
+
+    switch (userData.get(caller)) {
+      case (?user) {
+        switch (user.patients.get(prescription.mobile)) {
+          case (?patient) {
+            patient.prescriptionHistory.add(prescription);
+
+            let updatedPatients = user.patients.clone();
+            updatedPatients.add(prescription.mobile, patient);
+
+            let updatedData : UserData = {
+              profile = user.profile;
+              hashedPassword = user.hashedPassword;
+              appointments = user.appointments;
+              appointmentIdCounter = user.appointmentIdCounter;
+              leads = user.leads;
+              staff = user.staff;
+              attendance = user.attendance;
+              attendanceIdCounter = user.attendanceIdCounter;
+              adminConfig = user.adminConfig;
+              staffPermissions = user.staffPermissions;
+              whatsappTemplates = user.whatsappTemplates;
+              patients = updatedPatients;
+              appointmentsLastModified = user.appointmentsLastModified;
+              patientsLastModified = Time.now();
+              leadsLastModified = user.leadsLastModified;
+              staffLastModified = user.staffLastModified;
+              profileLastModified = user.profileLastModified;
+              prescriptionsLastModified = Time.now();
+            };
+
+            userData.add(caller, updatedData);
+            "Prescription saved successfully!";
+          };
+          case (null) {
+            let newPatientPrescriptions = List.empty<Prescription>();
+            newPatientPrescriptions.add(prescription);
+
+            let newPatient : Patient = {
+              image = null;
+              name = prescription.patientName;
+              mobile = prescription.mobile;
+              area = "";
+              notes = "";
+              prescriptionHistory = newPatientPrescriptions;
+            };
+
+            let updatedPatients = user.patients.clone();
+            updatedPatients.add(prescription.mobile, newPatient);
+
+            let updatedData : UserData = {
+              profile = user.profile;
+              hashedPassword = user.hashedPassword;
+              appointments = user.appointments;
+              appointmentIdCounter = user.appointmentIdCounter;
+              leads = user.leads;
+              staff = user.staff;
+              attendance = user.attendance;
+              attendanceIdCounter = user.attendanceIdCounter;
+              adminConfig = user.adminConfig;
+              staffPermissions = user.staffPermissions;
+              whatsappTemplates = user.whatsappTemplates;
+              patients = updatedPatients;
+              appointmentsLastModified = user.appointmentsLastModified;
+              patientsLastModified = Time.now();
+              leadsLastModified = user.leadsLastModified;
+              staffLastModified = user.staffLastModified;
+              profileLastModified = user.profileLastModified;
+              prescriptionsLastModified = Time.now();
+            };
+
+            userData.add(caller, updatedData);
+            "Prescription saved successfully!";
+          };
+        };
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
   };
 
   public query ({ caller }) func getPrescriptions(patientMobile : Text) : async [Prescription] {
@@ -515,23 +726,10 @@ actor {
 
     switch (userData.get(caller)) {
       case (?data) {
-        let filteredPrescriptions = data.prescriptions.filter(
-          func(prescription) { prescription.mobile == patientMobile }
-        );
-        filteredPrescriptions.toArray();
-      };
-      case (null) { [] };
-    };
-  };
-
-  public query ({ caller }) func getAllPrescriptions() : async [Prescription] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view all prescriptions");
-    };
-
-    switch (userData.get(caller)) {
-      case (?data) {
-        data.prescriptions.toArray();
+        switch (data.patients.get(patientMobile)) {
+          case (?patient) { patient.prescriptionHistory.toArray() };
+          case (null) { [] };
+        };
       };
       case (null) { [] };
     };
@@ -539,19 +737,18 @@ actor {
 
   public query ({ caller }) func getPrescriptionById(patientMobile : Text, id : Nat) : async ?Prescription {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view prescription details");
+      Runtime.trap("Unauthorized: Only users can view prescription.");
     };
 
     switch (userData.get(caller)) {
       case (?data) {
-        let filteredPrescriptions = data.prescriptions.filter(
-          func(prescription) { prescription.mobile == patientMobile }
-        );
-        let prescriptionsArray = filteredPrescriptions.toArray();
-        if (id < prescriptionsArray.size()) {
-          ?prescriptionsArray[id];
-        } else {
-          null;
+        switch (data.patients.get(patientMobile)) {
+          case (?patient) {
+            if (id < patient.prescriptionHistory.size()) { ?patient.prescriptionHistory.toArray()[id] } else {
+              null;
+            };
+          };
+          case (null) { null };
         };
       };
       case (null) { null };
@@ -565,17 +762,26 @@ actor {
 
     switch (userData.get(caller)) {
       case (?data) {
-        if (id < data.prescriptions.size()) {
-          let prescriptionsArray = data.prescriptions.toArray();
-          if (id + 1 >= prescriptionsArray.size()) {
-            if (prescriptionsArray.size() > 1) {
-              let tempPrescriptions = List.fromArray<Prescription>(prescriptionsArray.sliceToArray(1, prescriptionsArray.size()));
+        switch (data.patients.get(patientMobile)) {
+          case (?patient) {
+            if (id < patient.prescriptionHistory.size()) {
+              let prescriptionsArray = patient.prescriptionHistory.toArray();
+
+              patient.prescriptionHistory.clear();
+              for (i in Nat.range(0, prescriptionsArray.size())) {
+                if (i != id) {
+                  patient.prescriptionHistory.add(prescriptionsArray[i]);
+                };
+              };
+
+              let updatedPatients = data.patients.clone();
+              updatedPatients.add(patientMobile, patient);
+
               let updatedUserData : UserData = {
                 profile = data.profile;
                 hashedPassword = data.hashedPassword;
                 appointments = data.appointments;
                 appointmentIdCounter = data.appointmentIdCounter;
-                patients = data.patients;
                 leads = data.leads;
                 staff = data.staff;
                 attendance = data.attendance;
@@ -583,49 +789,22 @@ actor {
                 adminConfig = data.adminConfig;
                 staffPermissions = data.staffPermissions;
                 whatsappTemplates = data.whatsappTemplates;
-                prescriptions = tempPrescriptions;
+                patients = updatedPatients;
                 appointmentsLastModified = data.appointmentsLastModified;
-                patientsLastModified = data.patientsLastModified;
+                patientsLastModified = Time.now();
                 leadsLastModified = data.leadsLastModified;
                 staffLastModified = data.staffLastModified;
                 profileLastModified = data.profileLastModified;
                 prescriptionsLastModified = Time.now();
               };
+
               userData.add(caller, updatedUserData);
+              "Prescription deleted successfully!";
+            } else {
+              Runtime.trap("Prescription not found");
             };
-            "Prescription deleted successfully!";
-          } else {
-            let newArray = prescriptionsArray.sliceToArray(0, id).concat(prescriptionsArray.sliceToArray(id + 1, prescriptionsArray.size()));
-
-            let tempPrescriptions = List.fromArray<Prescription>(newArray);
-
-            let updatedUserData : UserData = {
-              profile = data.profile;
-              hashedPassword = data.hashedPassword;
-              appointments = data.appointments;
-              appointmentIdCounter = data.appointmentIdCounter;
-              patients = data.patients;
-              leads = data.leads;
-              staff = data.staff;
-              attendance = data.attendance;
-              attendanceIdCounter = data.attendanceIdCounter;
-              adminConfig = data.adminConfig;
-              staffPermissions = data.staffPermissions;
-              whatsappTemplates = data.whatsappTemplates;
-              prescriptions = tempPrescriptions;
-              appointmentsLastModified = data.appointmentsLastModified;
-              patientsLastModified = data.patientsLastModified;
-              leadsLastModified = data.leadsLastModified;
-              staffLastModified = data.staffLastModified;
-              profileLastModified = data.profileLastModified;
-              prescriptionsLastModified = Time.now();
-            };
-            userData.add(caller, updatedUserData);
-
-            "Prescription deleted successfully!";
           };
-        } else {
-          Runtime.trap("Prescription not found");
+          case (null) { Runtime.trap("Patient not found") };
         };
       };
       case (null) { Runtime.trap("User not found") };
@@ -643,6 +822,45 @@ actor {
   };
 
   // ATTENDANCE MANAGEMENT
+
+  // Not needed on backend since logic is same as createAttendance
+  // public shared ({ caller }) func checkIn(name : Text, role : Text) : async Bool {
+  //   if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+  //     Runtime.trap("Unauthorized: Only users can create attendance records");
+  //   };
+
+  //   let timestamp = Time.now();
+  //   let user = getOrInitializeUserData(caller);
+  //   let newAttendance : Attendance = { name; role; timestamp };
+
+  //   let updatedAttendance = user.attendance.clone();
+  //   updatedAttendance.add(timestamp.toText(), newAttendance);
+
+  //   let updatedUserData : UserData = {
+  //     profile = user.profile;
+  //     hashedPassword = user.hashedPassword;
+  //     appointments = user.appointments;
+  //     appointmentIdCounter = user.appointmentIdCounter + 1;
+  //     patients = user.patients;
+  //     leads = user.leads;
+  //     staff = user.staff;
+  //     attendance = updatedAttendance;
+  //     attendanceIdCounter = user.attendanceIdCounter;
+  //     adminConfig = user.adminConfig;
+  //     staffPermissions = user.staffPermissions;
+  //     whatsappTemplates = user.whatsappTemplates;
+  //     appointmentsLastModified = user.appointmentsLastModified;
+  //     patientsLastModified = user.patientsLastModified;
+  //     leadsLastModified = user.leadsLastModified;
+  //     staffLastModified = user.staffLastModified;
+  //     profileLastModified = user.profileLastModified;
+  //     prescriptionsLastModified = user.prescriptionsLastModified;
+  //   };
+
+  //   userData.add(caller, updatedUserData);
+  //   true;
+  // };
+
   public shared ({ caller }) func createAttendance(name : Text, role : Text) : async Bool {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create attendance records");
@@ -668,7 +886,6 @@ actor {
       adminConfig = user.adminConfig;
       staffPermissions = user.staffPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = user.leadsLastModified;
@@ -718,7 +935,6 @@ actor {
       adminConfig = user.adminConfig;
       staffPermissions = user.staffPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = user.leadsLastModified;
@@ -780,7 +996,6 @@ actor {
       adminConfig = user.adminConfig;
       staffPermissions = user.staffPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = user.patientsLastModified;
       leadsLastModified = currentTime;
@@ -856,7 +1071,6 @@ actor {
               adminConfig = data.adminConfig;
               staffPermissions = data.staffPermissions;
               whatsappTemplates = data.whatsappTemplates;
-              prescriptions = data.prescriptions;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = Time.now();
@@ -899,7 +1113,6 @@ actor {
               adminConfig = data.adminConfig;
               staffPermissions = data.staffPermissions;
               whatsappTemplates = data.whatsappTemplates;
-              prescriptions = data.prescriptions;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = Time.now();
@@ -943,29 +1156,68 @@ actor {
     let newAppointments = user.appointments.clone();
     newAppointments.add(user.appointmentIdCounter, newAppointment);
 
-    let updatedData : UserData = {
-      profile = user.profile;
-      hashedPassword = user.hashedPassword;
-      appointments = newAppointments;
-      appointmentIdCounter = user.appointmentIdCounter + 1;
-      patients = user.patients;
-      leads = user.leads;
-      staff = user.staff;
-      attendance = user.attendance;
-      attendanceIdCounter = user.attendanceIdCounter;
-      adminConfig = user.adminConfig;
-      staffPermissions = user.staffPermissions;
-      whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
-      appointmentsLastModified = Time.now();
-      patientsLastModified = user.patientsLastModified;
-      leadsLastModified = user.leadsLastModified;
-      staffLastModified = user.staffLastModified;
-      profileLastModified = user.profileLastModified;
-      prescriptionsLastModified = user.prescriptionsLastModified;
+    // If the patient doesn't exist in the patients map, automatically add them
+    if (not user.patients.containsKey(mobile)) {
+      let newPatient :
+        Patient = {
+        image = null;
+        name = patientName;
+        mobile;
+        area = "";
+        notes = "";
+        prescriptionHistory = List.empty<Prescription>();
+      };
+      let updatedPatients = user.patients.clone();
+      updatedPatients.add(mobile, newPatient);
+
+      let updatedData : UserData = {
+        profile = user.profile;
+        hashedPassword = user.hashedPassword;
+        appointments = newAppointments;
+        appointmentIdCounter = user.appointmentIdCounter + 1;
+        patients = updatedPatients;
+        leads = user.leads;
+        staff = user.staff;
+        attendance = user.attendance;
+        attendanceIdCounter = user.attendanceIdCounter;
+        adminConfig = user.adminConfig;
+        staffPermissions = user.staffPermissions;
+        whatsappTemplates = user.whatsappTemplates;
+        appointmentsLastModified = Time.now();
+        patientsLastModified = Time.now();
+        leadsLastModified = user.leadsLastModified;
+        staffLastModified = user.staffLastModified;
+        profileLastModified = user.profileLastModified;
+        prescriptionsLastModified = user.prescriptionsLastModified;
+      };
+
+      userData.add(caller, updatedData);
+    } else {
+      // If the patient exists, just update the appointments map
+      let updatedData : UserData = {
+        profile = user.profile;
+        hashedPassword = user.hashedPassword;
+        appointments = newAppointments;
+        appointmentIdCounter = user.appointmentIdCounter + 1;
+        patients = user.patients;
+        leads = user.leads;
+        staff = user.staff;
+        attendance = user.attendance;
+        attendanceIdCounter = user.attendanceIdCounter;
+        adminConfig = user.adminConfig;
+        staffPermissions = user.staffPermissions;
+        whatsappTemplates = user.whatsappTemplates;
+        appointmentsLastModified = Time.now();
+        patientsLastModified = user.patientsLastModified;
+        leadsLastModified = user.leadsLastModified;
+        staffLastModified = user.staffLastModified;
+        profileLastModified = user.profileLastModified;
+        prescriptionsLastModified = user.prescriptionsLastModified;
+      };
+
+      userData.add(caller, updatedData);
     };
 
-    userData.add(caller, updatedData);
     "Successfully stored appointment!";
   };
 
@@ -1102,7 +1354,6 @@ actor {
             adminConfig = data.adminConfig;
             staffPermissions = data.staffPermissions;
             whatsappTemplates = data.whatsappTemplates;
-            prescriptions = data.prescriptions;
             appointmentsLastModified = Time.now();
             patientsLastModified = data.patientsLastModified;
             leadsLastModified = data.leadsLastModified;
@@ -1149,7 +1400,6 @@ actor {
               adminConfig = data.adminConfig;
               staffPermissions = data.staffPermissions;
               whatsappTemplates = data.whatsappTemplates;
-              prescriptions = data.prescriptions;
               appointmentsLastModified = Time.now();
               patientsLastModified = data.patientsLastModified;
               leadsLastModified = data.leadsLastModified;
@@ -1192,7 +1442,6 @@ actor {
             adminConfig = data.adminConfig;
             staffPermissions = data.staffPermissions;
             whatsappTemplates = data.whatsappTemplates;
-            prescriptions = data.prescriptions;
             appointmentsLastModified = Time.now();
             patientsLastModified = data.patientsLastModified;
             leadsLastModified = data.leadsLastModified;
@@ -1223,6 +1472,7 @@ actor {
       mobile;
       area;
       notes;
+      prescriptionHistory = List.empty<Prescription>();
     };
 
     let currentTime = Time.now();
@@ -1244,7 +1494,6 @@ actor {
       adminConfig = user.adminConfig;
       staffPermissions = user.staffPermissions;
       whatsappTemplates = user.whatsappTemplates;
-      prescriptions = user.prescriptions;
       appointmentsLastModified = user.appointmentsLastModified;
       patientsLastModified = currentTime;
       leadsLastModified = user.leadsLastModified;
@@ -1257,14 +1506,25 @@ actor {
     "Successfully stored patient!";
   };
 
-  public query ({ caller }) func getPatients() : async [Patient] {
+  public query ({ caller }) func getPatients() : async [PatientView] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view patients");
     };
 
     switch (userData.get(caller)) {
       case (?data) {
-        data.patients.values().toArray();
+        data.patients.values().toArray().map(
+          func(patient) {
+            {
+              image = patient.image;
+              name = patient.name;
+              mobile = patient.mobile;
+              area = patient.area;
+              notes = patient.notes;
+              prescriptionHistory = patient.prescriptionHistory.toArray();
+            };
+          }
+        );
       };
       case (null) { [] };
     };
@@ -1278,7 +1538,7 @@ actor {
     switch (userData.get(caller)) {
       case (?data) {
         switch (data.patients.get(mobile)) {
-          case (?_) {
+          case (?existingPatient) {
             data.patients.remove(mobile);
             let updatedPatient : Patient = {
               image;
@@ -1286,6 +1546,7 @@ actor {
               mobile = newMobile;
               area;
               notes;
+              prescriptionHistory = existingPatient.prescriptionHistory;
             };
 
             let updatedData : UserData = {
@@ -1301,7 +1562,6 @@ actor {
               adminConfig = data.adminConfig;
               staffPermissions = data.staffPermissions;
               whatsappTemplates = data.whatsappTemplates;
-              prescriptions = data.prescriptions;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = Time.now();
               leadsLastModified = data.leadsLastModified;
@@ -1344,7 +1604,6 @@ actor {
               adminConfig = data.adminConfig;
               staffPermissions = data.staffPermissions;
               whatsappTemplates = data.whatsappTemplates;
-              prescriptions = data.prescriptions;
               appointmentsLastModified = data.appointmentsLastModified;
               patientsLastModified = Time.now();
               leadsLastModified = data.leadsLastModified;

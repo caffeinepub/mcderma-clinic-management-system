@@ -1,6 +1,24 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix lead save failure and admin password backend errors",
-  "requirements": []
+  "title": "Fix calendar visibility issue in appointment dialog",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Fix the calendar component in the New Appointment dialog so that the entire calendar is visible instead of only half being shown",
+      "acceptanceCriteria": [
+        "The calendar in the New Appointment dialog shows all dates of the current month without any being cut off",
+        "All calendar navigation controls (month/year selector, arrows) are fully visible",
+        "The calendar maintains proper spacing and layout on mobile devices",
+        "Users can see and select any date in the calendar without scrolling or resizing the dialog"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppointmentDialog.tsx",
+          "operation": "modify",
+          "description": "Fix the calendar visibility issue by adjusting the dialog content height and calendar container styling. Ensure the calendar popover has sufficient z-index and the dialog content allows proper calendar display without being cut off. Update the Popover content wrapper to prevent clipping and ensure full calendar month visibility on mobile devices."
+        }
+      ]
+    }
+  ]
 }

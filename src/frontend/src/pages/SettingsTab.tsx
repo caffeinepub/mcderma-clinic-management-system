@@ -1,235 +1,164 @@
 import { useState } from 'react';
-import { Download, RefreshCw, Package, Info, Share2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { useGetCallerUserProfile, useSaveCallerUserProfile, useGetAppointments, useGetPatients, useGetLeads } from '../hooks/useQueries';
+import { useGetCallerUserProfile, useSaveCallerUserProfile, useGetAppointments, useGetPatients, useGetLeads, useGetAllAttendance } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDateDDMMYY } from '../lib/utils';
-import { computeLeadAnalytics } from '../utils/leadAnalysis';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import AttendanceSection from '../components/settings/AttendanceSection';
+import { toast } from 'sonner';
+import { User, Share2, Download, Shield, MessageSquare, ClipboardCheck } from 'lucide-react';
 import WhatsAppTemplatesEditor from '../components/settings/WhatsAppTemplatesEditor';
 import AdminGateDialog from '../components/admin/AdminGateDialog';
 import PermissionsMatrix from '../components/admin/PermissionsMatrix';
+import AttendanceSection from '../components/settings/AttendanceSection';
 import { exportAttendanceData } from '../utils/attendanceExport';
-import { useGetAllAttendance } from '../hooks/useQueries';
+import ExportFormatDialog from '../components/ExportFormatDialog';
+import {
+  exportAppointmentsToPDF,
+  exportPatientsToPDF,
+  exportLeadsToPDF,
+  exportAttendanceToPDF,
+  exportAppointmentsToExcel,
+  exportPatientsToExcel,
+  exportLeadsToExcel,
+  exportAttendanceToExcel,
+} from '../utils/exportUtils';
 
-const SHARE_URL = 'https://mcderma-lef.caffeine.xyz/#caffeineAdminToken=f52248428fdf7d827891a887a39c0be1795c9577a6a77e47acaffdf8bea3de98';
+type ExportType = 'appointments' | 'patients' | 'leads' | 'attendance' | null;
 
 export default function SettingsTab() {
-  const { data: userProfile } = useGetCallerUserProfile();
+  const { data: profile } = useGetCallerUserProfile();
   const saveProfile = useSaveCallerUserProfile();
+  const { clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const { data: appointments = [] } = useGetAppointments();
   const { data: patients = [] } = useGetPatients();
   const { data: leads = [] } = useGetLeads();
-  const { data: allAttendance = [] } = useGetAllAttendance();
+  const { data: attendance = [] } = useGetAllAttendance();
 
-  const [username, setUsername] = useState(userProfile?.username || '');
-  const [clinicName, setClinicName] = useState(userProfile?.clinicName || '');
-  const [isSaving, setIsSaving] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [username, setUsername] = useState(profile?.username || '');
+  const [clinicName, setClinicName] = useState(profile?.clinicName || '');
   const [showAdminGate, setShowAdminGate] = useState(false);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportType, setExportType] = useState<ExportType>(null);
 
   const handleSaveProfile = async () => {
-    if (!username.trim() || !clinicName.trim()) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setIsSaving(true);
     try {
-      await saveProfile.mutateAsync({ username, clinicName });
-      toast.success('Profile updated successfully');
-    } catch (error: any) {
-      toast.error('Failed to update profile', {
-        description: error.message || 'Please try again',
+      await saveProfile.mutateAsync({
+        username,
+        clinicName,
       });
-    } finally {
-      setIsSaving(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      toast.error('Failed to update profile');
     }
+  };
+
+  const handleLogout = async () => {
+    await clear();
+    queryClient.clear();
+    toast.success('Logged out successfully');
   };
 
   const handleShareApp = async () => {
-    // Try native Web Share API first
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'McDerma Clinic App',
-          text: 'Install the McDerma Clinic app on your device',
-          url: SHARE_URL,
-        });
-        toast.success('Shared successfully');
-      } catch (error: any) {
-        // User cancelled or error occurred
-        if (error.name !== 'AbortError') {
-          // Fallback to clipboard
-          handleCopyToClipboard();
-        }
+    const shareData = {
+      title: 'McDerma Clinic App',
+      text: 'Check out this clinic management app!',
+      url: window.location.origin,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.origin);
+        toast.success('App link copied to clipboard');
       }
-    } else {
-      // Fallback to clipboard
-      handleCopyToClipboard();
+    } catch (error) {
+      toast.error('Failed to share app');
     }
   };
 
-  const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(SHARE_URL);
-      toast.success('Link copied to clipboard');
-    } catch (error) {
-      toast.error('Failed to copy link');
-    }
+  const handleExportClick = (type: ExportType) => {
+    setExportType(type);
+    setShowExportDialog(true);
   };
 
-  const handleManualSync = async () => {
-    toast.info('Syncing data...');
-    await queryClient.invalidateQueries();
-    toast.success('Data synced successfully');
-  };
-
-  const handleExportData = (format: 'json' | 'csv', dataType: 'all' | 'appointments' | 'patients' | 'leads' | 'attendance') => {
+  const handleExportConfirm = (format: 'pdf' | 'excel') => {
     try {
-      let data: any;
-      let filename: string;
-
-      if (dataType === 'attendance') {
-        const exportData = exportAttendanceData(allAttendance);
-        data = exportData;
-        filename = `attendance-export-${new Date().toISOString().split('T')[0]}`;
-      } else if (dataType === 'all') {
-        data = { appointments, patients, leads };
-        filename = `clinic-data-${new Date().toISOString().split('T')[0]}`;
-      } else if (dataType === 'appointments') {
-        data = appointments;
-        filename = `appointments-${new Date().toISOString().split('T')[0]}`;
-      } else if (dataType === 'patients') {
-        data = patients;
-        filename = `patients-${new Date().toISOString().split('T')[0]}`;
-      } else {
-        data = leads;
-        filename = `leads-${new Date().toISOString().split('T')[0]}`;
-      }
-
-      if (format === 'json') {
-        const jsonStr = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        // CSV export
-        let csvContent = '';
-        
-        if (dataType === 'attendance') {
-          // Attendance CSV format
-          csvContent = convertAttendanceToCSV(data);
-        } else if (dataType === 'appointments' || dataType === 'all') {
-          const appointmentsData = dataType === 'all' ? data.appointments : data;
-          csvContent = 'Patient Name,Mobile,Date,Time,Notes,Follow Up\n';
-          appointmentsData.forEach((apt: any) => {
-            const aptDate = new Date(Number(apt.appointmentTime) / 1000000);
-            const date = formatDateDDMMYY(aptDate);
-            const time = aptDate.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true 
-            });
-            csvContent += `"${apt.patientName}","${apt.mobile}","${date}","${time}","${apt.notes}","${apt.isFollowUp ? 'Yes' : 'No'}"\n`;
-          });
-        } else if (dataType === 'patients') {
-          csvContent = 'Name,Mobile,Area,Notes\n';
-          patients.forEach((patient: any) => {
-            csvContent += `"${patient.name}","${patient.mobile}","${patient.area}","${patient.notes}"\n`;
-          });
-        } else if (dataType === 'leads') {
-          csvContent = 'Lead Name,Mobile,Treatment,Area,Follow Up Date,Rating,Status\n';
-          leads.forEach((lead: any) => {
-            const followUpDateObj = new Date(Number(lead.followUpDate) / 1000000);
-            const followUpDate = formatDateDDMMYY(followUpDateObj);
-            csvContent += `"${lead.leadName}","${lead.mobile}","${lead.treatmentWanted}","${lead.area}","${followUpDate}",${lead.rating},"${lead.leadStatus}"\n`;
-          });
+      if (exportType === 'appointments') {
+        if (format === 'pdf') {
+          exportAppointmentsToPDF(appointments);
+        } else {
+          exportAppointmentsToExcel(appointments);
         }
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        toast.success('Appointments exported successfully');
+      } else if (exportType === 'patients') {
+        if (format === 'pdf') {
+          exportPatientsToPDF(patients);
+        } else {
+          exportPatientsToExcel(patients);
+        }
+        toast.success('Patients exported successfully');
+      } else if (exportType === 'leads') {
+        if (format === 'pdf') {
+          exportLeadsToPDF(leads);
+        } else {
+          exportLeadsToExcel(leads);
+        }
+        toast.success('Leads exported successfully');
+      } else if (exportType === 'attendance') {
+        const monthlyData = exportAttendanceData(attendance);
+        if (format === 'pdf') {
+          exportAttendanceToPDF(attendance, monthlyData);
+        } else {
+          exportAttendanceToExcel(attendance, monthlyData);
+        }
+        toast.success('Attendance exported successfully');
       }
-
-      toast.success(`${dataType === 'all' ? 'All data' : dataType.charAt(0).toUpperCase() + dataType.slice(1)} exported successfully`);
     } catch (error) {
+      console.error('Export error:', error);
       toast.error('Failed to export data');
     }
   };
 
-  const convertAttendanceToCSV = (data: any): string => {
-    let csv = '';
-    
-    // Header
-    csv += 'Staff Name,';
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                    'July', 'August', 'September', 'October', 'November', 'December'];
-    months.forEach(month => {
-      csv += `${month} - Absent Dates,${month} - Present Days,${month} - Absent Days,`;
-    });
-    csv += '\n';
-
-    // Data rows
-    Object.entries(data).forEach(([staffName, yearData]: [string, any]) => {
-      csv += `"${staffName}",`;
-      months.forEach((_, monthIndex) => {
-        const monthData = yearData.months[monthIndex];
-        if (monthData) {
-          const absentDates = monthData.absentDates.join('; ');
-          csv += `"${absentDates}",${monthData.presentDays},${monthData.absentDays},`;
-        } else {
-          csv += '"",0,0,';
-        }
-      });
-      csv += '\n';
-    });
-
-    return csv;
-  };
-
-  const handleOpenAdmin = () => {
-    setShowAdminGate(true);
-  };
-
-  const handleAdminUnlocked = () => {
-    setAdminUnlocked(true);
+  const handleAdminUnlock = () => {
+    setIsAdminUnlocked(true);
     setShowAdminGate(false);
   };
 
-  // Lead Analysis Data
-  const leadAnalysisData = computeLeadAnalytics(leads, appointments);
-
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+        <h1 className="text-3xl font-bold mb-2">Settings</h1>
         <p className="text-muted-foreground">Manage your profile and application settings</p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-          <TabsTrigger value="admin">Admin</TabsTrigger>
-          <TabsTrigger value="data">Data</TabsTrigger>
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsTrigger value="profile" className="gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="attendance" className="gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Attendance</span>
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </TabsTrigger>
+          <TabsTrigger value="admin" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Admin</span>
+          </TabsTrigger>
+          <TabsTrigger value="data" className="gap-2">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Data</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -248,6 +177,7 @@ export default function SettingsTab() {
                   placeholder="Enter your username"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="clinicName">Clinic Name</Label>
                 <Input
@@ -257,200 +187,109 @@ export default function SettingsTab() {
                   placeholder="Enter your clinic name"
                 />
               </div>
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Share App</CardTitle>
-              <CardDescription>Share the app installation link with others</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={handleShareApp} className="w-full" variant="outline">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share App
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistics</CardTitle>
-              <CardDescription>Overview of your clinic data</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary">{appointments.length}</div>
-                  <div className="text-sm text-muted-foreground">Appointments</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">{patients.length}</div>
-                  <div className="text-sm text-muted-foreground">Patients</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">{leads.length}</div>
-                  <div className="text-sm text-muted-foreground">Leads</div>
-                </div>
+              <div className="flex gap-3">
+                <Button onClick={handleSaveProfile} disabled={saveProfile.isPending}>
+                  {saveProfile.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+                <Button variant="outline" onClick={handleShareApp} className="gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Share App
+                </Button>
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Actions</CardTitle>
+              <CardDescription>Manage your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="destructive" onClick={handleLogout}>
+                Logout
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="attendance" className="space-y-4">
+        <TabsContent value="attendance">
           <AttendanceSection />
         </TabsContent>
 
-        <TabsContent value="whatsapp" className="space-y-4">
+        <TabsContent value="whatsapp">
           <WhatsAppTemplatesEditor />
         </TabsContent>
 
         <TabsContent value="admin" className="space-y-4">
-          {!adminUnlocked ? (
+          {!isAdminUnlocked ? (
             <Card>
               <CardHeader>
-                <CardTitle>Admin Section</CardTitle>
-                <CardDescription>Manage staff permissions and system settings</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Admin Section
+                </CardTitle>
+                <CardDescription>
+                  This section requires admin authentication
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleOpenAdmin}>
+                <Button onClick={() => setShowAdminGate(true)} className="gap-2">
+                  <Shield className="h-4 w-4" />
                   Unlock Admin Section
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Staff Permissions</CardTitle>
-                  <CardDescription>Manage staff access and permissions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PermissionsMatrix />
-                </CardContent>
-              </Card>
-            </>
+            <PermissionsMatrix />
           )}
         </TabsContent>
 
-        <TabsContent value="data" className="space-y-4">
+        <TabsContent value="data">
           <Card>
             <CardHeader>
-              <CardTitle>Lead Analysis</CardTitle>
-              <CardDescription>Conversion analysis by treatment category</CardDescription>
+              <CardTitle>Export Data</CardTitle>
+              <CardDescription>
+                Download your clinic data by category in PDF or Excel format
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={leadAnalysisData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="generated" fill="hsl(var(--primary))" name="Generated" />
-                    <Bar dataKey="converted" fill="hsl(var(--chart-2))" name="Converted" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Management</CardTitle>
-              <CardDescription>Export and sync your clinic data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Manual Sync</h3>
-                <Button onClick={handleManualSync} variant="outline" className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Sync Now
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button onClick={() => handleExportClick('appointments')} variant="outline" className="gap-2 justify-start">
+                  <Download className="h-4 w-4" />
+                  Export Appointments
+                </Button>
+                <Button onClick={() => handleExportClick('patients')} variant="outline" className="gap-2 justify-start">
+                  <Download className="h-4 w-4" />
+                  Export Patients
+                </Button>
+                <Button onClick={() => handleExportClick('leads')} variant="outline" className="gap-2 justify-start">
+                  <Download className="h-4 w-4" />
+                  Export Leads
+                </Button>
+                <Button onClick={() => handleExportClick('attendance')} variant="outline" className="gap-2 justify-start">
+                  <Download className="h-4 w-4" />
+                  Export Attendance
                 </Button>
               </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="text-sm font-medium mb-2">Export Data</h3>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleExportData('json', 'all')} variant="outline" className="flex-1">
-                      <Download className="h-4 w-4 mr-2" />
-                      All Data (JSON)
-                    </Button>
-                    <Button onClick={() => handleExportData('csv', 'all')} variant="outline" className="flex-1">
-                      <Download className="h-4 w-4 mr-2" />
-                      All Data (CSV)
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleExportData('csv', 'appointments')} variant="outline" className="flex-1">
-                      Appointments
-                    </Button>
-                    <Button onClick={() => handleExportData('csv', 'patients')} variant="outline" className="flex-1">
-                      Patients
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleExportData('csv', 'leads')} variant="outline" className="flex-1">
-                      Leads
-                    </Button>
-                    <Button onClick={() => handleExportData('csv', 'attendance')} variant="outline" className="flex-1">
-                      Attendance
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <p>
-                  Your data is automatically synced in the background. Use manual sync if you need to refresh immediately.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>About</CardTitle>
-              <CardDescription>Application information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Version 1.0.0</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Built with love using{' '}
-                <a
-                  href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                >
-                  caffeine.ai
-                </a>
-              </p>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {showAdminGate && (
-        <AdminGateDialog
-          open={showAdminGate}
-          onOpenChange={setShowAdminGate}
-          onUnlocked={handleAdminUnlocked}
-        />
-      )}
+      <AdminGateDialog
+        open={showAdminGate}
+        onOpenChange={setShowAdminGate}
+        onUnlocked={handleAdminUnlock}
+      />
+
+      <ExportFormatDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        onConfirm={handleExportConfirm}
+        title="Select Export Format"
+        description="Choose PDF or Excel format for your export"
+      />
     </div>
   );
 }

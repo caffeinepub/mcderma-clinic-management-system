@@ -1,70 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useGetStaff, useGetPermissionsMatrix, useSetStaffPermissions, useAddStaff } from '../../hooks/useQueries';
-import { Shield, Plus, Save } from 'lucide-react';
+import { useGetStaff, useAddStaff } from '../../hooks/useQueries';
+import { Users, Plus } from 'lucide-react';
+import type { StaffPermissions } from '../../hooks/useQueries';
 
 const ROLE_OPTIONS = [
   'Admin',
-  'Receptionist',
   'Doctor',
+  'Receptionist',
   'Nurse',
   'Patient Relationship Executive',
 ];
 
 export default function PermissionsMatrix() {
   const { data: staffList = [] } = useGetStaff();
-  const { data: allPermissions = {} } = useGetPermissionsMatrix();
-  const savePermissions = useSetStaffPermissions();
   const addStaff = useAddStaff();
 
-  const [permissions, setPermissions] = useState<Record<string, any>>({});
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffRole, setNewStaffRole] = useState('');
-
-  useEffect(() => {
-    setPermissions(allPermissions);
-  }, [allPermissions]);
-
-  const sections = [
-    { id: 'canAccessAppointments', label: 'Appointment tab' },
-    { id: 'canAccessPatients', label: 'Patient tab' },
-    { id: 'canAccessLeads', label: 'Lead tab' },
-    { id: 'canAccessSettings', label: 'Settings' },
-    { id: 'hasFullControl', label: 'Full control' },
-  ];
-
-  const handleTogglePermission = (staffName: string, permissionId: string) => {
-    setPermissions((prev) => ({
-      ...prev,
-      [staffName]: {
-        ...prev[staffName],
-        [permissionId]: !prev[staffName]?.[permissionId],
-      },
-    }));
-  };
-
-  const handleSavePermissions = async () => {
-    try {
-      // Save all permissions
-      for (const [staffName, perms] of Object.entries(permissions)) {
-        await savePermissions.mutateAsync({
-          staffName,
-          permissions: perms as any,
-        });
-      }
-      toast.success('Permissions saved successfully');
-    } catch (error: any) {
-      toast.error('Failed to save permissions', {
-        description: error.message || 'Please try again',
-      });
-    }
-  };
 
   const handleAddStaff = async () => {
     if (!newStaffName.trim() || !newStaffRole.trim()) {
@@ -73,22 +32,19 @@ export default function PermissionsMatrix() {
     }
 
     try {
+      const defaultPermissions: StaffPermissions = {
+        canAccessAppointments: false,
+        canAccessPatients: false,
+        canAccessLeads: false,
+        canAccessSettings: false,
+        hasFullControl: false,
+      };
+
       await addStaff.mutateAsync({
         name: newStaffName,
         role: newStaffRole,
+        permissions: defaultPermissions,
       });
-
-      // Initialize permissions for new staff
-      setPermissions((prev) => ({
-        ...prev,
-        [newStaffName]: {
-          canAccessAppointments: false,
-          canAccessPatients: false,
-          canAccessLeads: false,
-          canAccessSettings: false,
-          hasFullControl: false,
-        },
-      }));
 
       toast.success('Staff member added successfully');
       setNewStaffName('');
@@ -106,11 +62,11 @@ export default function PermissionsMatrix() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Staff Permissions Matrix
+            <Users className="h-5 w-5" />
+            Staff Management
           </CardTitle>
           <CardDescription>
-            Configure which sections each staff member can access
+            Add and manage staff members for attendance tracking
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -120,25 +76,31 @@ export default function PermissionsMatrix() {
               Add Staff Member
             </Button>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-2 p-4 border rounded-lg bg-muted/50">
-              <Input
-                placeholder="Staff name"
-                value={newStaffName}
-                onChange={(e) => setNewStaffName(e.target.value)}
-                className="flex-1"
-              />
-              <Select value={newStaffRole} onValueChange={setNewStaffRole}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-3 p-4 border rounded-lg bg-muted/50">
+              <div className="space-y-2">
+                <Label htmlFor="newStaffName">Staff Name</Label>
+                <Input
+                  id="newStaffName"
+                  placeholder="Enter staff name"
+                  value={newStaffName}
+                  onChange={(e) => setNewStaffName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newStaffRole">Staff Role</Label>
+                <Select value={newStaffRole} onValueChange={setNewStaffRole}>
+                  <SelectTrigger id="newStaffRole">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex gap-2">
                 <Button onClick={handleAddStaff} disabled={addStaff.isPending}>
                   {addStaff.isPending ? 'Adding...' : 'Add'}
@@ -156,56 +118,25 @@ export default function PermissionsMatrix() {
 
           {staffList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No staff members found. Add staff members to configure permissions.</p>
+              <p>No staff members found. Add staff members to track attendance.</p>
             </div>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Staff Name</th>
-                      <th className="text-left p-3 font-medium">Role</th>
-                      {sections.map((section) => (
-                        <th key={section.id} className="text-center p-3 font-medium text-sm">
-                          {section.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {staffList.map((staff, index) => (
-                      <tr
-                        key={staff.name}
-                        className={`border-b hover:bg-muted/50 transition-colors ${
-                          index % 2 === 0 ? 'bg-muted/20' : ''
-                        }`}
-                      >
-                        <td className="p-3 font-medium">{staff.name}</td>
-                        <td className="p-3 text-sm text-muted-foreground">{staff.role}</td>
-                        {sections.map((section) => (
-                          <td key={section.id} className="p-3 text-center">
-                            <div className="flex justify-center">
-                              <Checkbox
-                                checked={permissions[staff.name]?.[section.id] || false}
-                                onCheckedChange={() => handleTogglePermission(staff.name, section.id)}
-                              />
-                            </div>
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Staff List</h4>
+              <div className="border rounded-lg divide-y">
+                {staffList.map((staff) => (
+                  <div
+                    key={staff.name}
+                    className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <div className="font-medium">{staff.name}</div>
+                      <div className="text-sm text-muted-foreground">{staff.role}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleSavePermissions} disabled={savePermissions.isPending} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {savePermissions.isPending ? 'Saving...' : 'Save All Permissions'}
-                </Button>
-              </div>
-            </>
+            </div>
           )}
         </CardContent>
       </Card>

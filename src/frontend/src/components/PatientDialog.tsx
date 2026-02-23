@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { Patient } from '../backend';
+import type { PatientView } from '../hooks/useQueries';
 import { ExternalBlob } from '../backend';
 import { useAddPatient, useUpdatePatient } from '../hooks/useQueries';
 import { toast } from 'sonner';
@@ -17,10 +17,10 @@ import ContactImportReviewDialog from './ContactImportReviewDialog';
 interface PatientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  patient?: Patient;
+  prefilledData?: PatientView;
 }
 
-export default function PatientDialog({ open, onOpenChange, patient }: PatientDialogProps) {
+export default function PatientDialog({ open, onOpenChange, prefilledData }: PatientDialogProps) {
   const addPatient = useAddPatient();
   const updatePatient = useUpdatePatient();
   const { pickContact } = useContactPicker();
@@ -56,16 +56,16 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
   });
 
   useEffect(() => {
-    if (patient) {
+    if (prefilledData) {
       setFormData({
-        name: patient.name,
-        mobile: patient.mobile,
-        area: patient.area,
-        notes: patient.notes,
+        name: prefilledData.name,
+        mobile: prefilledData.mobile,
+        area: prefilledData.area,
+        notes: prefilledData.notes,
       });
 
-      if (patient.image) {
-        setImagePreview(patient.image.getDirectURL());
+      if (prefilledData.image) {
+        setImagePreview(prefilledData.image.getDirectURL());
       }
     } else {
       setFormData({
@@ -77,7 +77,7 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
       setImageFile(null);
       setImagePreview(null);
     }
-  }, [patient, open]);
+  }, [prefilledData, open]);
 
   useEffect(() => {
     if (!open && isCameraActive) {
@@ -148,13 +148,13 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
         const arrayBuffer = await imageFile.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         imageBlob = ExternalBlob.fromBytes(uint8Array);
-      } else if (patient?.image) {
-        imageBlob = patient.image;
+      } else if (prefilledData?.image) {
+        imageBlob = prefilledData.image;
       }
 
-      if (patient) {
+      if (prefilledData) {
         await updatePatient.mutateAsync({
-          oldMobile: patient.mobile,
+          oldMobile: prefilledData.mobile,
           patient: {
             image: imageBlob,
             name: formData.name,
@@ -188,7 +188,7 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{patient ? 'Edit Patient' : 'New Patient'}</DialogTitle>
+            <DialogTitle>{prefilledData ? 'Edit Patient' : 'New Patient'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-end">
@@ -358,7 +358,7 @@ export default function PatientDialog({ open, onOpenChange, patient }: PatientDi
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
-                ) : patient ? (
+                ) : prefilledData ? (
                   'Update'
                 ) : (
                   'Add'

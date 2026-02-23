@@ -14,10 +14,17 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
-export interface Patient {
+export type Time = bigint;
+export interface Attendance {
+    name: string;
+    role: string;
+    timestamp: bigint;
+}
+export interface PatientView {
     area: string;
     name: string;
     notes: string;
+    prescriptionHistory: Array<Prescription>;
     image?: ExternalBlob;
     mobile: string;
 }
@@ -33,16 +40,24 @@ export interface Lead {
     expectedTreatmentDate: bigint;
     followUpDate: bigint;
 }
-export interface AdminConfig {
-    hashedSecurityAnswer?: Uint8Array;
-    securityQuestion: string;
-    hashedPassword?: Uint8Array;
+export interface StaffPermissions {
+    hasFullControl: boolean;
+    canAccessSettings: boolean;
+    canAccessAppointments: boolean;
+    canAccessPatients: boolean;
+    canAccessLeads: boolean;
 }
-export type Time = bigint;
-export interface Attendance {
+export interface Staff {
     name: string;
     role: string;
-    timestamp: bigint;
+}
+export interface Appointment {
+    id: bigint;
+    appointmentTime: bigint;
+    notes: string;
+    patientName: string;
+    mobile: string;
+    isFollowUp: boolean;
 }
 export interface Prescription {
     doctorNotes: string;
@@ -68,13 +83,10 @@ export interface Prescription {
     appointmentId?: bigint;
     consultationType: Variant_telemedicine_inPerson;
 }
-export interface Appointment {
-    id: bigint;
-    appointmentTime: bigint;
-    notes: string;
-    patientName: string;
-    mobile: string;
-    isFollowUp: boolean;
+export interface AdminConfig {
+    hashedSecurityAnswer?: Uint8Array;
+    securityQuestion: string;
+    hashedPassword?: Uint8Array;
 }
 export interface UserProfile {
     username: string;
@@ -98,23 +110,26 @@ export interface backendInterface {
     addAppointment(patientName: string, mobile: string, appointmentTime: bigint, notes: string): Promise<string>;
     addLead(leadName: string, mobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     addPatient(image: ExternalBlob | null, name: string, mobile: string, area: string, notes: string): Promise<string>;
+    addStaff(name: string, role: string, permissions: StaffPermissions): Promise<string>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createAttendance(name: string, role: string): Promise<boolean>;
     deleteAppointment(id: bigint): Promise<string>;
     deleteLead(mobile: string): Promise<string>;
     deletePatient(mobile: string): Promise<string>;
     deletePrescription(patientMobile: string, id: bigint): Promise<string>;
+    deleteStaff(staffName: string): Promise<string>;
     getAdminConfig(): Promise<AdminConfig | null>;
-    getAllPrescriptions(): Promise<Array<Prescription>>;
     getAppointments(): Promise<Array<Appointment>>;
     getAttendance(): Promise<Array<Attendance>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getLeads(): Promise<Array<Lead>>;
-    getPatients(): Promise<Array<Patient>>;
+    getPatients(): Promise<Array<PatientView>>;
     getPrescriptionById(patientMobile: string, id: bigint): Promise<Prescription | null>;
     getPrescriptions(patientMobile: string): Promise<Array<Prescription>>;
     getPrescriptionsLastModified(): Promise<Time | null>;
+    getStaff(): Promise<Array<Staff>>;
+    getStaffPermissions(staffName: string): Promise<StaffPermissions | null>;
     getTodaysAppointmentsSorted(): Promise<Array<Appointment>>;
     getTomorrowAppointmentsSorted(): Promise<Array<Appointment>>;
     getUpcomingAppointmentsSorted(): Promise<Array<Appointment>>;
@@ -132,5 +147,6 @@ export interface backendInterface {
     updateAttendance(_timestamp: string, name: string, role: string): Promise<boolean>;
     updateLead(mobile: string, leadName: string, newMobile: string, treatmentWanted: string, area: string, followUpDate: bigint, expectedTreatmentDate: bigint, rating: number, doctorRemark: string, addToAppointment: boolean, leadStatus: string): Promise<string>;
     updatePatient(mobile: string, image: ExternalBlob | null, name: string, newMobile: string, area: string, notes: string): Promise<string>;
+    updateStaffPermissions(staffName: string, permissions: StaffPermissions): Promise<string>;
     verifyAdminPassword(hashedPassword: Uint8Array): Promise<boolean>;
 }

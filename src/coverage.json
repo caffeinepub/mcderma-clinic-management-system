@@ -1,44 +1,35 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T19:01:18.058Z",
+  "generatedAt": "2026-02-23T16:29:37.977Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 0,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the 'Failed to save lead' error in the lead entry form by implementing or correcting the backend addLead function to properly store lead data with all fields (name, mobile, treatment, followUpDate, consultationDate, rating, remarks, status)",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Fix the 'backend function not implemented' error in admin password setup by implementing the missing backend functions for admin password management (setAdminPassword, unlockAdmin, or equivalent functions referenced by AdminGateDialog)",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Fix the calendar component in the New Appointment dialog so that the entire calendar is visible instead of only half being shown. The calendar should display all weeks of the month with proper spacing and not be cut off.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/AppointmentDialog.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AppointmentDialog.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/admin/AdminGateDialog.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/components/AppointmentDialog.tsx",
+    "frontend/src/index.css",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

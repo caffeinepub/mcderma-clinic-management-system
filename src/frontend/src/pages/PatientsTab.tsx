@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import PatientCard from '../components/PatientCard';
 import PatientDialog from '../components/PatientDialog';
 import { useGetPatients } from '../hooks/useQueries';
-import type { Patient } from '../backend';
+import type { PatientView } from '../hooks/useQueries';
 
 export default function PatientsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<Patient | undefined>(undefined);
+  const [editingPatient, setEditingPatient] = useState<PatientView | undefined>(undefined);
 
   const { data: patients = [], isLoading } = useGetPatients();
 
@@ -21,21 +21,16 @@ export default function PatientsTab() {
     patient.area.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleEdit = (patient: Patient) => {
-    setEditingPatient(patient);
-    setIsDialogOpen(true);
-  };
-
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingPatient(undefined);
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-4 pb-20">
       {/* Header Section */}
       <Card className="border-none shadow-sm bg-gradient-to-br from-primary/5 via-background to-background">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10">
               <Users className="h-6 w-6 text-primary" />
@@ -52,7 +47,7 @@ export default function PatientsTab() {
 
       {/* Search Bar */}
       <Card className="shadow-sm">
-        <CardContent className="pt-6">
+        <CardContent className="pt-4">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -98,7 +93,6 @@ export default function PatientsTab() {
             <PatientCard
               key={patient.mobile}
               patient={patient}
-              onEdit={handleEdit}
             />
           ))}
         </div>
@@ -117,7 +111,7 @@ export default function PatientsTab() {
       <PatientDialog
         open={isDialogOpen}
         onOpenChange={handleCloseDialog}
-        patient={editingPatient}
+        prefilledData={editingPatient}
       />
     </div>
   );

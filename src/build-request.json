@@ -1,55 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Fix lead save failure and admin password backend errors",
+  "title": "Fix calendar visibility issue in appointment dialog",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the 'Failed to save lead' error in the lead entry form by implementing or correcting the backend addLead function to properly store lead data with all fields (name, mobile, treatment, followUpDate, consultationDate, rating, remarks, status)",
-      "target": "backend",
+      "text": "Fix the calendar component in the New Appointment dialog so that the entire calendar is visible instead of only half being shown. The calendar should display all weeks of the month with proper spacing and not be cut off.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-last"
         ],
         "quotes": [
-          "In lead entry it's showing fail to save lead error"
+          "There is issue with calender only half calender is visible"
         ]
       },
       "acceptanceCriteria": [
-        "Lead entry form successfully saves new leads without showing 'Failed to save lead' error",
-        "All lead fields are properly persisted to backend storage",
-        "Lead data is immediately queryable after save"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Fix the 'backend function not implemented' error in admin password setup by implementing the missing backend functions for admin password management (setAdminPassword, unlockAdmin, or equivalent functions referenced by AdminGateDialog)",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "in admin setup password it's showing backend function not implemented error"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Admin password setup completes successfully without 'backend function not implemented' error",
-        "Admin can set initial password with security question",
-        "Admin can unlock with correct password after setup",
-        "Password is properly hashed and stored in backend"
+        "The calendar in the New Appointment dialog shows all dates of the current month without any being cut off",
+        "All calendar navigation controls (month/year selector, arrows) are fully visible",
+        "The calendar maintains proper spacing and layout on mobile devices",
+        "Users can see and select any date in the calendar without scrolling or resizing the dialog"
       ]
     }
   ],
   "constraints": [
-    "Maintain existing data structures for leads and admin authentication",
-    "Do not modify the single-actor architecture",
-    "Ensure backward compatibility with existing stored data"
+    "Do not modify the immutable frontend paths: useInternetIdentity.ts, useInternetIdentity.tsx, useActor.ts, main.tsx, or components/ui directory",
+    "Maintain the existing React + Tailwind + Shadcn stack",
+    "Ensure the fix works on mobile devices as shown in the screenshot"
   ],
   "nonGoals": [
-    "Changing the UI or form fields for lead entry",
-    "Modifying the admin authentication flow in frontend",
-    "Adding new features beyond fixing the reported errors"
+    "Changing the calendar component library",
+    "Modifying other dialog components",
+    "Adding new calendar features or functionality"
   ],
   "imageRequirements": {
     "required": [],

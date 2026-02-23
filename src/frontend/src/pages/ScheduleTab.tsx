@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function ScheduleTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<{ appointment: Appointment; id: bigint } | undefined>(undefined);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | undefined>(undefined);
   const [isFollowUpDialogOpen, setIsFollowUpDialogOpen] = useState(false);
   const [followUpAppointment, setFollowUpAppointment] = useState<Appointment | null>(null);
   const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
@@ -29,7 +29,7 @@ export default function ScheduleTab() {
   const now = useNow(60000);
 
   const handleEdit = (appointment: Appointment) => {
-    setEditingAppointment({ appointment, id: appointment.id });
+    setEditingAppointment(appointment);
     setIsDialogOpen(true);
   };
 
@@ -71,7 +71,7 @@ export default function ScheduleTab() {
   const isLoading = loadingToday || loadingTomorrow || loadingUpcoming;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Next Appointment Widget */}
       <NextAppointmentWidget appointments={allAppointments} currentTime={now} />
 
@@ -88,7 +88,7 @@ export default function ScheduleTab() {
 
       {/* Today's Schedule */}
       <section>
-        <h2 className="text-xl font-semibold mb-3 text-foreground">Today's Schedule</h2>
+        <h2 className="text-xl font-semibold mb-2 text-foreground">Today's Schedule</h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -117,7 +117,7 @@ export default function ScheduleTab() {
 
       {/* Tomorrow's Schedule */}
       <section>
-        <h2 className="text-xl font-semibold mb-3 text-foreground">Tomorrow</h2>
+        <h2 className="text-xl font-semibold mb-2 text-foreground">Tomorrow</h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -144,7 +144,7 @@ export default function ScheduleTab() {
 
       {/* Upcoming Schedule */}
       <section>
-        <h2 className="text-xl font-semibold mb-3 text-foreground">Upcoming</h2>
+        <h2 className="text-xl font-semibold mb-2 text-foreground">Upcoming</h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -185,8 +185,7 @@ export default function ScheduleTab() {
       <AppointmentDialog
         open={isDialogOpen}
         onOpenChange={handleCloseDialog}
-        appointment={editingAppointment?.appointment}
-        appointmentId={editingAppointment?.id}
+        appointment={editingAppointment}
       />
 
       {/* Follow Up Date/Time Dialog */}

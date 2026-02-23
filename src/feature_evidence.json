@@ -1,4 +1,26 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-fix-the-calendar-component-in-the-new-appointment-dialog-so-that-the-entire-calendar-is-visible-instead-of-only-half-being-shown-the-calendar-should-display-all-weeks-of-the-month-with-proper-spacing-and-not-be-cut-off",
+      "featureTitle": "Fix the calendar component in the New Appointment dialog so that the entire calendar is visible instead of only half being shown. The calendar should display all weeks of the month with proper spacing and not be cut off.",
+      "files": [
+        "frontend/src/components/AppointmentDialog.tsx"
+      ],
+      "components": [
+        "camera@1.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

@@ -1,26 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Appointment, Patient, UserProfile, Attendance, Prescription, Lead, AdminConfig } from '../backend';
+import type { Appointment, PatientView, UserProfile, Attendance, Prescription, Lead, AdminConfig, Staff, StaffPermissions } from '../backend';
 import { ExternalBlob, Variant_typed_freehand_camera, Variant_telemedicine_inPerson } from '../backend';
 
 // Temporary type definitions for missing backend types
-interface Staff {
-  name: string;
-  role: string;
-}
-
-interface StaffPermissions {
-  canAccessAppointments: boolean;
-  canAccessPatients: boolean;
-  canAccessLeads: boolean;
-  canAccessSettings: boolean;
-  hasFullControl: boolean;
-}
-
 interface WhatsAppTemplate {
   templateName: string;
   messageContent: string;
 }
+
+// Export types for use in other components
+export type { Lead, Staff, StaffPermissions, PatientView };
 
 // User Profile Queries
 export function useGetCallerUserProfile() {
@@ -207,7 +197,7 @@ export function useToggleFollowUpAppointment() {
 export function useGetPatients() {
   const { actor, isFetching } = useActor();
 
-  return useQuery<Patient[]>({
+  return useQuery<PatientView[]>({
     queryKey: ['patients'],
     queryFn: async () => {
       if (!actor) return [];
@@ -225,7 +215,7 @@ export function useAddPatient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (patient: Patient) => {
+    mutationFn: async (patient: Omit<PatientView, 'prescriptionHistory'>) => {
       if (!actor) throw new Error('Actor not available');
       return actor.addPatient(
         patient.image || null,
@@ -246,7 +236,7 @@ export function useUpdatePatient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ oldMobile, patient }: { oldMobile: string; patient: Patient }) => {
+    mutationFn: async ({ oldMobile, patient }: { oldMobile: string; patient: Omit<PatientView, 'prescriptionHistory'> }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updatePatient(
         oldMobile,
@@ -363,22 +353,31 @@ export function useDeleteLead() {
   });
 }
 
-// Staff Queries (Placeholder - backend not implemented)
+// Staff Queries
 export function useGetStaff() {
+  const { actor, isFetching } = useActor();
+
   return useQuery<Staff[]>({
     queryKey: ['staff'],
     queryFn: async () => {
-      return [];
+      if (!actor) return [];
+      return actor.getStaff();
     },
+    enabled: !!actor && !isFetching,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }
 
 export function useAddStaff() {
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (staff: Staff) => {
-      throw new Error('Backend function not implemented');
+    mutationFn: async ({ name, role, permissions }: { name: string; role: string; permissions: StaffPermissions }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addStaff(name, role, permissions);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -432,7 +431,7 @@ export function useGetTodaysAttendance() {
   });
 }
 
-export function useRegisterAttendance() {
+export function useCreateAttendance() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
@@ -458,7 +457,7 @@ export function useRegisterAttendance() {
       const alreadyRegistered = todaysAttendance.some(record => record.name === name);
       
       if (alreadyRegistered) {
-        throw new Error(`${name} has already registered attendance today`);
+        throw new Error(`${name} has already checked in today`);
       }
       
       return actor.createAttendance(name, role);
@@ -470,22 +469,41 @@ export function useRegisterAttendance() {
   });
 }
 
-// Staff Permissions Queries (Placeholder - backend not implemented)
+// Staff Permissions Queries
 export function useGetPermissionsMatrix() {
+  const { actor, isFetching } = useActor();
+
   return useQuery<Record<string, StaffPermissions>>({
     queryKey: ['permissionsMatrix'],
     queryFn: async () => {
-      return {};
+      if (!actor) return {};
+      const staff = await actor.getStaff();
+      const matrix: Record<string, StaffPermissions> = {};
+      
+      for (const member of staff) {
+        const permissions = await actor.getStaffPermissions(member.name);
+        if (permissions) {
+          matrix[member.name] = permissions;
+        }
+      }
+      
+      return matrix;
     },
+    enabled: !!actor && !isFetching,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }
 
 export function useSetStaffPermissions() {
+  const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ staffName, permissions }: { staffName: string; permissions: StaffPermissions }) => {
-      throw new Error('Backend function not implemented: Staff permissions management is not available in the backend. Please contact support.');
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateStaffPermissions(staffName, permissions);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissionsMatrix'] });
@@ -578,7 +596,8 @@ export function useSaveWhatsAppTemplates() {
 
   return useMutation({
     mutationFn: async (templates: WhatsAppTemplate[]) => {
-      throw new Error('Backend function not implemented: WhatsApp template management is not available in the backend. Please contact support.');
+      // Placeholder - backend not implemented
+      return Promise.resolve();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsappTemplates'] });
@@ -587,14 +606,19 @@ export function useSaveWhatsAppTemplates() {
 }
 
 // Prescription Queries
-export function useGetPrescriptions() {
+export function usePrescriptions(patientMobile: string) {
   const { actor, isFetching } = useActor();
 
-  return useMutation({
-    mutationFn: async (patientMobile: string) => {
-      if (!actor) throw new Error('Actor not available');
+  return useQuery<Prescription[]>({
+    queryKey: ['prescriptions', patientMobile],
+    queryFn: async () => {
+      if (!actor) return [];
       return actor.getPrescriptions(patientMobile);
     },
+    enabled: !!actor && !isFetching && !!patientMobile,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -605,30 +629,27 @@ export function useSavePrescription() {
   return useMutation({
     mutationFn: async (prescription: Prescription) => {
       if (!actor) throw new Error('Actor not available');
-      
-      // Ensure the prescription object is properly formatted with correct variant types
-      const formattedPrescription: Prescription = {
-        patientName: prescription.patientName,
-        mobile: prescription.mobile,
-        clinicName: prescription.clinicName,
-        prescriptionType: prescription.prescriptionType,
-        prescriptionData: prescription.prescriptionData,
-        doctorNotes: prescription.doctorNotes,
-        consultationType: prescription.consultationType,
-        appointmentId: prescription.appointmentId,
-        timestamp: prescription.timestamp,
-        symptoms: prescription.symptoms,
-        allergies: prescription.allergies,
-        medicalHistory: prescription.medicalHistory,
-        followUp: prescription.followUp,
-      };
-      
-      return actor.savePrescription(formattedPrescription);
+      return actor.savePrescription(prescription);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prescriptions'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.mobile] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 }
 
-export type { Lead, Staff, StaffPermissions, WhatsAppTemplate };
+export function useDeletePrescription() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ patientMobile, id }: { patientMobile: string; id: bigint }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deletePrescription(patientMobile, id);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.patientMobile] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+}

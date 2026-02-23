@@ -1,9 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Image as ImageIcon, Camera } from 'lucide-react';
 import { formatDateTime12Hour } from '../../lib/utils';
+import type { Prescription } from '../../backend';
 
 interface PrescriptionHistoryListProps {
-  prescriptions: any[];
+  prescriptions: Prescription[];
   isLoading: boolean;
 }
 
@@ -27,11 +28,11 @@ export default function PrescriptionHistoryList({ prescriptions, isLoading }: Pr
   }
 
   return (
-    <div className="space-y-3 max-h-[300px] overflow-y-auto">
+    <div className="space-y-3 max-h-[400px] overflow-y-auto">
       {prescriptions.map((prescription, index) => {
-        const isTyped = prescription.prescriptionType.__kind__ === 'typed';
-        const isFreehand = prescription.prescriptionType.__kind__ === 'freehand';
-        const isCamera = prescription.prescriptionType.__kind__ === 'camera';
+        const isTyped = prescription.prescriptionData.__kind__ === 'typed';
+        const isFreehand = prescription.prescriptionData.__kind__ === 'freehand';
+        const isCamera = prescription.prescriptionData.__kind__ === 'camera';
 
         return (
           <Card key={index} className="hover:shadow-md transition-shadow">
@@ -55,21 +56,27 @@ export default function PrescriptionHistoryList({ prescriptions, isLoading }: Pr
                     </span>
                   </div>
                   
-                  {isTyped && prescription.prescriptionData.typed && (
+                  {isTyped && prescription.prescriptionData.__kind__ === 'typed' && (
                     <p className="text-sm text-foreground line-clamp-2">
                       {prescription.prescriptionData.typed}
                     </p>
                   )}
                   
-                  {(isFreehand || isCamera) && (
+                  {isFreehand && prescription.prescriptionData.__kind__ === 'freehand' && (
                     <div className="mt-2">
                       <img
-                        src={
-                          isFreehand
-                            ? prescription.prescriptionData.freehand.getDirectURL()
-                            : prescription.prescriptionData.camera.getDirectURL()
-                        }
-                        alt="Prescription"
+                        src={prescription.prescriptionData.freehand.getDirectURL()}
+                        alt="Freehand Prescription"
+                        className="w-full h-auto rounded border max-h-[200px] object-contain"
+                      />
+                    </div>
+                  )}
+
+                  {isCamera && prescription.prescriptionData.__kind__ === 'camera' && (
+                    <div className="mt-2">
+                      <img
+                        src={prescription.prescriptionData.camera.getDirectURL()}
+                        alt="Camera Prescription"
                         className="w-full h-auto rounded border max-h-[200px] object-contain"
                       />
                     </div>

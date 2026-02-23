@@ -1,250 +1,368 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Appointment } from '../backend';
-import { format } from 'date-fns';
-import { useAddAppointment, useUpdateAppointment } from '../hooks/useQueries';
+import { useAddAppointment, useUpdateAppointment, useGetPatients } from '../hooks/useQueries';
 import { toast } from 'sonner';
-import { Loader2, Contact } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import type { Appointment } from '../backend';
 import { useContactPicker } from '../hooks/useContactPicker';
-import { normalizePhone } from '../utils/phone';
 import ContactImportReviewDialog from './ContactImportReviewDialog';
+import { normalizePhone } from '../utils/phone';
 
 interface AppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment?: Appointment;
-  appointmentId?: bigint;
   prefilledData?: {
-    patientName?: string;
-    mobile?: string;
+    patientName: string;
+    mobile: string;
+    appointmentTime?: Date;
+    notes?: string;
   };
 }
 
-export default function AppointmentDialog({ open, onOpenChange, appointment, appointmentId, prefilledData }: AppointmentDialogProps) {
+export default function AppointmentDialog({
+  open,
+  onOpenChange,
+  appointment,
+  prefilledData,
+}: AppointmentDialogProps) {
+  const isEditing = !!appointment;
   const addAppointment = useAddAppointment();
   const updateAppointment = useUpdateAppointment();
+  const { data: patients = [] } = useGetPatients();
   const { pickContact } = useContactPicker();
 
-  const [formData, setFormData] = useState({
-    patientName: '',
-    mobile: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    hour: '9',
-    minute: '00',
-    period: 'AM' as 'AM' | 'PM',
-    notes: '',
-  });
+  const [patientName, setPatientName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [date, setDate] = useState<Date>();
+  const [hour, setHour] = useState('12');
+  const [minute, setMinute] = useState('00');
+  const [period, setPeriod] = useState<'AM' | 'PM'>('PM');
+  const [notes, setNotes] = useState('');
+  const [showContactReview, setShowContactReview] = useState(false);
+  const [selectedContactName, setSelectedContactName] = useState('');
+  const [selectedContactMobile, setSelectedContactMobile] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date | undefined>();
 
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
-  const [pendingContact, setPendingContact] = useState({ name: '', mobile: '' });
+  // Check if Contact Picker API is supported
+  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
 
   useEffect(() => {
-    if (appointment) {
-      const date = new Date(Number(appointment.appointmentTime) / 1000000);
-      let hours = date.getHours();
-      const minutes = date.getMinutes();
-      const period = hours >= 12 ? 'PM' : 'AM';
-      
-      // Convert to 12-hour format
-      if (hours === 0) hours = 12;
-      else if (hours > 12) hours = hours - 12;
-
-      setFormData({
-        patientName: appointment.patientName,
-        mobile: appointment.mobile,
-        date: format(date, 'yyyy-MM-dd'),
-        hour: hours.toString(),
-        minute: minutes.toString().padStart(2, '0'),
-        period,
-        notes: appointment.notes,
-      });
-    } else if (prefilledData) {
-      setFormData({
-        patientName: prefilledData.patientName || '',
-        mobile: prefilledData.mobile || '',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        hour: '9',
-        minute: '00',
-        period: 'AM',
-        notes: '',
-      });
-    } else {
-      setFormData({
-        patientName: '',
-        mobile: '',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        hour: '9',
-        minute: '00',
-        period: 'AM',
-        notes: '',
-      });
+    if (open) {
+      if (prefilledData) {
+        setPatientName(prefilledData.patientName);
+        setMobile(prefilledData.mobile);
+        setNotes(prefilledData.notes || '');
+        
+        if (prefilledData.appointmentTime) {
+          setDate(prefilledData.appointmentTime);
+          const hours = prefilledData.appointmentTime.getHours();
+          const mins = prefilledData.appointmentTime.getMinutes();
+          
+          if (hours === 0) {
+            setHour('12');
+            setPeriod('AM');
+          } else if (hours < 12) {
+            setHour(hours.toString().padStart(2, '0'));
+            setPeriod('AM');
+          } else if (hours === 12) {
+            setHour('12');
+            setPeriod('PM');
+          } else {
+            setHour((hours - 12).toString().padStart(2, '0'));
+            setPeriod('PM');
+          }
+          
+          setMinute(mins.toString().padStart(2, '0'));
+        } else {
+          setDate(new Date());
+        }
+      } else if (appointment) {
+        setPatientName(appointment.patientName);
+        setMobile(appointment.mobile);
+        setNotes(appointment.notes);
+        
+        const appointmentDate = new Date(Number(appointment.appointmentTime) / 1000000);
+        setDate(appointmentDate);
+        
+        const hours = appointmentDate.getHours();
+        const mins = appointmentDate.getMinutes();
+        
+        if (hours === 0) {
+          setHour('12');
+          setPeriod('AM');
+        } else if (hours < 12) {
+          setHour(hours.toString().padStart(2, '0'));
+          setPeriod('AM');
+        } else if (hours === 12) {
+          setHour('12');
+          setPeriod('PM');
+        } else {
+          setHour((hours - 12).toString().padStart(2, '0'));
+          setPeriod('PM');
+        }
+        
+        setMinute(mins.toString().padStart(2, '0'));
+      } else {
+        setPatientName('');
+        setMobile('');
+        setDate(new Date());
+        setHour('12');
+        setMinute('00');
+        setPeriod('PM');
+        setNotes('');
+      }
     }
-  }, [appointment, prefilledData, open]);
-
-  const handlePickContact = async () => {
-    try {
-      const contact = await pickContact();
-      const normalizedMobile = normalizePhone(contact.mobile || '');
-      setPendingContact({
-        name: contact.name || '',
-        mobile: normalizedMobile,
-      });
-      setShowReviewDialog(true);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to access phonebook');
-    }
-  };
-
-  const handleConfirmContact = (name: string, mobile: string) => {
-    setFormData({
-      ...formData,
-      patientName: name || formData.patientName,
-      mobile: mobile || formData.mobile,
-    });
-    toast.success('Contact added from phonebook');
-  };
+  }, [open, appointment, prefilledData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Convert 12-hour format to 24-hour format
-    let hours = parseInt(formData.hour);
-    if (formData.period === 'PM' && hours !== 12) {
+    if (!date) {
+      toast.error('Please select a date');
+      return;
+    }
+
+    let hours = parseInt(hour);
+    if (period === 'PM' && hours !== 12) {
       hours += 12;
-    } else if (formData.period === 'AM' && hours === 12) {
+    } else if (period === 'AM' && hours === 12) {
       hours = 0;
     }
 
-    const timeString = `${hours.toString().padStart(2, '0')}:${formData.minute}`;
-    const dateTime = new Date(`${formData.date}T${timeString}`);
-    const appointmentTime = BigInt(dateTime.getTime() * 1000000);
+    const appointmentDateTime = new Date(date);
+    appointmentDateTime.setHours(hours, parseInt(minute), 0, 0);
+    const timestamp = BigInt(appointmentDateTime.getTime() * 1000000);
 
     try {
-      if (appointment && appointmentId !== undefined) {
+      if (isEditing && appointment) {
         await updateAppointment.mutateAsync({
-          id: appointmentId,
+          id: appointment.id,
           appointment: {
-            id: appointmentId,
-            patientName: formData.patientName,
-            mobile: formData.mobile,
-            appointmentTime,
-            notes: formData.notes,
-            isFollowUp: appointment.isFollowUp, // Preserve existing isFollowUp flag
+            id: appointment.id,
+            patientName,
+            mobile,
+            appointmentTime: timestamp,
+            notes,
+            isFollowUp: appointment.isFollowUp,
           },
         });
         toast.success('Appointment updated successfully');
       } else {
+        // Check if patient exists before creating appointment
+        const normalizedMobile = normalizePhone(mobile);
+        const patientExists = patients.some(p => normalizePhone(p.mobile) === normalizedMobile);
+        
+        // If patient doesn't exist, they will be auto-created by the backend
         await addAppointment.mutateAsync({
-          patientName: formData.patientName,
-          mobile: formData.mobile,
-          appointmentTime,
-          notes: formData.notes,
+          patientName,
+          mobile,
+          appointmentTime: timestamp,
+          notes,
         });
-        toast.success('Appointment added successfully');
+        
+        if (!patientExists) {
+          toast.success('Appointment created and patient added successfully');
+        } else {
+          toast.success('Appointment created successfully');
+        }
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error('Failed to save appointment');
+      toast.error(isEditing ? 'Failed to update appointment' : 'Failed to create appointment');
     }
   };
 
-  const isPending = addAppointment.isPending || updateAppointment.isPending;
+  const handleImportContact = async () => {
+    try {
+      const contact = await pickContact();
+      if (contact) {
+        setSelectedContactName(contact.name);
+        setSelectedContactMobile(contact.mobile);
+        setShowContactReview(true);
+      }
+    } catch (error: any) {
+      if (error.message !== 'User cancelled contact selection') {
+        toast.error('Failed to import contact');
+      }
+    }
+  };
 
-  const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
-  const minutes = ['00', '15', '30', '45'];
+  const handleContactConfirm = (name: string, mobile: string) => {
+    setPatientName(name);
+    setMobile(mobile);
+    setShowContactReview(false);
+    setSelectedContactName('');
+    setSelectedContactMobile('');
+  };
+
+  const handleCalendarOpen = (open: boolean) => {
+    setCalendarOpen(open);
+    if (open) {
+      setTempDate(date || new Date());
+    }
+  };
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setTempDate(selectedDate);
+  };
+
+  const handleSetDate = () => {
+    if (tempDate) {
+      setDate(tempDate);
+      setCalendarOpen(false);
+    }
+  };
+
+  const handleClearDate = () => {
+    setTempDate(undefined);
+  };
+
+  const handleCancelDate = () => {
+    setCalendarOpen(false);
+    setTempDate(date);
+  };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{appointment ? 'Edit Appointment' : 'New Appointment'}</DialogTitle>
+            <DialogTitle>{isEditing ? 'Edit Appointment' : 'New Appointment'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handlePickContact}
-                disabled={isPending}
-                className="gap-2"
-              >
-                <Contact className="h-4 w-4" />
-                Add from phonebook
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="patientName">Patient Name</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="patientName"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="Enter patient name"
+                  required
+                  className="flex-1"
+                />
+                {isContactPickerSupported && !isEditing && (
+                  <Button type="button" variant="outline" size="icon" onClick={handleImportContact}>
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="patientName">Patient Name *</Label>
-              <Input
-                id="patientName"
-                value={formData.patientName}
-                onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-                required
-                disabled={isPending}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile Number *</Label>
+              <Label htmlFor="mobile">Mobile Number</Label>
               <Input
                 id="mobile"
-                type="tel"
-                value={formData.mobile}
-                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="Enter mobile number"
                 required
-                disabled={isPending}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-                disabled={isPending}
-              />
+              <Label>Appointment Date</Label>
+              <Popover open={calendarOpen} onOpenChange={handleCalendarOpen} modal={true}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, 'PPP') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 appointment-calendar-popover" align="center" side="top">
+                  <div className="enhanced-calendar-container">
+                    {/* Blue header with selected date */}
+                    <div className="calendar-header">
+                      <div className="calendar-year">{tempDate ? format(tempDate, 'yyyy') : format(new Date(), 'yyyy')}</div>
+                      <div className="calendar-selected-date">
+                        {tempDate ? format(tempDate, 'EEE, d MMM') : format(new Date(), 'EEE, d MMM')}
+                      </div>
+                    </div>
+
+                    {/* Calendar grid */}
+                    <div className="calendar-body">
+                      <Calendar 
+                        mode="single" 
+                        selected={tempDate} 
+                        onSelect={handleDateSelect} 
+                        initialFocus 
+                      />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="calendar-footer">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleClearDate}
+                        className="calendar-action-btn"
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleCancelDate}
+                        className="calendar-action-btn"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleSetDate}
+                        className="calendar-action-btn calendar-action-btn-primary"
+                      >
+                        Set
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label>Time *</Label>
+              <Label>Appointment Time</Label>
               <div className="flex gap-2">
-                <Select
-                  value={formData.hour}
-                  onValueChange={(value) => setFormData({ ...formData, hour: value })}
-                  disabled={isPending}
-                >
-                  <SelectTrigger className="flex-1">
+                <Select value={hour} onValueChange={setHour}>
+                  <SelectTrigger className="w-[100px]">
                     <SelectValue placeholder="Hour" />
                   </SelectTrigger>
                   <SelectContent>
-                    {hours.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const h = (i + 1).toString().padStart(2, '0');
+                      return (
+                        <SelectItem key={h} value={h}>
+                          {h}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={formData.minute}
-                  onValueChange={(value) => setFormData({ ...formData, minute: value })}
-                  disabled={isPending}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Minute" />
+                <Select value={minute} onValueChange={setMinute}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue placeholder="Min" />
                   </SelectTrigger>
                   <SelectContent>
-                    {minutes.map((m) => (
+                    {['00', '15', '30', '45'].map((m) => (
                       <SelectItem key={m} value={m}>
                         {m}
                       </SelectItem>
@@ -252,12 +370,8 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={formData.period}
-                  onValueChange={(value: 'AM' | 'PM') => setFormData({ ...formData, period: value })}
-                  disabled={isPending}
-                >
-                  <SelectTrigger className="w-20">
+                <Select value={period} onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}>
+                  <SelectTrigger className="w-[100px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -269,31 +383,26 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">Notes / Treatment</Label>
               <Textarea
                 id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Enter appointment notes or treatment details"
                 rows={3}
-                disabled={isPending}
               />
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : appointment ? (
-                  'Update'
-                ) : (
-                  'Add'
-                )}
+              <Button type="submit" disabled={addAppointment.isPending || updateAppointment.isPending}>
+                {addAppointment.isPending || updateAppointment.isPending
+                  ? 'Saving...'
+                  : isEditing
+                  ? 'Update'
+                  : 'Create'}
               </Button>
             </DialogFooter>
           </form>
@@ -301,11 +410,11 @@ export default function AppointmentDialog({ open, onOpenChange, appointment, app
       </Dialog>
 
       <ContactImportReviewDialog
-        open={showReviewDialog}
-        onOpenChange={setShowReviewDialog}
-        contactName={pendingContact.name}
-        contactMobile={pendingContact.mobile}
-        onConfirm={handleConfirmContact}
+        open={showContactReview}
+        onOpenChange={setShowContactReview}
+        contactName={selectedContactName}
+        contactMobile={selectedContactMobile}
+        onConfirm={handleContactConfirm}
       />
     </>
   );

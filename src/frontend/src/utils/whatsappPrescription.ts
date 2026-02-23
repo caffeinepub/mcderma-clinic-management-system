@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 /**
  * Send prescription via WhatsApp
  * For typed prescriptions: opens WhatsApp with prefilled message
- * For image prescriptions: attempts Web Share API, falls back to manual flow
+ * For image prescriptions: opens patient's WhatsApp chat directly with image pre-attached using Web Share API
  */
 export async function sendPrescriptionViaWhatsApp(
   mobile: string,
@@ -25,49 +25,43 @@ export async function sendPrescriptionViaWhatsApp(
     window.open(whatsappUrl, '_blank');
     toast.success('Opening WhatsApp...');
   } else {
-    // Image prescription - try Web Share API with files
+    // Image prescription - use Web Share API to open WhatsApp with image pre-attached
     const imageUrl = content.getDirectURL();
     
     try {
-      // Try to fetch the image as a blob for sharing
+      // Fetch the image as a blob for sharing
       const response = await fetch(imageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'prescription.jpg', { type: 'image/jpeg' });
       
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        // Web Share API with files is supported
+        // Web Share API with files is supported - this will open WhatsApp with image pre-attached
         await navigator.share({
-          title: 'Prescription',
-          text: `Prescription for ${patientName} from ${clinicName}`,
           files: [file],
+          title: `Prescription for ${patientName}`,
+          text: `Prescription from ${clinicName}`,
         });
-        toast.success('Prescription shared successfully');
+        toast.success('Opening WhatsApp with prescription');
       } else {
-        // Fallback: open WhatsApp with text and provide download link
-        const message = encodeURIComponent(
-          `Hello ${patientName},\n\nYour prescription from ${clinicName} is ready.\n\nPlease download the prescription image and share it with us if needed.`
-        );
-        
-        const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${message}`;
+        // Fallback: open WhatsApp chat directly and provide download link
+        const whatsappUrl = `https://wa.me/${normalizedPhone}`;
         window.open(whatsappUrl, '_blank');
         
-        // Also open the image in a new tab for easy download
-        window.open(imageUrl, '_blank');
+        // Also open the image in a new tab for easy download and manual sharing
+        setTimeout(() => {
+          window.open(imageUrl, '_blank');
+        }, 500);
         
-        toast.info('Opening WhatsApp and prescription image. Please download and share the image manually.');
+        toast.info('Opening WhatsApp chat. Please download and share the prescription image manually.');
       }
     } catch (error) {
       console.error('Failed to share prescription:', error);
       
-      // Final fallback: just open WhatsApp with text
-      const message = encodeURIComponent(
-        `Hello ${patientName},\n\nYour prescription from ${clinicName} is ready. Please contact us to receive it.`
-      );
-      
-      const whatsappUrl = `https://wa.me/${normalizedPhone}?text=${message}`;
+      // Final fallback: just open WhatsApp chat
+      const whatsappUrl = `https://wa.me/${normalizedPhone}`;
       window.open(whatsappUrl, '_blank');
       
-      toast.error('Could not share image automatically. Opening WhatsApp with message.');
+      toast.error('Could not share image automatically. Opening WhatsApp chat.');
     }
   }
 }

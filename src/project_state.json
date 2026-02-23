@@ -4,30 +4,21 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Lead entry form shows 'Failed to save lead' error",
-    "Admin setup password shows 'backend function not implemented' error"
+    "Calendar display issue - only half of calendar is visible on current version"
   ],
   "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Fix the 'Failed to save lead' error in the lead entry form by implementing or correcting the backend addLead function to properly store lead data with all fields (name, mobile, treatment, followUpDate, consultationDate, rating, remarks, status)",
+      "id": "feature-fix-the-calendar-component-in-the-new-appointment-dialog-so-that-the-entire-calendar-is-visible-instead-of-only-half-being-shown-the-calendar-should-display-all-weeks-of-the-month-with-proper-spacing-and-not-be-cut-off",
+      "title": "Fix the calendar component in the New Appointment dialog so that the entire calendar is visible instead of only half being shown. The calendar should display all weeks of the month with proper spacing and not be cut off.",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Fix the 'backend function not implemented' error in admin password setup by implementing the missing backend functions for admin password management (setAdminPassword, unlockAdmin, or equivalent functions referenced by AdminGateDialog)",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
+      "version": 1
     }
   ],
-  "projectName": "Fix lead save failure and admin password backend errors",
+  "new_feature_requests": [],
+  "projectName": "Fix calendar visibility issue in appointment dialog",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

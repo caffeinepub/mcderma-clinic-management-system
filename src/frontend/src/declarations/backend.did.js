@@ -20,6 +20,13 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const StaffPermissions = IDL.Record({
+  'hasFullControl' : IDL.Bool,
+  'canAccessSettings' : IDL.Bool,
+  'canAccessAppointments' : IDL.Bool,
+  'canAccessPatients' : IDL.Bool,
+  'canAccessLeads' : IDL.Bool,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -29,32 +36,6 @@ export const AdminConfig = IDL.Record({
   'hashedSecurityAnswer' : IDL.Opt(IDL.Vec(IDL.Nat8)),
   'securityQuestion' : IDL.Text,
   'hashedPassword' : IDL.Opt(IDL.Vec(IDL.Nat8)),
-});
-export const Prescription = IDL.Record({
-  'doctorNotes' : IDL.Text,
-  'prescriptionData' : IDL.Variant({
-    'typed' : IDL.Text,
-    'freehand' : ExternalBlob,
-    'camera' : ExternalBlob,
-  }),
-  'followUp' : IDL.Opt(IDL.Text),
-  'prescriptionType' : IDL.Variant({
-    'typed' : IDL.Null,
-    'freehand' : IDL.Null,
-    'camera' : IDL.Null,
-  }),
-  'medicalHistory' : IDL.Opt(IDL.Text),
-  'timestamp' : IDL.Int,
-  'patientName' : IDL.Text,
-  'symptoms' : IDL.Opt(IDL.Text),
-  'mobile' : IDL.Text,
-  'clinicName' : IDL.Text,
-  'allergies' : IDL.Opt(IDL.Text),
-  'appointmentId' : IDL.Opt(IDL.Nat),
-  'consultationType' : IDL.Variant({
-    'telemedicine' : IDL.Null,
-    'inPerson' : IDL.Null,
-  }),
 });
 export const Appointment = IDL.Record({
   'id' : IDL.Nat,
@@ -85,14 +66,42 @@ export const Lead = IDL.Record({
   'expectedTreatmentDate' : IDL.Int,
   'followUpDate' : IDL.Int,
 });
-export const Patient = IDL.Record({
+export const Prescription = IDL.Record({
+  'doctorNotes' : IDL.Text,
+  'prescriptionData' : IDL.Variant({
+    'typed' : IDL.Text,
+    'freehand' : ExternalBlob,
+    'camera' : ExternalBlob,
+  }),
+  'followUp' : IDL.Opt(IDL.Text),
+  'prescriptionType' : IDL.Variant({
+    'typed' : IDL.Null,
+    'freehand' : IDL.Null,
+    'camera' : IDL.Null,
+  }),
+  'medicalHistory' : IDL.Opt(IDL.Text),
+  'timestamp' : IDL.Int,
+  'patientName' : IDL.Text,
+  'symptoms' : IDL.Opt(IDL.Text),
+  'mobile' : IDL.Text,
+  'clinicName' : IDL.Text,
+  'allergies' : IDL.Opt(IDL.Text),
+  'appointmentId' : IDL.Opt(IDL.Nat),
+  'consultationType' : IDL.Variant({
+    'telemedicine' : IDL.Null,
+    'inPerson' : IDL.Null,
+  }),
+});
+export const PatientView = IDL.Record({
   'area' : IDL.Text,
   'name' : IDL.Text,
   'notes' : IDL.Text,
+  'prescriptionHistory' : IDL.Vec(Prescription),
   'image' : IDL.Opt(ExternalBlob),
   'mobile' : IDL.Text,
 });
 export const Time = IDL.Int;
+export const Staff = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -148,20 +157,21 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'addStaff' : IDL.Func([IDL.Text, IDL.Text, StaffPermissions], [IDL.Text], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createAttendance' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'deleteAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
   'deleteLead' : IDL.Func([IDL.Text], [IDL.Text], []),
   'deletePatient' : IDL.Func([IDL.Text], [IDL.Text], []),
   'deletePrescription' : IDL.Func([IDL.Text, IDL.Nat], [IDL.Text], []),
+  'deleteStaff' : IDL.Func([IDL.Text], [IDL.Text], []),
   'getAdminConfig' : IDL.Func([], [IDL.Opt(AdminConfig)], ['query']),
-  'getAllPrescriptions' : IDL.Func([], [IDL.Vec(Prescription)], ['query']),
   'getAppointments' : IDL.Func([], [IDL.Vec(Appointment)], ['query']),
   'getAttendance' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
-  'getPatients' : IDL.Func([], [IDL.Vec(Patient)], ['query']),
+  'getPatients' : IDL.Func([], [IDL.Vec(PatientView)], ['query']),
   'getPrescriptionById' : IDL.Func(
       [IDL.Text, IDL.Nat],
       [IDL.Opt(Prescription)],
@@ -169,6 +179,12 @@ export const idlService = IDL.Service({
     ),
   'getPrescriptions' : IDL.Func([IDL.Text], [IDL.Vec(Prescription)], ['query']),
   'getPrescriptionsLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
+  'getStaff' : IDL.Func([], [IDL.Vec(Staff)], ['query']),
+  'getStaffPermissions' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(StaffPermissions)],
+      ['query'],
+    ),
   'getTodaysAppointmentsSorted' : IDL.Func(
       [],
       [IDL.Vec(Appointment)],
@@ -230,6 +246,11 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'updateStaffPermissions' : IDL.Func(
+      [IDL.Text, StaffPermissions],
+      [IDL.Text],
+      [],
+    ),
   'verifyAdminPassword' : IDL.Func([IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
 });
 
@@ -248,6 +269,13 @@ export const idlFactory = ({ IDL }) => {
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
   const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const StaffPermissions = IDL.Record({
+    'hasFullControl' : IDL.Bool,
+    'canAccessSettings' : IDL.Bool,
+    'canAccessAppointments' : IDL.Bool,
+    'canAccessPatients' : IDL.Bool,
+    'canAccessLeads' : IDL.Bool,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -257,32 +285,6 @@ export const idlFactory = ({ IDL }) => {
     'hashedSecurityAnswer' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'securityQuestion' : IDL.Text,
     'hashedPassword' : IDL.Opt(IDL.Vec(IDL.Nat8)),
-  });
-  const Prescription = IDL.Record({
-    'doctorNotes' : IDL.Text,
-    'prescriptionData' : IDL.Variant({
-      'typed' : IDL.Text,
-      'freehand' : ExternalBlob,
-      'camera' : ExternalBlob,
-    }),
-    'followUp' : IDL.Opt(IDL.Text),
-    'prescriptionType' : IDL.Variant({
-      'typed' : IDL.Null,
-      'freehand' : IDL.Null,
-      'camera' : IDL.Null,
-    }),
-    'medicalHistory' : IDL.Opt(IDL.Text),
-    'timestamp' : IDL.Int,
-    'patientName' : IDL.Text,
-    'symptoms' : IDL.Opt(IDL.Text),
-    'mobile' : IDL.Text,
-    'clinicName' : IDL.Text,
-    'allergies' : IDL.Opt(IDL.Text),
-    'appointmentId' : IDL.Opt(IDL.Nat),
-    'consultationType' : IDL.Variant({
-      'telemedicine' : IDL.Null,
-      'inPerson' : IDL.Null,
-    }),
   });
   const Appointment = IDL.Record({
     'id' : IDL.Nat,
@@ -313,14 +315,42 @@ export const idlFactory = ({ IDL }) => {
     'expectedTreatmentDate' : IDL.Int,
     'followUpDate' : IDL.Int,
   });
-  const Patient = IDL.Record({
+  const Prescription = IDL.Record({
+    'doctorNotes' : IDL.Text,
+    'prescriptionData' : IDL.Variant({
+      'typed' : IDL.Text,
+      'freehand' : ExternalBlob,
+      'camera' : ExternalBlob,
+    }),
+    'followUp' : IDL.Opt(IDL.Text),
+    'prescriptionType' : IDL.Variant({
+      'typed' : IDL.Null,
+      'freehand' : IDL.Null,
+      'camera' : IDL.Null,
+    }),
+    'medicalHistory' : IDL.Opt(IDL.Text),
+    'timestamp' : IDL.Int,
+    'patientName' : IDL.Text,
+    'symptoms' : IDL.Opt(IDL.Text),
+    'mobile' : IDL.Text,
+    'clinicName' : IDL.Text,
+    'allergies' : IDL.Opt(IDL.Text),
+    'appointmentId' : IDL.Opt(IDL.Nat),
+    'consultationType' : IDL.Variant({
+      'telemedicine' : IDL.Null,
+      'inPerson' : IDL.Null,
+    }),
+  });
+  const PatientView = IDL.Record({
     'area' : IDL.Text,
     'name' : IDL.Text,
     'notes' : IDL.Text,
+    'prescriptionHistory' : IDL.Vec(Prescription),
     'image' : IDL.Opt(ExternalBlob),
     'mobile' : IDL.Text,
   });
   const Time = IDL.Int;
+  const Staff = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -376,20 +406,25 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
+    'addStaff' : IDL.Func(
+        [IDL.Text, IDL.Text, StaffPermissions],
+        [IDL.Text],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createAttendance' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'deleteAppointment' : IDL.Func([IDL.Nat], [IDL.Text], []),
     'deleteLead' : IDL.Func([IDL.Text], [IDL.Text], []),
     'deletePatient' : IDL.Func([IDL.Text], [IDL.Text], []),
     'deletePrescription' : IDL.Func([IDL.Text, IDL.Nat], [IDL.Text], []),
+    'deleteStaff' : IDL.Func([IDL.Text], [IDL.Text], []),
     'getAdminConfig' : IDL.Func([], [IDL.Opt(AdminConfig)], ['query']),
-    'getAllPrescriptions' : IDL.Func([], [IDL.Vec(Prescription)], ['query']),
     'getAppointments' : IDL.Func([], [IDL.Vec(Appointment)], ['query']),
     'getAttendance' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
-    'getPatients' : IDL.Func([], [IDL.Vec(Patient)], ['query']),
+    'getPatients' : IDL.Func([], [IDL.Vec(PatientView)], ['query']),
     'getPrescriptionById' : IDL.Func(
         [IDL.Text, IDL.Nat],
         [IDL.Opt(Prescription)],
@@ -401,6 +436,12 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getPrescriptionsLastModified' : IDL.Func([], [IDL.Opt(Time)], ['query']),
+    'getStaff' : IDL.Func([], [IDL.Vec(Staff)], ['query']),
+    'getStaffPermissions' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(StaffPermissions)],
+        ['query'],
+      ),
     'getTodaysAppointmentsSorted' : IDL.Func(
         [],
         [IDL.Vec(Appointment)],
@@ -470,6 +511,11 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Text,
         ],
+        [IDL.Text],
+        [],
+      ),
+    'updateStaffPermissions' : IDL.Func(
+        [IDL.Text, StaffPermissions],
         [IDL.Text],
         [],
       ),

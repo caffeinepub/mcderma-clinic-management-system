@@ -8,12 +8,13 @@ import { Camera, Send, Loader2, FileText, PenTool, History } from 'lucide-react'
 import { toast } from 'sonner';
 import type { Appointment, Prescription } from '../backend';
 import { ExternalBlob, Variant_typed_freehand_camera, Variant_telemedicine_inPerson } from '../backend';
-import { useSavePrescription, useGetPrescriptions, useGetCallerUserProfile } from '../hooks/useQueries';
+import { useSavePrescription, usePrescriptions, useGetCallerUserProfile, useGetPatients, useAddPatient } from '../hooks/useQueries';
 import PrescriptionTypedForm from './prescription/PrescriptionTypedForm';
 import FreehandPad from './prescription/FreehandPad';
 import PrescriptionCameraCapture from './prescription/PrescriptionCameraCapture';
 import PrescriptionHistoryList from './prescription/PrescriptionHistoryList';
 import { sendPrescriptionViaWhatsApp } from '../utils/whatsappPrescription';
+import { normalizePhone } from '../utils/phone';
 
 interface PrescriptionEditorDialogProps {
   open: boolean;
@@ -32,31 +33,39 @@ export default function PrescriptionEditorDialog({
   const [cameraBlob, setCameraBlob] = useState<ExternalBlob | null>(null);
   const [showCameraCapture, setShowCameraCapture] = useState(false);
   const [doctorNotes, setDoctorNotes] = useState('');
-  const [prescriptionHistory, setPrescriptionHistory] = useState<Prescription[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const savePrescription = useSavePrescription();
-  const getPrescriptions = useGetPrescriptions();
+  const { data: prescriptionHistory = [], isLoading: isLoadingHistory, refetch: refetchHistory } = usePrescriptions(appointment.mobile);
   const { data: userProfile } = useGetCallerUserProfile();
+  const { data: patients = [] } = useGetPatients();
+  const addPatient = useAddPatient();
 
-  // Load prescription history when dialog opens
-  useEffect(() => {
-    if (open && appointment.mobile) {
-      loadPrescriptionHistory();
-    }
-  }, [open, appointment.mobile]);
+  // Sort prescription history by timestamp, newest first
+  const sortedPrescriptionHistory = [...prescriptionHistory].sort((a, b) => Number(b.timestamp - a.timestamp));
 
-  const loadPrescriptionHistory = async () => {
-    setIsLoadingHistory(true);
-    try {
-      const history = await getPrescriptions.mutateAsync(appointment.mobile);
-      // Sort by timestamp, newest first
-      const sorted = [...history].sort((a, b) => Number(b.timestamp - a.timestamp));
-      setPrescriptionHistory(sorted);
-    } catch (error) {
-      console.error('Failed to load prescription history:', error);
-    } finally {
-      setIsLoadingHistory(false);
+  const ensurePatientExists = async () => {
+    // Normalize the appointment mobile for comparison
+    const normalizedAppointmentMobile = normalizePhone(appointment.mobile);
+    
+    // Check if patient exists by comparing normalized mobile numbers
+    const existingPatient = patients.find(
+      (p) => normalizePhone(p.mobile) === normalizedAppointmentMobile
+    );
+
+    if (!existingPatient) {
+      // Create new patient with basic info from appointment
+      try {
+        await addPatient.mutateAsync({
+          image: undefined,
+          name: appointment.patientName,
+          mobile: appointment.mobile,
+          area: '',
+          notes: '',
+        });
+      } catch (error) {
+        console.error('Failed to create patient:', error);
+        throw error;
+      }
     }
   };
 
@@ -101,6 +110,9 @@ export default function PrescriptionEditorDialog({
         return;
       }
 
+      // Ensure patient exists before saving prescription
+      await ensurePatientExists();
+
       const prescription: Prescription = {
         patientName: appointment.patientName,
         mobile: appointment.mobile,
@@ -127,7 +139,7 @@ export default function PrescriptionEditorDialog({
       setDoctorNotes('');
       
       // Reload history
-      await loadPrescriptionHistory();
+      await refetchHistory();
       
       // Switch to history tab to show the saved prescription
       setActiveTab('history');
@@ -295,80 +307,76 @@ export default function PrescriptionEditorDialog({
             </TabsContent>
 
             <TabsContent value="camera" className="space-y-4">
-              <div className="space-y-4">
-                {!cameraBlob ? (
-                  <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                    <Camera className="h-16 w-16 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Capture prescription using camera
-                    </p>
-                    <Button onClick={() => setShowCameraCapture(true)} className="gap-2">
-                      <Camera className="h-4 w-4" />
-                      Open Camera
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="border rounded-lg overflow-hidden">
-                      <img
-                        src={cameraBlob.getDirectURL()}
-                        alt="Captured prescription"
-                        className="w-full h-auto"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => setShowCameraCapture(true)}
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Retake Photo
-                    </Button>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="doctor-notes-camera">Doctor Notes (Optional)</Label>
-                  <Textarea
-                    id="doctor-notes-camera"
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
-                    placeholder="Additional notes..."
-                    rows={2}
-                  />
+              {!cameraBlob ? (
+                <div className="text-center py-8">
+                  <Button onClick={() => setShowCameraCapture(true)} className="gap-2">
+                    <Camera className="h-5 w-5" />
+                    Open Camera
+                  </Button>
                 </div>
-
-                <div className="flex gap-2 justify-end">
+              ) : (
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <img
+                      src={cameraBlob.getDirectURL()}
+                      alt="Captured prescription"
+                      className="w-full h-auto rounded"
+                    />
+                  </div>
                   <Button
-                    onClick={handleSendWhatsApp}
+                    onClick={() => {
+                      setCameraBlob(null);
+                      setShowCameraCapture(true);
+                    }}
                     variant="outline"
-                    disabled={!cameraBlob}
-                    className="gap-2"
+                    className="w-full"
                   >
-                    <Send className="h-4 w-4" />
-                    Send via WhatsApp
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={savePrescription.isPending || !cameraBlob}
-                    className="gap-2"
-                  >
-                    {savePrescription.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Prescription'
-                    )}
+                    Retake Photo
                   </Button>
                 </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="doctor-notes-camera">Doctor Notes (Optional)</Label>
+                <Textarea
+                  id="doctor-notes-camera"
+                  value={doctorNotes}
+                  onChange={(e) => setDoctorNotes(e.target.value)}
+                  placeholder="Additional notes..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  onClick={handleSendWhatsApp}
+                  variant="outline"
+                  disabled={!cameraBlob}
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Send via WhatsApp
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={savePrescription.isPending || !cameraBlob}
+                  className="gap-2"
+                >
+                  {savePrescription.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Prescription'
+                  )}
+                </Button>
               </div>
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4">
               <PrescriptionHistoryList 
-                prescriptions={prescriptionHistory} 
+                prescriptions={sortedPrescriptionHistory} 
                 isLoading={isLoadingHistory}
               />
             </TabsContent>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
+import { SiInstagram, SiWhatsapp } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LeadCard from '../components/LeadCard';
@@ -24,6 +25,50 @@ export default function LeadsTab() {
     setEditingLead(undefined);
   };
 
+  const handleOpenInstagram = () => {
+    // Try to open Instagram app on mobile, fallback to web
+    const instagramUrl = 'instagram://';
+    const instagramWebUrl = 'https://www.instagram.com';
+    
+    // Create a temporary link to test if app opens
+    const link = document.createElement('a');
+    link.href = instagramUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    
+    // Try to open the app
+    link.click();
+    
+    // Fallback to web after a short delay if app doesn't open
+    setTimeout(() => {
+      window.open(instagramWebUrl, '_blank');
+    }, 500);
+    
+    document.body.removeChild(link);
+  };
+
+  const handleOpenWhatsApp = () => {
+    // Try to open WhatsApp app, fallback to web
+    const whatsappUrl = 'whatsapp://';
+    const whatsappWebUrl = 'https://wa.me';
+    
+    // Create a temporary link to test if app opens
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    
+    // Try to open the app
+    link.click();
+    
+    // Fallback to web after a short delay if app doesn't open
+    setTimeout(() => {
+      window.open(whatsappWebUrl, '_blank');
+    }, 500);
+    
+    document.body.removeChild(link);
+  };
+
   const filteredLeads = leads.filter((lead) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -40,13 +85,33 @@ export default function LeadsTab() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
-        <Button onClick={() => setIsDialogOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleOpenInstagram} 
+            size="sm" 
+            variant="outline"
+            className="gap-2"
+          >
+            <SiInstagram className="h-4 w-4" />
+            <span className="hidden sm:inline">Instagram</span>
+          </Button>
+          <Button 
+            onClick={handleOpenWhatsApp} 
+            size="sm" 
+            variant="outline"
+            className="gap-2"
+          >
+            <SiWhatsapp className="h-4 w-4" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </Button>
+          <Button onClick={() => setIsDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Lead
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
