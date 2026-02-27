@@ -1,0 +1,86 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Doctor assignment dropdown, Next Appointment fix, calendar resize, and Staff role option",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Add doctor assignment dropdown to appointment cards in Today's Schedule",
+      "acceptanceCriteria": [
+        "Each appointment card in Today's Schedule displays a dropdown in the bottom-right area of the card.",
+        "The dropdown lists only staff members with the role 'Doctor'.",
+        "Selecting a doctor from the dropdown assigns them to that appointment.",
+        "The assignment is persisted to the backend and survives a page refresh.",
+        "If no doctors exist in staff, the dropdown shows a disabled state or placeholder such as 'No doctors available'."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AppointmentCard.tsx",
+          "operation": "modify",
+          "description": "Add a doctor assignment dropdown in the bottom-right area of the appointment card. The dropdown should fetch doctors using the backend's getStaffByRole('Doctor') method, display their names, and call assignDoctorToAppointment when a selection is made. Include proper loading states, disabled state when no doctors are available, and display the currently assigned doctor if one exists. Position the dropdown below the existing action icons row."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a useGetStaffByRole query hook that calls actor.getStaffByRole(role) to fetch staff filtered by role. Add a useAssignDoctorToAppointment mutation hook that calls actor.assignDoctorToAppointment(appointmentId, doctorName) and invalidates the appointments query cache on success. Ensure proper error handling for both hooks."
+        },
+        {
+          "path": "frontend/src/types/index.ts",
+          "operation": "modify",
+          "description": "Add an optional assignedDoctor field of type string to the Appointment interface to track which doctor is assigned to each appointment. This field will be populated by the backend after assignment."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Update Next Appointment widget to show only today's appointments",
+      "acceptanceCriteria": [
+        "The Next Appointment widget only considers appointments whose date matches today's date.",
+        "It displays the soonest upcoming appointment from today's list (sorted by time).",
+        "If today's appointment list is empty, the widget displays the text 'No Appointment For Today'.",
+        "The widget does not show appointments from tomorrow or future dates."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/NextAppointmentWidget.tsx",
+          "operation": "modify",
+          "description": "Refactor the widget logic to filter appointments to only include those with a date matching today's date (compare date portions only, ignoring time). From this filtered list, find the next upcoming appointment by time. If the filtered list is empty, display 'No Appointment For Today' instead of the current placeholder. Remove any logic that considers future dates beyond today."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Increase calendar size in appointment date picker by 30%",
+      "acceptanceCriteria": [
+        "The calendar in the appointment date picker is visibly larger than before — approximately 30% wider and taller.",
+        "Date numbers in each cell are clearly legible and not overlapping or cramped.",
+        "There is visible padding/gap between adjacent date cells.",
+        "The resize applies both on mobile and desktop viewports.",
+        "The calendar does not overflow its container or clip any dates."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Target the existing rdp (react-day-picker) calendar classes and add explicit CSS overrides to increase the calendar size by 30%. Set explicit width and height on .rdp container (e.g., increase from default to 130% scale or use explicit pixel dimensions). Increase font-size for .rdp-day elements by 30%. Add cell-spacing/padding by increasing .rdp-cell padding and margin. Ensure .rdp-month has sufficient width/height. Use !important flags if necessary to override default styles. Test on both mobile and desktop breakpoints using media queries if needed."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add 'Staff' as a selectable role option in Admin staff management",
+      "acceptanceCriteria": [
+        "The Role dropdown in the Admin tab includes 'Staff' as one of the available options.",
+        "Selecting 'Staff' and saving correctly stores the role as 'Staff' for that staff member.",
+        "Existing role options remain unchanged."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/PermissionsMatrix.tsx",
+          "operation": "modify",
+          "description": "Locate the role selection dropdown (likely a Select component) in the staff management form. Add 'Staff' as a new option to the existing role options array or select items. Ensure the value 'Staff' is passed to the backend when the form is submitted. Do not modify existing role options or the form submission logic beyond adding this new option."
+        }
+      ]
+    }
+  ]
+}

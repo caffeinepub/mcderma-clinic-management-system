@@ -1,0 +1,234 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: oklch(0.98 0.003 240);
+    --foreground: oklch(0.15 0.02 240);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0.02 240);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.02 240);
+    --primary: oklch(0.52 0.18 240);
+    --primary-foreground: oklch(0.98 0.003 240);
+    --secondary: oklch(0.94 0.01 240);
+    --secondary-foreground: oklch(0.25 0.02 240);
+    --muted: oklch(0.94 0.01 240);
+    --muted-foreground: oklch(0.52 0.02 240);
+    --accent: oklch(0.94 0.01 240);
+    --accent-foreground: oklch(0.25 0.02 240);
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.98 0.003 240);
+    --border: oklch(0.88 0.01 240);
+    --input: oklch(0.88 0.01 240);
+    --ring: oklch(0.52 0.18 240);
+    --radius: 0.75rem;
+    --success: oklch(0.55 0.18 145);
+    --warning: oklch(0.75 0.18 75);
+  }
+
+  .dark {
+    --background: oklch(0.13 0.02 240);
+    --foreground: oklch(0.93 0.01 240);
+    --card: oklch(0.18 0.02 240);
+    --card-foreground: oklch(0.93 0.01 240);
+    --popover: oklch(0.18 0.02 240);
+    --popover-foreground: oklch(0.93 0.01 240);
+    --primary: oklch(0.62 0.18 240);
+    --primary-foreground: oklch(0.13 0.02 240);
+    --secondary: oklch(0.25 0.02 240);
+    --secondary-foreground: oklch(0.93 0.01 240);
+    --muted: oklch(0.25 0.02 240);
+    --muted-foreground: oklch(0.62 0.02 240);
+    --accent: oklch(0.25 0.02 240);
+    --accent-foreground: oklch(0.93 0.01 240);
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.98 0.003 240);
+    --border: oklch(0.28 0.02 240);
+    --input: oklch(0.28 0.02 240);
+    --ring: oklch(0.62 0.18 240);
+    --success: oklch(0.60 0.18 145);
+    --warning: oklch(0.78 0.18 75);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.75 0.02 240);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.60 0.05 240);
+}
+
+/* ─── React Day Picker Calendar — Enlarged by 30% ─────────────────────────── */
+
+/* Container */
+.rdp-root {
+  --rdp-cell-size: 44px !important;
+  --rdp-caption-font-size: 16px !important;
+  --rdp-accent-color: var(--primary) !important;
+  --rdp-background-color: var(--primary) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Month container */
+.rdp-month {
+  width: 100% !important;
+}
+
+.rdp-month_caption {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 8px 4px !important;
+  margin-bottom: 6px !important;
+}
+
+/* Weekday header row */
+.rdp-weekdays {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+.rdp-weekday {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  padding: 6px 0 !important;
+  color: var(--muted-foreground) !important;
+}
+
+/* Weeks grid */
+.rdp-weeks {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.rdp-week {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 4px !important;
+}
+
+/* Individual day cells */
+.rdp-day {
+  width: 100% !important;
+  aspect-ratio: 1 !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.rdp-day_button {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease !important;
+}
+
+/* Selected day */
+.rdp-selected .rdp-day_button,
+.rdp-day_button[aria-selected="true"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  font-weight: 700 !important;
+}
+
+/* Today */
+.rdp-today .rdp-day_button {
+  border: 2px solid var(--primary) !important;
+  font-weight: 700 !important;
+}
+
+/* Hover */
+.rdp-day_button:hover:not([disabled]):not([aria-selected="true"]) {
+  background-color: var(--muted) !important;
+}
+
+/* Disabled */
+.rdp-day_button:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+/* Navigation buttons */
+.rdp-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.rdp-button_previous,
+.rdp-button_next {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.rdp-button_previous:hover,
+.rdp-button_next:hover {
+  background-color: var(--muted) !important;
+}
+
+/* Ensure calendar wrapper doesn't clip */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Popover calendar container */
+.rdp {
+  margin: 0 !important;
+  padding: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 400px) {
+  .rdp-day_button {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    font-size: 13px !important;
+  }
+  .rdp-weekday {
+    font-size: 11px !important;
+  }
+}

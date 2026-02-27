@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Medical scheduling app (McDerma style) with admin, schedule, and appointment management tabs. Features include staff/doctor role management, today's appointments, calendar-based appointment booking, and doctor assignment to appointments.",
+  "architectural_notes": [
+    "Doctor assignment dropdown in Today's Appointments pulls names from staff entries with 'Doctor' role",
+    "Next Appointment card in Schedule tab is scoped to today's appointments only"
+  ],
+  "known_issues": [
+    "Calendar resize in appointment date picker previously failed — numbers remained cramped; needs explicit size increase fix"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-add-a-doctor-assignment-dropdown-to-each-appointment-entry-card-in-the-today-s-schedule-section-the-dropdown-should-appear-in-the-bottom-right-area-of-the-appointment-card-as-shown-in-the-uploaded-screenshot-it-should-list-only-staff-members-whose-role-is-doctor-selecting-a-doctor-from-the-dropdown-assigns-that-doctor-to-the-appointment-and-persists-the-assignment-via-the-backend",
+      "title": "Add a doctor assignment dropdown to each appointment entry card in the Today's Schedule section. The dropdown should appear in the bottom-right area of the appointment card (as shown in the uploaded screenshot). It should list only staff members whose role is 'Doctor'. Selecting a doctor from the dropdown assigns that doctor to the appointment and persists the assignment via the backend.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-next-appointment-widget-on-the-schedule-tab-to-source-its-data-exclusively-from-today-s-appointments-it-should-display-the-next-upcoming-appointment-by-time-that-falls-on-today-s-date-if-there-are-no-appointments-scheduled-for-today-the-widget-must-display-no-appointment-for-today-instead-of-any-other-placeholder-or-future-appointment",
+      "title": "Update the Next Appointment widget on the Schedule tab to source its data exclusively from today's appointments. It should display the next upcoming appointment (by time) that falls on today's date. If there are no appointments scheduled for today, the widget must display 'No Appointment For Today' instead of any other placeholder or future appointment.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-increase-the-size-of-the-calendar-displayed-inside-the-appointment-date-picker-appointmentdialog-by-30-compared-to-its-current-rendered-size-ensure-there-is-sufficient-spacing-between-individual-date-cells-so-that-numbers-are-not-cramped-apply-explicit-width-height-and-cell-size-overrides-using-css-targeting-the-rdp-react-day-picker-calendar-classes-already-present-in-index-css-to-guarantee-the-resize-takes-effect-and-is-not-overridden-by-default-styles",
+      "title": "Increase the size of the calendar displayed inside the appointment date picker (AppointmentDialog) by 30% compared to its current rendered size. Ensure there is sufficient spacing between individual date cells so that numbers are not cramped. Apply explicit width, height, and cell-size overrides using CSS (targeting the rdp/react-day-picker calendar classes already present in index.css) to guarantee the resize takes effect and is not overridden by default styles.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-admin-tab-s-staff-management-form-permissionsmatrix-component-add-staff-as-a-selectable-option-in-the-role-dropdown-menu-alongside-the-existing-role-options",
+      "title": "In the Admin tab's staff management form (PermissionsMatrix component), add 'Staff' as a selectable option in the Role dropdown menu, alongside the existing role options.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add 'Staff' as an option in the Role dropdown under Admin tab",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "In Schedule tab, Next Appointment status should show only from today's appointments; display 'No Appointment For Today' if none exist",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Increase size of appointment date picker calendar by 30% with proper spacing between dates",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add doctor assignment dropdown to Today's Appointment entries, showing doctors with 'Doctor' staff role",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "McDerma",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
