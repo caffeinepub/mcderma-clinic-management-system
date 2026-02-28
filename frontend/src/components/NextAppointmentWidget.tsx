@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, User, FileText } from 'lucide-react';
-import { useGetAppointments } from '../hooks/useQueries';
+import { useGetTodaysAppointments } from '../hooks/useQueries';
 
 function formatTime12Hour(ms: number): string {
   const d = new Date(ms);
@@ -20,27 +20,13 @@ function getTreatmentFromNotes(notes: string): string {
   return notes.split('\n')[0]?.trim() || '';
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
 export default function NextAppointmentWidget() {
-  const { data: appointments = [] } = useGetAppointments();
+  // Only use today's appointments — never tomorrow or upcoming
+  const { data: todaysAppointments = [] } = useGetTodaysAppointments();
 
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // Filter to today's appointments only
-  const todaysAppointments = appointments.filter((appt) => {
-    const apptDate = new Date(Number(appt.appointmentTime));
-    return isSameDay(apptDate, today);
-  });
-
-  // Find the next upcoming appointment from today's list (after current time)
+  // Find the next upcoming appointment from today's list only (after current time)
   const next = todaysAppointments
     .filter((appt) => Number(appt.appointmentTime) > now.getTime())
     .sort((a, b) => Number(a.appointmentTime) - Number(b.appointmentTime))[0] ?? null;

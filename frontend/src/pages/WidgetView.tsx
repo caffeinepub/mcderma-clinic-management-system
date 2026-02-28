@@ -1,21 +1,29 @@
 import { Clock, User, FileText, Calendar } from 'lucide-react';
-import { useGetAppointments } from '../hooks/useQueries';
+import { useGetTodaysAppointments } from '../hooks/useQueries';
 import { useNow } from '../hooks/useNow';
-import { formatTimestamp12Hour } from '../lib/utils';
 import { extractTreatmentFromNotes } from '../utils/treatment';
 
+function formatTime12Hour(ms: number): string {
+  const d = new Date(ms);
+  let hours = d.getHours();
+  const minutes = d.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+}
+
 export default function WidgetView() {
-  const { data: appointments = [], isLoading } = useGetAppointments();
+  // Only use today's appointments — never tomorrow or upcoming
+  const { data: todaysAppointments = [], isLoading } = useGetTodaysAppointments();
   const currentTime = useNow();
 
-  // Find the next upcoming appointment
-  const nowMs = currentTime.getTime() * 1_000_000; // Convert to nanoseconds
-  
-  const upcomingAppointments = appointments
-    .filter(apt => Number(apt.appointmentTime) >= nowMs)
-    .sort((a, b) => Number(a.appointmentTime) - Number(b.appointmentTime));
-  
-  const nextAppointment = upcomingAppointments[0];
+  const nowMs = currentTime.getTime();
+
+  // Find the next upcoming appointment from today's list only (after current time)
+  const nextAppointment = todaysAppointments
+    .filter((apt) => Number(apt.appointmentTime) > nowMs)
+    .sort((a, b) => Number(a.appointmentTime) - Number(b.appointmentTime))[0] ?? null;
 
   if (isLoading) {
     return (
@@ -38,7 +46,7 @@ export default function WidgetView() {
             </div>
             <div>
               <p className="text-xl font-semibold text-foreground mb-2">Next Appointment</p>
-              <p className="text-lg text-muted-foreground">No upcoming appointments</p>
+              <p className="text-lg text-muted-foreground">No Appointment For Today</p>
             </div>
           </div>
         </div>
@@ -57,20 +65,24 @@ export default function WidgetView() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-muted-foreground mb-1">Next Appointment</p>
-            <p className="text-2xl font-bold text-foreground">{formatTimestamp12Hour(nextAppointment.appointmentTime)}</p>
+            <p className="text-2xl font-bold text-foreground">
+              {formatTime12Hour(Number(nextAppointment.appointmentTime))}
+            </p>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {/* Patient Name */}
           <div className="flex items-center gap-3 bg-background/50 rounded-lg p-3">
             <User className="h-5 w-5 text-primary flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Patient</p>
-              <p className="text-base font-semibold text-foreground truncate">{nextAppointment.patientName}</p>
+              <p className="text-base font-semibold text-foreground truncate">
+                {nextAppointment.patientName}
+              </p>
             </div>
           </div>
-          
+
           {/* Treatment */}
           {treatment && (
             <div className="flex items-start gap-3 bg-background/50 rounded-lg p-3">

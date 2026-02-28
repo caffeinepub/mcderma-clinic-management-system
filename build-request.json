@@ -1,104 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Doctor assignment dropdown, Next Appointment fix, calendar resize, and Staff role option",
-  "projectName": "McDerma Clinic",
+  "title": "Next Appointment Widget: Show Only Today's Appointments",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a doctor assignment dropdown to each appointment entry card in the Today's Schedule section. The dropdown should appear in the bottom-right area of the appointment card (as shown in the uploaded screenshot). It should list only staff members whose role is 'Doctor'. Selecting a doctor from the dropdown assigns that doctor to the appointment and persists the assignment via the backend.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-6"
-        ],
-        "quotes": [
-          "assign doctor to an existing appointment",
-          "In today's appointment schedule add a drop down menu in right bottom of entry section as seen in photo. Drop down menu should show names of doctors which have been entered as Doctor in staff role"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each appointment card in Today's Schedule displays a dropdown in the bottom-right area of the card.",
-        "The dropdown lists only staff members with the role 'Doctor'.",
-        "Selecting a doctor from the dropdown assigns them to that appointment.",
-        "The assignment is persisted to the backend and survives a page refresh.",
-        "If no doctors exist in staff, the dropdown shows a disabled state or placeholder such as 'No doctors available'."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Update the Next Appointment widget on the Schedule tab to source its data exclusively from today's appointments. It should display the next upcoming appointment (by time) that falls on today's date. If there are no appointments scheduled for today, the widget must display 'No Appointment For Today' instead of any other placeholder or future appointment.",
+      "text": "Update the NextAppointmentWidget component so that it only considers appointments from today's appointment list when determining the next upcoming appointment. It must not pull from tomorrow's or upcoming appointment sections.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-6"
+          "msg-last"
         ],
         "quotes": [
-          "for next appointment show next appointment from today's appointment section only. If there is no appointment in today's appointment section then Show No Appointment For Today.",
-          "In Schedule tab show next appointment status details from today's appointment section only."
+          "for next appointment show next appointment from today's appointment section only. If there is no appointment in today's appointment section then Show No Appointment For Today."
         ]
       },
       "acceptanceCriteria": [
-        "The Next Appointment widget only considers appointments whose date matches today's date.",
-        "It displays the soonest upcoming appointment from today's list (sorted by time).",
-        "If today's appointment list is empty, the widget displays the text 'No Appointment For Today'.",
-        "The widget does not show appointments from tomorrow or future dates."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Increase the size of the calendar displayed inside the appointment date picker (AppointmentDialog) by 30% compared to its current rendered size. Ensure there is sufficient spacing between individual date cells so that numbers are not cramped. Apply explicit width, height, and cell-size overrides using CSS (targeting the rdp/react-day-picker calendar classes already present in index.css) to guarantee the resize takes effect and is not overridden by default styles.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-5",
-          "msg-6"
-        ],
-        "quotes": [
-          "yes tried resizing calendar in previous prompt but failed it's size remained small and numbers were cramped",
-          "Increase size of calendar in appointment date in new appointment by 30 %, make sure their is space between dates."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The calendar in the appointment date picker is visibly larger than before — approximately 30% wider and taller.",
-        "Date numbers in each cell are clearly legible and not overlapping or cramped.",
-        "There is visible padding/gap between adjacent date cells.",
-        "The resize applies both on mobile and desktop viewports.",
-        "The calendar does not overflow its container or clip any dates."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "In the Admin tab's staff management form (PermissionsMatrix component), add 'Staff' as a selectable option in the Role dropdown menu, alongside the existing role options.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "in admin tab under role option add staff as option in drop down menu"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The Role dropdown in the Admin tab includes 'Staff' as one of the available options.",
-        "Selecting 'Staff' and saving correctly stores the role as 'Staff' for that staff member.",
-        "Existing role options remain unchanged."
+        "The Next Appointment widget only evaluates appointments that belong to today's appointment section.",
+        "If today has future appointments, the widget shows the next one chronologically.",
+        "If today has no appointments at all (or all of today's appointments have already passed), the widget displays 'No Appointment For Today'.",
+        "Appointments from tomorrow or the upcoming section are never shown in the Next Appointment widget.",
+        "The same logic applies in WidgetView.tsx if it also renders next-appointment data."
       ]
     }
   ],
   "constraints": [
-    "Doctor dropdown in appointment cards must only show staff with the 'Doctor' role — not all staff.",
-    "Next Appointment widget must strictly filter by today's date only — no future appointments.",
-    "Calendar resize must use explicit CSS overrides targeting rdp classes to prevent the size from reverting as happened in the previous attempt."
+    "Do not modify useInternetIdentity.ts, useActor.ts, main.tsx, or any file under frontend/src/components/ui.",
+    "Do not change the backend data model or any Motoko actor logic.",
+    "Do not alter any other sections of the Schedule tab beyond the Next Appointment widget."
   ],
   "nonGoals": [
-    "Filtering today's appointments by doctor (the dropdown is for assignment only, not filtering).",
-    "Changing the layout or design of the Schedule tab beyond the doctor dropdown addition.",
-    "Adding new appointment fields or modifying the appointment creation form beyond the calendar fix.",
-    "Changing any other role options or permissions logic beyond adding 'Staff' to the dropdown."
+    "Adding new appointment filtering or sorting options.",
+    "Changing the layout or design of the Schedule tab.",
+    "Fixing the loading spinner issue (separate known issue).",
+    "Modifying tomorrow's or upcoming appointment sections."
   ],
   "imageRequirements": {
     "required": [],

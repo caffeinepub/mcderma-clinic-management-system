@@ -2,12 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-doctor-assignment-dropdown-to-each-appointment-entry-card-in-the-today-s-schedule-section-the-dropdown-should-appear-in-the-bottom-right-area-of-the-appointment-card-as-shown-in-the-uploaded-screenshot-it-should-list-only-staff-members-whose-role-is-doctor-selecting-a-doctor-from-the-dropdown-assigns-that-doctor-to-the-appointment-and-persists-the-assignment-via-the-backend",
-      "featureTitle": "Add a doctor assignment dropdown to each appointment entry card in the Today's Schedule section. The dropdown should appear in the bottom-right area of the appointment card (as shown in the uploaded screenshot). It should list only staff members whose role is 'Doctor'. Selecting a doctor from the dropdown assigns that doctor to the appointment and persists the assignment via the backend.",
+      "featureId": "feature-update-the-nextappointmentwidget-component-so-that-it-only-considers-appointments-from-today-s-appointment-list-when-determining-the-next-upcoming-appointment-it-must-not-pull-from-tomorrow-s-or-upcoming-appointment-sections",
+      "featureTitle": "Update the NextAppointmentWidget component so that it only considers appointments from today's appointment list when determining the next upcoming appointment. It must not pull from tomorrow's or upcoming appointment sections.",
       "files": [
-        "frontend/src/components/AppointmentCard.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/types/index.ts"
+        "frontend/src/components/NextAppointmentWidget.tsx",
+        "frontend/src/pages/WidgetView.tsx"
       ],
       "components": [
         "camera@1.0.0",
@@ -21,69 +20,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-next-appointment-widget-on-the-schedule-tab-to-source-its-data-exclusively-from-today-s-appointments-it-should-display-the-next-upcoming-appointment-by-time-that-falls-on-today-s-date-if-there-are-no-appointments-scheduled-for-today-the-widget-must-display-no-appointment-for-today-instead-of-any-other-placeholder-or-future-appointment",
-      "featureTitle": "Update the Next Appointment widget on the Schedule tab to source its data exclusively from today's appointments. It should display the next upcoming appointment (by time) that falls on today's date. If there are no appointments scheduled for today, the widget must display 'No Appointment For Today' instead of any other placeholder or future appointment.",
-      "files": [
-        "frontend/src/components/NextAppointmentWidget.tsx"
-      ],
-      "components": [
-        "camera@1.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-increase-the-size-of-the-calendar-displayed-inside-the-appointment-date-picker-appointmentdialog-by-30-compared-to-its-current-rendered-size-ensure-there-is-sufficient-spacing-between-individual-date-cells-so-that-numbers-are-not-cramped-apply-explicit-width-height-and-cell-size-overrides-using-css-targeting-the-rdp-react-day-picker-calendar-classes-already-present-in-index-css-to-guarantee-the-resize-takes-effect-and-is-not-overridden-by-default-styles",
-      "featureTitle": "Increase the size of the calendar displayed inside the appointment date picker (AppointmentDialog) by 30% compared to its current rendered size. Ensure there is sufficient spacing between individual date cells so that numbers are not cramped. Apply explicit width, height, and cell-size overrides using CSS (targeting the rdp/react-day-picker calendar classes already present in index.css) to guarantee the resize takes effect and is not overridden by default styles.",
-      "files": [
-        "frontend/src/index.css"
-      ],
-      "components": [
-        "camera@1.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-in-the-admin-tab-s-staff-management-form-permissionsmatrix-component-add-staff-as-a-selectable-option-in-the-role-dropdown-menu-alongside-the-existing-role-options",
-      "featureTitle": "In the Admin tab's staff management form (PermissionsMatrix component), add 'Staff' as a selectable option in the Role dropdown menu, alongside the existing role options.",
-      "files": [
-        "frontend/src/components/admin/PermissionsMatrix.tsx"
-      ],
-      "components": [
-        "camera@1.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }
