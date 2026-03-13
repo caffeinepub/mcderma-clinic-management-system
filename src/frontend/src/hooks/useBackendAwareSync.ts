@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useActor } from "./useActor";
 
 /**
  * Automatic synchronization hook that:
@@ -17,15 +17,15 @@ export function useBackendAwareSync() {
     if (!actor) return;
 
     const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['attendance'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAttendance"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
@@ -35,28 +35,28 @@ export function useBackendAwareSync() {
   useEffect(() => {
     const handleFocus = () => {
       if (!actor) return;
-      
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['attendance'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAttendance"] });
+      queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
     };
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
         handleFocus();
       }
     });
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [actor, queryClient]);
 }

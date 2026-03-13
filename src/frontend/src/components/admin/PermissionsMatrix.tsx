@@ -1,20 +1,32 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { useGetStaff, useAddStaff } from '../../hooks/useQueries';
-import { Users, Plus } from 'lucide-react';
-import type { StaffPermissions } from '../../hooks/useQueries';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Users } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useAddStaff, useGetStaff } from "../../hooks/useQueries";
+import type { StaffPermissions } from "../../hooks/useQueries";
 
 const ROLE_OPTIONS = [
-  'Admin',
-  'Doctor',
-  'Receptionist',
-  'Nurse',
-  'Patient Relationship Executive',
+  "Admin",
+  "Doctor",
+  "Receptionist",
+  "Nurse",
+  "Patient Relationship Executive",
 ];
 
 export default function PermissionsMatrix() {
@@ -22,12 +34,12 @@ export default function PermissionsMatrix() {
   const addStaff = useAddStaff();
 
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [newStaffName, setNewStaffName] = useState('');
-  const [newStaffRole, setNewStaffRole] = useState('');
+  const [newStaffName, setNewStaffName] = useState("");
+  const [newStaffRole, setNewStaffRole] = useState("");
 
   const handleAddStaff = async () => {
     if (!newStaffName.trim() || !newStaffRole.trim()) {
-      toast.error('Please enter staff name and select a role');
+      toast.error("Please enter staff name and select a role");
       return;
     }
 
@@ -46,13 +58,13 @@ export default function PermissionsMatrix() {
         permissions: defaultPermissions,
       });
 
-      toast.success('Staff member added successfully');
-      setNewStaffName('');
-      setNewStaffRole('');
+      toast.success("Staff member added successfully");
+      setNewStaffName("");
+      setNewStaffRole("");
       setShowAddStaff(false);
     } catch (error: any) {
-      toast.error('Failed to add staff member', {
-        description: error.message || 'Please try again',
+      toast.error("Failed to add staff member", {
+        description: error.message || "Please try again",
       });
     }
   };
@@ -71,7 +83,12 @@ export default function PermissionsMatrix() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!showAddStaff ? (
-            <Button onClick={() => setShowAddStaff(true)} variant="outline" size="sm" className="gap-2">
+            <Button
+              onClick={() => setShowAddStaff(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add Staff Member
             </Button>
@@ -103,13 +120,16 @@ export default function PermissionsMatrix() {
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleAddStaff} disabled={addStaff.isPending}>
-                  {addStaff.isPending ? 'Adding...' : 'Add'}
+                  {addStaff.isPending ? "Adding..." : "Add"}
                 </Button>
-                <Button variant="outline" onClick={() => {
-                  setShowAddStaff(false);
-                  setNewStaffName('');
-                  setNewStaffRole('');
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddStaff(false);
+                    setNewStaffName("");
+                    setNewStaffRole("");
+                  }}
+                >
                   Cancel
                 </Button>
               </div>
@@ -118,7 +138,9 @@ export default function PermissionsMatrix() {
 
           {staffList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No staff members found. Add staff members to track attendance.</p>
+              <p>
+                No staff members found. Add staff members to track attendance.
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -131,7 +153,9 @@ export default function PermissionsMatrix() {
                   >
                     <div>
                       <div className="font-medium">{staff.name}</div>
-                      <div className="text-sm text-muted-foreground">{staff.role}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {staff.role}
+                      </div>
                     </div>
                   </div>
                 ))}

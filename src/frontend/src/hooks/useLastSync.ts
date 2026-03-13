@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { formatTime12Hour } from '@/lib/utils';
+import { formatTime12Hour } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 /**
  * Hook that tracks the last successful data synchronization time.
@@ -13,10 +13,20 @@ export function useLastSync() {
   useEffect(() => {
     // Update last sync time whenever any data query is successfully fetched
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event?.type === 'updated' && event.query.state.status === 'success') {
+      if (event?.type === "updated" && event.query.state.status === "success") {
         const queryKey = event.query.queryKey[0] as string;
         // Track sync time for all data queries including profile
-        if (['appointments', 'todaysAppointments', 'tomorrowAppointments', 'upcomingAppointments', 'patients', 'leads', 'currentUserProfile'].includes(queryKey)) {
+        if (
+          [
+            "appointments",
+            "todaysAppointments",
+            "tomorrowAppointments",
+            "upcomingAppointments",
+            "patients",
+            "leads",
+            "currentUserProfile",
+          ].includes(queryKey)
+        ) {
           setLastSyncTime(new Date());
         }
       }
@@ -26,20 +36,20 @@ export function useLastSync() {
   }, [queryClient]);
 
   const formatLastSync = (date: Date | null): string => {
-    if (!date) return 'Never';
-    
+    if (!date) return "Never";
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins === 1) return '1 min ago';
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins === 1) return "1 min ago";
     if (diffMins < 60) return `${diffMins} mins ago`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return '1 hour ago';
+    if (diffHours === 1) return "1 hour ago";
     if (diffHours < 24) return `${diffHours} hours ago`;
-    
+
     // For older syncs, show time in 12-hour AM/PM format
     return formatTime12Hour(date);
   };

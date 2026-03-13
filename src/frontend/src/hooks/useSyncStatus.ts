@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 /**
  * Hook that tracks whether any data queries are currently fetching.
@@ -12,12 +12,22 @@ export function useSyncStatus() {
   useEffect(() => {
     const checkSyncStatus = () => {
       const queries = queryClient.getQueryCache().getAll();
-      const dataQueries = queries.filter(query => {
+      const dataQueries = queries.filter((query) => {
         const key = query.queryKey[0] as string;
-        return ['appointments', 'todaysAppointments', 'tomorrowAppointments', 'upcomingAppointments', 'patients', 'leads', 'currentUserProfile'].includes(key);
+        return [
+          "appointments",
+          "todaysAppointments",
+          "tomorrowAppointments",
+          "upcomingAppointments",
+          "patients",
+          "leads",
+          "currentUserProfile",
+        ].includes(key);
       });
 
-      const isAnyFetching = dataQueries.some(query => query.state.fetchStatus === 'fetching');
+      const isAnyFetching = dataQueries.some(
+        (query) => query.state.fetchStatus === "fetching",
+      );
       setIsSyncing(isAnyFetching);
     };
 

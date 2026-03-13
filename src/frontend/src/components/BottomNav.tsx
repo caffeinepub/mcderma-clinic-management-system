@@ -1,17 +1,17 @@
-import { Calendar, Users, UserPlus, Settings } from 'lucide-react';
+import { Calendar, Settings, UserPlus, Users } from "lucide-react";
 
 interface BottomNavProps {
-  activeTab: 'schedule' | 'patients' | 'leads' | 'settings';
-  onTabChange: (tab: 'schedule' | 'patients' | 'leads' | 'settings') => void;
-  allowedTabs: Array<'schedule' | 'patients' | 'leads' | 'settings'>;
+  activeTab: "schedule" | "patients" | "leads" | "settings";
+  onTabChange: (tab: "schedule" | "patients" | "leads" | "settings") => void;
+  allowedTabs: Array<"schedule" | "patients" | "leads" | "settings">;
 }
 
-export default function BottomNav({ activeTab, onTabChange, allowedTabs }: BottomNavProps) {
+export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const tabs = [
-    { id: 'schedule' as const, label: 'Schedule', icon: Calendar },
-    { id: 'patients' as const, label: 'Patients', icon: Users },
-    { id: 'leads' as const, label: 'Leads', icon: UserPlus },
-    { id: 'settings' as const, label: 'Settings', icon: Settings },
+    { id: "schedule" as const, label: "Schedule", icon: Calendar },
+    { id: "patients" as const, label: "Patients", icon: Users },
+    { id: "leads" as const, label: "Leads", icon: UserPlus },
+    { id: "settings" as const, label: "Settings", icon: Settings },
   ];
 
   // All tabs are always visible
@@ -23,18 +23,21 @@ export default function BottomNav({ activeTab, onTabChange, allowedTabs }: Botto
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
-          
+
           return (
             <button
+              type="button"
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${
                 isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? 'fill-primary/20' : ''}`} />
+              <Icon
+                className={`h-5 w-5 ${isActive ? "fill-primary/20" : ""}`}
+              />
               <span className="text-xs font-medium">{tab.label}</span>
             </button>
           );

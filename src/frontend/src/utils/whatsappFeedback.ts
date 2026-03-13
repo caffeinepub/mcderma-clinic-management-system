@@ -22,13 +22,16 @@ export function getFeedbackMessage(template?: string): string {
  * @param mobile - The mobile number to validate
  * @returns Object with isValid flag and sanitized mobile number
  */
-export function validateMobileForWhatsApp(mobile: string): { isValid: boolean; sanitized: string } {
-  if (!mobile || mobile.trim() === '') {
-    return { isValid: false, sanitized: '' };
+export function validateMobileForWhatsApp(mobile: string): {
+  isValid: boolean;
+  sanitized: string;
+} {
+  if (!mobile || mobile.trim() === "") {
+    return { isValid: false, sanitized: "" };
   }
 
   // Remove all non-digit characters
-  const sanitized = mobile.replace(/\D/g, '');
+  const sanitized = mobile.replace(/\D/g, "");
 
   // Check if we have a valid number (at least 10 digits)
   if (sanitized.length < 10) {
@@ -44,7 +47,10 @@ export function validateMobileForWhatsApp(mobile: string): { isValid: boolean; s
  * @param template - Optional custom template
  * @returns WhatsApp URL or null if mobile is invalid
  */
-export function generateWhatsAppFeedbackURL(mobile: string, template?: string): string | null {
+export function generateWhatsAppFeedbackURL(
+  mobile: string,
+  template?: string,
+): string | null {
   const { isValid, sanitized } = validateMobileForWhatsApp(mobile);
 
   if (!isValid) {
@@ -62,13 +68,16 @@ export function generateWhatsAppFeedbackURL(mobile: string, template?: string): 
  * @param template - Optional custom template
  * @returns true if successful, false if mobile is invalid
  */
-export function openWhatsAppFeedback(mobile: string, template?: string): boolean {
+export function openWhatsAppFeedback(
+  mobile: string,
+  template?: string,
+): boolean {
   const url = generateWhatsAppFeedbackURL(mobile, template);
 
   if (!url) {
     return false;
   }
 
-  window.open(url, '_blank');
+  window.open(url, "_blank");
   return true;
 }

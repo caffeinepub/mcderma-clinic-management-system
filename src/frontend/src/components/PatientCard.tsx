@@ -1,16 +1,28 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Phone, MapPin, Edit, Trash2, FileText, CalendarPlus } from 'lucide-react';
-import { SiWhatsapp } from 'react-icons/si';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { PatientView } from '../hooks/useQueries';
-import PatientDialog from './PatientDialog';
-import PatientPrescriptionHistoryDialog from './PatientPrescriptionHistoryDialog';
-import AppointmentDialog from './AppointmentDialog';
-import { useDeletePatient } from '../hooks/useQueries';
-import { toast } from 'sonner';
-import { normalizePhone } from '../utils/phone';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  CalendarPlus,
+  Edit,
+  FileText,
+  MapPin,
+  Phone,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { SiWhatsapp } from "react-icons/si";
+import { toast } from "sonner";
+import type { PatientView } from "../hooks/useQueries";
+import { useDeletePatient } from "../hooks/useQueries";
+import { normalizePhone } from "../utils/phone";
+import AppointmentDialog from "./AppointmentDialog";
+import PatientDialog from "./PatientDialog";
+import PatientPrescriptionHistoryDialog from "./PatientPrescriptionHistoryDialog";
 
 interface PatientCardProps {
   patient: PatientView;
@@ -26,10 +38,10 @@ export default function PatientCard({ patient }: PatientCardProps) {
     if (window.confirm(`Are you sure you want to delete ${patient.name}?`)) {
       try {
         await deletePatient.mutateAsync(patient.mobile);
-        toast.success('Patient deleted successfully');
+        toast.success("Patient deleted successfully");
       } catch (error: any) {
-        toast.error('Failed to delete patient', {
-          description: error.message || 'Please try again',
+        toast.error("Failed to delete patient", {
+          description: error.message || "Please try again",
         });
       }
     }
@@ -43,24 +55,24 @@ export default function PatientCard({ patient }: PatientCardProps) {
   const handleWhatsApp = () => {
     const normalizedMobile = normalizePhone(patient.mobile);
     const whatsappUrl = `https://wa.me/${normalizedMobile}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(whatsappUrl, "_blank");
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   const avatarColors = [
-    'from-blue-500 to-cyan-500',
-    'from-purple-500 to-pink-500',
-    'from-green-500 to-emerald-500',
-    'from-orange-500 to-red-500',
-    'from-indigo-500 to-blue-500',
+    "from-blue-500 to-cyan-500",
+    "from-purple-500 to-pink-500",
+    "from-green-500 to-emerald-500",
+    "from-orange-500 to-red-500",
+    "from-indigo-500 to-blue-500",
   ];
 
   const colorIndex = patient.name.charCodeAt(0) % avatarColors.length;

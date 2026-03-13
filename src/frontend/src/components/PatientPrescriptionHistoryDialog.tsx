@@ -1,6 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { usePrescriptions } from '../hooks/useQueries';
-import PrescriptionHistoryList from './prescription/PrescriptionHistoryList';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { usePrescriptions } from "../hooks/useQueries";
+import PrescriptionHistoryList from "./prescription/PrescriptionHistoryList";
 
 interface PatientPrescriptionHistoryDialogProps {
   open: boolean;
@@ -15,10 +20,13 @@ export default function PatientPrescriptionHistoryDialog({
   patientName,
   patientMobile,
 }: PatientPrescriptionHistoryDialogProps) {
-  const { data: prescriptions = [], isLoading } = usePrescriptions(patientMobile);
+  const { data: prescriptions = [], isLoading } =
+    usePrescriptions(patientMobile);
 
   // Sort by timestamp, newest first
-  const sortedPrescriptions = [...prescriptions].sort((a, b) => Number(b.timestamp - a.timestamp));
+  const sortedPrescriptions = [...prescriptions].sort((a, b) =>
+    Number(b.timestamp - a.timestamp),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,8 +41,8 @@ export default function PatientPrescriptionHistoryDialog({
         </DialogHeader>
 
         <div className="mt-4">
-          <PrescriptionHistoryList 
-            prescriptions={sortedPrescriptions} 
+          <PrescriptionHistoryList
+            prescriptions={sortedPrescriptions}
             isLoading={isLoading}
           />
         </div>

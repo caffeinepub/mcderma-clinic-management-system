@@ -1,12 +1,15 @@
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PrescriptionTypedFormProps {
   content: string;
   onChange: (content: string) => void;
 }
 
-export default function PrescriptionTypedForm({ content, onChange }: PrescriptionTypedFormProps) {
+export default function PrescriptionTypedForm({
+  content,
+  onChange,
+}: PrescriptionTypedFormProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -20,7 +23,8 @@ export default function PrescriptionTypedForm({ content, onChange }: Prescriptio
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        Enter prescription details including medicine names, dosage, frequency, duration, and any special instructions.
+        Enter prescription details including medicine names, dosage, frequency,
+        duration, and any special instructions.
       </p>
     </div>
   );

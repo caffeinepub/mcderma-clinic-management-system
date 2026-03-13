@@ -1,21 +1,46 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAddAppointment, useUpdateAppointment, useGetPatients } from '../hooks/useQueries';
-import { toast } from 'sonner';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import type { Appointment } from '../backend';
-import { useContactPicker } from '../hooks/useContactPicker';
-import ContactImportReviewDialog from './ContactImportReviewDialog';
-import { normalizePhone } from '../utils/phone';
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import type { Appointment } from "../backend";
+import { useContactPicker } from "../hooks/useContactPicker";
+import {
+  useAddAppointment,
+  useGetPatients,
+  useUpdateAppointment,
+} from "../hooks/useQueries";
+import { normalizePhone } from "../utils/phone";
+import ContactImportReviewDialog from "./ContactImportReviewDialog";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -41,49 +66,50 @@ export default function AppointmentDialog({
   const { data: patients = [] } = useGetPatients();
   const { pickContact } = useContactPicker();
 
-  const [patientName, setPatientName] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [patientName, setPatientName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [date, setDate] = useState<Date>();
-  const [hour, setHour] = useState('12');
-  const [minute, setMinute] = useState('00');
-  const [period, setPeriod] = useState<'AM' | 'PM'>('PM');
-  const [notes, setNotes] = useState('');
+  const [hour, setHour] = useState("12");
+  const [minute, setMinute] = useState("00");
+  const [period, setPeriod] = useState<"AM" | "PM">("PM");
+  const [notes, setNotes] = useState("");
   const [showContactReview, setShowContactReview] = useState(false);
-  const [selectedContactName, setSelectedContactName] = useState('');
-  const [selectedContactMobile, setSelectedContactMobile] = useState('');
+  const [selectedContactName, setSelectedContactName] = useState("");
+  const [selectedContactMobile, setSelectedContactMobile] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date | undefined>();
 
   // Check if Contact Picker API is supported
-  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
+  const isContactPickerSupported =
+    "contacts" in navigator && "ContactsManager" in window;
 
   useEffect(() => {
     if (open) {
       if (prefilledData) {
         setPatientName(prefilledData.patientName);
         setMobile(prefilledData.mobile);
-        setNotes(prefilledData.notes || '');
-        
+        setNotes(prefilledData.notes || "");
+
         if (prefilledData.appointmentTime) {
           setDate(prefilledData.appointmentTime);
           const hours = prefilledData.appointmentTime.getHours();
           const mins = prefilledData.appointmentTime.getMinutes();
-          
+
           if (hours === 0) {
-            setHour('12');
-            setPeriod('AM');
+            setHour("12");
+            setPeriod("AM");
           } else if (hours < 12) {
-            setHour(hours.toString().padStart(2, '0'));
-            setPeriod('AM');
+            setHour(hours.toString().padStart(2, "0"));
+            setPeriod("AM");
           } else if (hours === 12) {
-            setHour('12');
-            setPeriod('PM');
+            setHour("12");
+            setPeriod("PM");
           } else {
-            setHour((hours - 12).toString().padStart(2, '0'));
-            setPeriod('PM');
+            setHour((hours - 12).toString().padStart(2, "0"));
+            setPeriod("PM");
           }
-          
-          setMinute(mins.toString().padStart(2, '0'));
+
+          setMinute(mins.toString().padStart(2, "0"));
         } else {
           setDate(new Date());
         }
@@ -91,36 +117,38 @@ export default function AppointmentDialog({
         setPatientName(appointment.patientName);
         setMobile(appointment.mobile);
         setNotes(appointment.notes);
-        
-        const appointmentDate = new Date(Number(appointment.appointmentTime) / 1000000);
+
+        const appointmentDate = new Date(
+          Number(appointment.appointmentTime) / 1000000,
+        );
         setDate(appointmentDate);
-        
+
         const hours = appointmentDate.getHours();
         const mins = appointmentDate.getMinutes();
-        
+
         if (hours === 0) {
-          setHour('12');
-          setPeriod('AM');
+          setHour("12");
+          setPeriod("AM");
         } else if (hours < 12) {
-          setHour(hours.toString().padStart(2, '0'));
-          setPeriod('AM');
+          setHour(hours.toString().padStart(2, "0"));
+          setPeriod("AM");
         } else if (hours === 12) {
-          setHour('12');
-          setPeriod('PM');
+          setHour("12");
+          setPeriod("PM");
         } else {
-          setHour((hours - 12).toString().padStart(2, '0'));
-          setPeriod('PM');
+          setHour((hours - 12).toString().padStart(2, "0"));
+          setPeriod("PM");
         }
-        
-        setMinute(mins.toString().padStart(2, '0'));
+
+        setMinute(mins.toString().padStart(2, "0"));
       } else {
-        setPatientName('');
-        setMobile('');
+        setPatientName("");
+        setMobile("");
         setDate(new Date());
-        setHour('12');
-        setMinute('00');
-        setPeriod('PM');
-        setNotes('');
+        setHour("12");
+        setMinute("00");
+        setPeriod("PM");
+        setNotes("");
       }
     }
   }, [open, appointment, prefilledData]);
@@ -129,19 +157,19 @@ export default function AppointmentDialog({
     e.preventDefault();
 
     if (!date) {
-      toast.error('Please select a date');
+      toast.error("Please select a date");
       return;
     }
 
-    let hours = parseInt(hour);
-    if (period === 'PM' && hours !== 12) {
+    let hours = Number.parseInt(hour);
+    if (period === "PM" && hours !== 12) {
       hours += 12;
-    } else if (period === 'AM' && hours === 12) {
+    } else if (period === "AM" && hours === 12) {
       hours = 0;
     }
 
     const appointmentDateTime = new Date(date);
-    appointmentDateTime.setHours(hours, parseInt(minute), 0, 0);
+    appointmentDateTime.setHours(hours, Number.parseInt(minute), 0, 0);
     const timestamp = BigInt(appointmentDateTime.getTime() * 1000000);
 
     try {
@@ -157,12 +185,14 @@ export default function AppointmentDialog({
             isFollowUp: appointment.isFollowUp,
           },
         });
-        toast.success('Appointment updated successfully');
+        toast.success("Appointment updated successfully");
       } else {
         // Check if patient exists before creating appointment
         const normalizedMobile = normalizePhone(mobile);
-        const patientExists = patients.some(p => normalizePhone(p.mobile) === normalizedMobile);
-        
+        const patientExists = patients.some(
+          (p) => normalizePhone(p.mobile) === normalizedMobile,
+        );
+
         // If patient doesn't exist, they will be auto-created by the backend
         await addAppointment.mutateAsync({
           patientName,
@@ -170,16 +200,20 @@ export default function AppointmentDialog({
           appointmentTime: timestamp,
           notes,
         });
-        
+
         if (!patientExists) {
-          toast.success('Appointment created and patient added successfully');
+          toast.success("Appointment created and patient added successfully");
         } else {
-          toast.success('Appointment created successfully');
+          toast.success("Appointment created successfully");
         }
       }
       onOpenChange(false);
-    } catch (error) {
-      toast.error(isEditing ? 'Failed to update appointment' : 'Failed to create appointment');
+    } catch (_error) {
+      toast.error(
+        isEditing
+          ? "Failed to update appointment"
+          : "Failed to create appointment",
+      );
     }
   };
 
@@ -192,8 +226,8 @@ export default function AppointmentDialog({
         setShowContactReview(true);
       }
     } catch (error: any) {
-      if (error.message !== 'User cancelled contact selection') {
-        toast.error('Failed to import contact');
+      if (error.message !== "User cancelled contact selection") {
+        toast.error("Failed to import contact");
       }
     }
   };
@@ -202,8 +236,8 @@ export default function AppointmentDialog({
     setPatientName(name);
     setMobile(mobile);
     setShowContactReview(false);
-    setSelectedContactName('');
-    setSelectedContactMobile('');
+    setSelectedContactName("");
+    setSelectedContactMobile("");
   };
 
   const handleCalendarOpen = (open: boolean) => {
@@ -238,7 +272,9 @@ export default function AppointmentDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Appointment' : 'New Appointment'}</DialogTitle>
+            <DialogTitle>
+              {isEditing ? "Edit Appointment" : "New Appointment"}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -253,7 +289,12 @@ export default function AppointmentDialog({
                   className="flex-1"
                 />
                 {isContactPickerSupported && !isEditing && (
-                  <Button type="button" variant="outline" size="icon" onClick={handleImportContact}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleImportContact}
+                  >
                     <UserPlus className="h-4 w-4" />
                   </Button>
                 )}
@@ -273,36 +314,50 @@ export default function AppointmentDialog({
 
             <div className="space-y-2">
               <Label>Appointment Date</Label>
-              <Popover open={calendarOpen} onOpenChange={handleCalendarOpen} modal={true}>
+              <Popover
+                open={calendarOpen}
+                onOpenChange={handleCalendarOpen}
+                modal={true}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !date && 'text-muted-foreground'
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, 'PPP') : <span>Pick a date</span>}
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 appointment-calendar-popover" align="center" side="top">
+                <PopoverContent
+                  className="w-auto p-0 appointment-calendar-popover"
+                  align="center"
+                  side="top"
+                >
                   <div className="enhanced-calendar-container">
                     {/* Blue header with selected date */}
                     <div className="calendar-header">
-                      <div className="calendar-year">{tempDate ? format(tempDate, 'yyyy') : format(new Date(), 'yyyy')}</div>
+                      <div className="calendar-year">
+                        {tempDate
+                          ? format(tempDate, "yyyy")
+                          : format(new Date(), "yyyy")}
+                      </div>
                       <div className="calendar-selected-date">
-                        {tempDate ? format(tempDate, 'EEE, d MMM') : format(new Date(), 'EEE, d MMM')}
+                        {tempDate
+                          ? format(tempDate, "EEE, d MMM")
+                          : format(new Date(), "EEE, d MMM")}
                       </div>
                     </div>
 
                     {/* Calendar grid */}
                     <div className="calendar-body">
-                      <Calendar 
-                        mode="single" 
-                        selected={tempDate} 
-                        onSelect={handleDateSelect} 
-                        initialFocus 
+                      <Calendar
+                        mode="single"
+                        selected={tempDate}
+                        onSelect={handleDateSelect}
+                        initialFocus
                       />
                     </div>
 
@@ -347,7 +402,7 @@ export default function AppointmentDialog({
                   </SelectTrigger>
                   <SelectContent>
                     {Array.from({ length: 12 }, (_, i) => {
-                      const h = (i + 1).toString().padStart(2, '0');
+                      const h = (i + 1).toString().padStart(2, "0");
                       return (
                         <SelectItem key={h} value={h}>
                           {h}
@@ -362,7 +417,7 @@ export default function AppointmentDialog({
                     <SelectValue placeholder="Min" />
                   </SelectTrigger>
                   <SelectContent>
-                    {['00', '15', '30', '45'].map((m) => (
+                    {["00", "15", "30", "45"].map((m) => (
                       <SelectItem key={m} value={m}>
                         {m}
                       </SelectItem>
@@ -370,7 +425,10 @@ export default function AppointmentDialog({
                   </SelectContent>
                 </Select>
 
-                <Select value={period} onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}>
+                <Select
+                  value={period}
+                  onValueChange={(v) => setPeriod(v as "AM" | "PM")}
+                >
                   <SelectTrigger className="w-[100px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -394,15 +452,24 @@ export default function AppointmentDialog({
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={addAppointment.isPending || updateAppointment.isPending}>
+              <Button
+                type="submit"
+                disabled={
+                  addAppointment.isPending || updateAppointment.isPending
+                }
+              >
                 {addAppointment.isPending || updateAppointment.isPending
-                  ? 'Saving...'
+                  ? "Saving..."
                   : isEditing
-                  ? 'Update'
-                  : 'Create'}
+                    ? "Update"
+                    : "Create"}
               </Button>
             </DialogFooter>
           </form>

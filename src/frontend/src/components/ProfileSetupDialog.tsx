@@ -1,27 +1,33 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useSaveCallerUserProfile } from '../hooks/useQueries';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useSaveCallerUserProfile } from "../hooks/useQueries";
 
 export default function ProfileSetupDialog() {
-  const [username, setUsername] = useState('');
-  const [clinicName, setClinicName] = useState('McDerma');
+  const [username, setUsername] = useState("");
+  const [clinicName, setClinicName] = useState("McDerma");
   const saveProfile = useSaveCallerUserProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!username.trim()) {
-      toast.error('Please enter your name');
+      toast.error("Please enter your name");
       return;
     }
 
     if (!clinicName.trim()) {
-      toast.error('Please enter clinic name');
+      toast.error("Please enter clinic name");
       return;
     }
 
@@ -30,16 +36,19 @@ export default function ProfileSetupDialog() {
         username: username.trim(),
         clinicName: clinicName.trim(),
       });
-      toast.success('Profile setup complete!');
+      toast.success("Profile setup complete!");
     } catch (error) {
-      console.error('Profile setup error:', error);
-      toast.error('Failed to save profile. Please try again.');
+      console.error("Profile setup error:", error);
+      toast.error("Failed to save profile. Please try again.");
     }
   };
 
   return (
     <Dialog open={true}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Welcome! Set up your profile</DialogTitle>
           <DialogDescription>
@@ -70,14 +79,18 @@ export default function ProfileSetupDialog() {
               disabled={saveProfile.isPending}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={saveProfile.isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={saveProfile.isPending}
+          >
             {saveProfile.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
-              'Continue'
+              "Continue"
             )}
           </Button>
         </form>

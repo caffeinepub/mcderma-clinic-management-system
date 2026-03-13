@@ -1,32 +1,52 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useGetCallerUserProfile, useSaveCallerUserProfile, useGetAppointments, useGetPatients, useGetLeads, useGetAllAttendance } from '../hooks/useQueries';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { User, Share2, Download, Shield, MessageSquare, ClipboardCheck } from 'lucide-react';
-import WhatsAppTemplatesEditor from '../components/settings/WhatsAppTemplatesEditor';
-import AdminGateDialog from '../components/admin/AdminGateDialog';
-import PermissionsMatrix from '../components/admin/PermissionsMatrix';
-import AttendanceSection from '../components/settings/AttendanceSection';
-import { exportAttendanceData } from '../utils/attendanceExport';
-import ExportFormatDialog from '../components/ExportFormatDialog';
+import { Button } from "@/components/ui/button";
 import {
-  exportAppointmentsToPDF,
-  exportPatientsToPDF,
-  exportLeadsToPDF,
-  exportAttendanceToPDF,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  ClipboardCheck,
+  Download,
+  MessageSquare,
+  Share2,
+  Shield,
+  User,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import ExportFormatDialog from "../components/ExportFormatDialog";
+import AdminGateDialog from "../components/admin/AdminGateDialog";
+import PermissionsMatrix from "../components/admin/PermissionsMatrix";
+import AttendanceSection from "../components/settings/AttendanceSection";
+import WhatsAppTemplatesEditor from "../components/settings/WhatsAppTemplatesEditor";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  useGetAllAttendance,
+  useGetAppointments,
+  useGetCallerUserProfile,
+  useGetLeads,
+  useGetPatients,
+  useSaveCallerUserProfile,
+} from "../hooks/useQueries";
+import { exportAttendanceData } from "../utils/attendanceExport";
+import {
   exportAppointmentsToExcel,
-  exportPatientsToExcel,
-  exportLeadsToExcel,
+  exportAppointmentsToPDF,
   exportAttendanceToExcel,
-} from '../utils/exportUtils';
+  exportAttendanceToPDF,
+  exportLeadsToExcel,
+  exportLeadsToPDF,
+  exportPatientsToExcel,
+  exportPatientsToPDF,
+} from "../utils/exportUtils";
 
-type ExportType = 'appointments' | 'patients' | 'leads' | 'attendance' | null;
+type ExportType = "appointments" | "patients" | "leads" | "attendance" | null;
 
 export default function SettingsTab() {
   const { data: profile } = useGetCallerUserProfile();
@@ -38,8 +58,8 @@ export default function SettingsTab() {
   const { data: leads = [] } = useGetLeads();
   const { data: attendance = [] } = useGetAllAttendance();
 
-  const [username, setUsername] = useState(profile?.username || '');
-  const [clinicName, setClinicName] = useState(profile?.clinicName || '');
+  const [username, setUsername] = useState(profile?.username || "");
+  const [clinicName, setClinicName] = useState(profile?.clinicName || "");
   const [showAdminGate, setShowAdminGate] = useState(false);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -51,22 +71,22 @@ export default function SettingsTab() {
         username,
         clinicName,
       });
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
+      toast.success("Profile updated successfully");
+    } catch (_error) {
+      toast.error("Failed to update profile");
     }
   };
 
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
-    toast.success('Logged out successfully');
+    toast.success("Logged out successfully");
   };
 
   const handleShareApp = async () => {
     const shareData = {
-      title: 'McDerma Clinic App',
-      text: 'Check out this clinic management app!',
+      title: "McDerma Clinic App",
+      text: "Check out this clinic management app!",
       url: window.location.origin,
     };
 
@@ -75,10 +95,10 @@ export default function SettingsTab() {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(window.location.origin);
-        toast.success('App link copied to clipboard');
+        toast.success("App link copied to clipboard");
       }
-    } catch (error) {
-      toast.error('Failed to share app');
+    } catch (_error) {
+      toast.error("Failed to share app");
     }
   };
 
@@ -87,41 +107,41 @@ export default function SettingsTab() {
     setShowExportDialog(true);
   };
 
-  const handleExportConfirm = (format: 'pdf' | 'excel') => {
+  const handleExportConfirm = (format: "pdf" | "excel") => {
     try {
-      if (exportType === 'appointments') {
-        if (format === 'pdf') {
+      if (exportType === "appointments") {
+        if (format === "pdf") {
           exportAppointmentsToPDF(appointments);
         } else {
           exportAppointmentsToExcel(appointments);
         }
-        toast.success('Appointments exported successfully');
-      } else if (exportType === 'patients') {
-        if (format === 'pdf') {
+        toast.success("Appointments exported successfully");
+      } else if (exportType === "patients") {
+        if (format === "pdf") {
           exportPatientsToPDF(patients);
         } else {
           exportPatientsToExcel(patients);
         }
-        toast.success('Patients exported successfully');
-      } else if (exportType === 'leads') {
-        if (format === 'pdf') {
+        toast.success("Patients exported successfully");
+      } else if (exportType === "leads") {
+        if (format === "pdf") {
           exportLeadsToPDF(leads);
         } else {
           exportLeadsToExcel(leads);
         }
-        toast.success('Leads exported successfully');
-      } else if (exportType === 'attendance') {
+        toast.success("Leads exported successfully");
+      } else if (exportType === "attendance") {
         const monthlyData = exportAttendanceData(attendance);
-        if (format === 'pdf') {
+        if (format === "pdf") {
           exportAttendanceToPDF(attendance, monthlyData);
         } else {
           exportAttendanceToExcel(attendance, monthlyData);
         }
-        toast.success('Attendance exported successfully');
+        toast.success("Attendance exported successfully");
       }
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export data');
+      console.error("Export error:", error);
+      toast.error("Failed to export data");
     }
   };
 
@@ -134,7 +154,9 @@ export default function SettingsTab() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your profile and application settings</p>
+        <p className="text-muted-foreground">
+          Manage your profile and application settings
+        </p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
@@ -165,7 +187,9 @@ export default function SettingsTab() {
           <Card>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal and clinic information</CardDescription>
+              <CardDescription>
+                Update your personal and clinic information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -189,10 +213,17 @@ export default function SettingsTab() {
               </div>
 
               <div className="flex gap-3">
-                <Button onClick={handleSaveProfile} disabled={saveProfile.isPending}>
-                  {saveProfile.isPending ? 'Saving...' : 'Save Changes'}
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={saveProfile.isPending}
+                >
+                  {saveProfile.isPending ? "Saving..." : "Save Changes"}
                 </Button>
-                <Button variant="outline" onClick={handleShareApp} className="gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleShareApp}
+                  className="gap-2"
+                >
                   <Share2 className="h-4 w-4" />
                   Share App
                 </Button>
@@ -234,7 +265,10 @@ export default function SettingsTab() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setShowAdminGate(true)} className="gap-2">
+                <Button
+                  onClick={() => setShowAdminGate(true)}
+                  className="gap-2"
+                >
                   <Shield className="h-4 w-4" />
                   Unlock Admin Section
                 </Button>
@@ -255,19 +289,35 @@ export default function SettingsTab() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button onClick={() => handleExportClick('appointments')} variant="outline" className="gap-2 justify-start">
+                <Button
+                  onClick={() => handleExportClick("appointments")}
+                  variant="outline"
+                  className="gap-2 justify-start"
+                >
                   <Download className="h-4 w-4" />
                   Export Appointments
                 </Button>
-                <Button onClick={() => handleExportClick('patients')} variant="outline" className="gap-2 justify-start">
+                <Button
+                  onClick={() => handleExportClick("patients")}
+                  variant="outline"
+                  className="gap-2 justify-start"
+                >
                   <Download className="h-4 w-4" />
                   Export Patients
                 </Button>
-                <Button onClick={() => handleExportClick('leads')} variant="outline" className="gap-2 justify-start">
+                <Button
+                  onClick={() => handleExportClick("leads")}
+                  variant="outline"
+                  className="gap-2 justify-start"
+                >
                   <Download className="h-4 w-4" />
                   Export Leads
                 </Button>
-                <Button onClick={() => handleExportClick('attendance')} variant="outline" className="gap-2 justify-start">
+                <Button
+                  onClick={() => handleExportClick("attendance")}
+                  variant="outline"
+                  className="gap-2 justify-start"
+                >
                   <Download className="h-4 w-4" />
                   Export Attendance
                 </Button>

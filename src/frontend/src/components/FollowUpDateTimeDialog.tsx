@@ -1,11 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface FollowUpDateTimeDialogProps {
   open: boolean;
@@ -21,20 +33,20 @@ export default function FollowUpDateTimeDialog({
   isPending = false,
 }: FollowUpDateTimeDialogProps) {
   const [formData, setFormData] = useState({
-    date: format(new Date(), 'yyyy-MM-dd'),
-    hour: '9',
-    minute: '00',
-    period: 'AM' as 'AM' | 'PM',
+    date: format(new Date(), "yyyy-MM-dd"),
+    hour: "9",
+    minute: "00",
+    period: "AM" as "AM" | "PM",
   });
 
   useEffect(() => {
     if (open) {
       // Reset to default values when dialog opens
       setFormData({
-        date: format(new Date(), 'yyyy-MM-dd'),
-        hour: '9',
-        minute: '00',
-        period: 'AM',
+        date: format(new Date(), "yyyy-MM-dd"),
+        hour: "9",
+        minute: "00",
+        period: "AM",
       });
     }
   }, [open]);
@@ -43,14 +55,14 @@ export default function FollowUpDateTimeDialog({
     e.preventDefault();
 
     // Convert 12-hour format to 24-hour format
-    let hours = parseInt(formData.hour);
-    if (formData.period === 'PM' && hours !== 12) {
+    let hours = Number.parseInt(formData.hour);
+    if (formData.period === "PM" && hours !== 12) {
       hours += 12;
-    } else if (formData.period === 'AM' && hours === 12) {
+    } else if (formData.period === "AM" && hours === 12) {
       hours = 0;
     }
 
-    const timeString = `${hours.toString().padStart(2, '0')}:${formData.minute}`;
+    const timeString = `${hours.toString().padStart(2, "0")}:${formData.minute}`;
     const dateTime = new Date(`${formData.date}T${timeString}`);
     const appointmentTime = BigInt(dateTime.getTime() * 1000000);
 
@@ -58,7 +70,7 @@ export default function FollowUpDateTimeDialog({
   };
 
   const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
-  const minutes = ['00', '15', '30', '45'];
+  const minutes = ["00", "15", "30", "45"];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,7 +85,9 @@ export default function FollowUpDateTimeDialog({
               id="followup-date"
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
               required
               disabled={isPending}
             />
@@ -84,7 +98,9 @@ export default function FollowUpDateTimeDialog({
             <div className="flex gap-2">
               <Select
                 value={formData.hour}
-                onValueChange={(value) => setFormData({ ...formData, hour: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, hour: value })
+                }
                 disabled={isPending}
               >
                 <SelectTrigger className="flex-1">
@@ -101,7 +117,9 @@ export default function FollowUpDateTimeDialog({
 
               <Select
                 value={formData.minute}
-                onValueChange={(value) => setFormData({ ...formData, minute: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, minute: value })
+                }
                 disabled={isPending}
               >
                 <SelectTrigger className="flex-1">
@@ -118,7 +136,9 @@ export default function FollowUpDateTimeDialog({
 
               <Select
                 value={formData.period}
-                onValueChange={(value: 'AM' | 'PM') => setFormData({ ...formData, period: value })}
+                onValueChange={(value: "AM" | "PM") =>
+                  setFormData({ ...formData, period: value })
+                }
                 disabled={isPending}
               >
                 <SelectTrigger className="w-20">
@@ -133,7 +153,12 @@ export default function FollowUpDateTimeDialog({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
@@ -143,7 +168,7 @@ export default function FollowUpDateTimeDialog({
                   Scheduling...
                 </>
               ) : (
-                'Confirm'
+                "Confirm"
               )}
             </Button>
           </DialogFooter>

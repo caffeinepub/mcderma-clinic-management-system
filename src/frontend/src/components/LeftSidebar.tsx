@@ -1,13 +1,23 @@
-import { useState } from 'react';
-import { X, UserCheck, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetStaff, useCreateAttendance, useGetTodaysAttendance } from '../hooks/useQueries';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { formatTime12Hour } from '../lib/utils';
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useQueryClient } from "@tanstack/react-query";
+import { LogOut, UserCheck, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import {
+  useCreateAttendance,
+  useGetStaff,
+  useGetTodaysAttendance,
+} from "../hooks/useQueries";
+import { formatTime12Hour } from "../lib/utils";
 
 interface LeftSidebarProps {
   open: boolean;
@@ -20,19 +30,19 @@ export default function LeftSidebar({ open, onClose }: LeftSidebarProps) {
   const { data: staff = [] } = useGetStaff();
   const { data: todaysAttendance = [] } = useGetTodaysAttendance();
   const createAttendance = useCreateAttendance();
-  const [selectedStaffName, setSelectedStaffName] = useState<string>('');
+  const [selectedStaffName, setSelectedStaffName] = useState<string>("");
 
-  const selectedStaff = staff.find(s => s.name === selectedStaffName);
+  const selectedStaff = staff.find((s) => s.name === selectedStaffName);
 
   const handleCheckIn = async () => {
     if (!selectedStaffName) {
-      toast.error('Please select a staff member');
+      toast.error("Please select a staff member");
       return;
     }
 
-    const staffMember = staff.find(s => s.name === selectedStaffName);
+    const staffMember = staff.find((s) => s.name === selectedStaffName);
     if (!staffMember) {
-      toast.error('Staff member not found');
+      toast.error("Staff member not found");
       return;
     }
 
@@ -43,19 +53,19 @@ export default function LeftSidebar({ open, onClose }: LeftSidebarProps) {
       });
 
       toast.success(`${staffMember.name} checked in successfully`);
-      setSelectedStaffName('');
+      setSelectedStaffName("");
     } catch (error: any) {
-      toast.error('Failed to check in', {
-        description: error.message || 'Please try again',
+      toast.error("Failed to check in", {
+        description: error.message || "Please try again",
       });
     }
   };
 
   const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+    if (window.confirm("Are you sure you want to logout?")) {
       await clear();
       queryClient.clear();
-      toast.success('Logged out successfully');
+      toast.success("Logged out successfully");
       onClose();
     }
   };
@@ -67,13 +77,19 @@ export default function LeftSidebar({ open, onClose }: LeftSidebarProps) {
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onClose}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClose();
+          }}
+          role="button"
+          tabIndex={-1}
+          aria-label="Close sidebar"
         />
       )}
 
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full w-80 bg-card border-r border-border z-50 transform transition-transform duration-300 ease-in-out ${
-          open ? 'translate-x-0' : '-translate-x-full'
+          open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -96,10 +112,13 @@ export default function LeftSidebar({ open, onClose }: LeftSidebarProps) {
               {/* Check In Subsection */}
               <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border">
                 <h4 className="text-sm font-medium">Check In</h4>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="staffName">Staff Name</Label>
-                  <Select value={selectedStaffName} onValueChange={setSelectedStaffName}>
+                  <Select
+                    value={selectedStaffName}
+                    onValueChange={setSelectedStaffName}
+                  >
                     <SelectTrigger id="staffName">
                       <SelectValue placeholder="Select staff member" />
                     </SelectTrigger>
@@ -134,28 +153,30 @@ export default function LeftSidebar({ open, onClose }: LeftSidebarProps) {
                   className="w-full gap-2"
                 >
                   <UserCheck className="h-4 w-4" />
-                  {createAttendance.isPending ? 'Checking in...' : 'Check In'}
+                  {createAttendance.isPending ? "Checking in..." : "Check In"}
                 </Button>
               </div>
 
               {/* Today's Attendance */}
               <div className="space-y-3">
                 <h4 className="text-sm font-medium">Today's Attendance</h4>
-                
+
                 {todaysAttendance.length === 0 ? (
                   <p className="text-sm text-muted-foreground px-3 py-2">
                     No check-ins yet today
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {todaysAttendance.map((record, index) => (
+                    {todaysAttendance.map((record) => (
                       <div
-                        key={index}
+                        key={`${record.name}-${record.timestamp.toString()}`}
                         className="flex items-center justify-between px-3 py-2 bg-muted/30 rounded-md border border-border text-sm"
                       >
                         <span className="font-medium">{record.name}</span>
                         <span className="text-muted-foreground">
-                          {formatTime12Hour(new Date(Number(record.timestamp) / 1000000))}
+                          {formatTime12Hour(
+                            new Date(Number(record.timestamp) / 1000000),
+                          )}
                         </span>
                       </div>
                     ))}

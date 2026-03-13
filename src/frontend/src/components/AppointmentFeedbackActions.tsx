@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { validateMobileForWhatsApp, generateWhatsAppFeedbackURL, getFeedbackMessage } from '../utils/whatsappFeedback';
-import WhatsAppFeedbackPreviewDialog from './WhatsAppFeedbackPreviewDialog';
-import { useGetWhatsAppTemplates } from '../hooks/useQueries';
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useGetWhatsAppTemplates } from "../hooks/useQueries";
+import {
+  generateWhatsAppFeedbackURL,
+  getFeedbackMessage,
+  validateMobileForWhatsApp,
+} from "../utils/whatsappFeedback";
+import WhatsAppFeedbackPreviewDialog from "./WhatsAppFeedbackPreviewDialog";
 
 interface AppointmentFeedbackActionsProps {
   mobile: string;
@@ -12,18 +16,24 @@ interface AppointmentFeedbackActionsProps {
   compact?: boolean;
 }
 
-export default function AppointmentFeedbackActions({ mobile, patientName, compact = false }: AppointmentFeedbackActionsProps) {
+export default function AppointmentFeedbackActions({
+  mobile,
+  patientName,
+  compact = false,
+}: AppointmentFeedbackActionsProps) {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  const [sanitizedMobile, setSanitizedMobile] = useState('');
-  const { data: templates = {} } = useGetWhatsAppTemplates();
+  const [sanitizedMobile, setSanitizedMobile] = useState("");
+  const { data: templates = [] } = useGetWhatsAppTemplates();
 
-  const feedbackTemplate = templates['after_appointment_feedback'];
+  const feedbackTemplate = templates.find(
+    (t) => t.templateName === "after_appointment_feedback",
+  )?.messageContent;
 
   const handleFeedbackClick = () => {
     const { isValid, sanitized } = validateMobileForWhatsApp(mobile);
 
     if (!isValid) {
-      toast.error('Cannot send feedback request', {
+      toast.error("Cannot send feedback request", {
         description: `No valid mobile number found for ${patientName}. Please update the patient's contact information.`,
       });
       return;
@@ -36,7 +46,7 @@ export default function AppointmentFeedbackActions({ mobile, patientName, compac
   const handleConfirmSend = () => {
     const url = generateWhatsAppFeedbackURL(mobile, feedbackTemplate);
     if (url) {
-      window.open(url, '_blank');
+      window.open(url, "_blank");
     }
   };
 

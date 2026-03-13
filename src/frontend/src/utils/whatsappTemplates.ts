@@ -13,9 +13,12 @@ export interface LeadTemplateData {
  * Default WhatsApp templates for lead communication
  */
 export const DEFAULT_LEAD_TEMPLATES = {
-  initialContact: 'Hello {leadName}! Thank you for your interest in {treatmentWanted}. We would love to discuss your requirements. When would be a good time to connect?',
-  followUp: 'Hi {leadName}, following up on your inquiry about {treatmentWanted}. Are you still interested? We have some great options available for you.',
-  appointmentScheduling: 'Hello {leadName}! We are ready to schedule your appointment for {treatmentWanted}. Please let us know your preferred date and time.',
+  initialContact:
+    "Hello {leadName}! Thank you for your interest in {treatmentWanted}. We would love to discuss your requirements. When would be a good time to connect?",
+  followUp:
+    "Hi {leadName}, following up on your inquiry about {treatmentWanted}. Are you still interested? We have some great options available for you.",
+  appointmentScheduling:
+    "Hello {leadName}! We are ready to schedule your appointment for {treatmentWanted}. Please let us know your preferred date and time.",
 };
 
 /**
@@ -24,11 +27,14 @@ export const DEFAULT_LEAD_TEMPLATES = {
  * @param data - Lead data to fill placeholders
  * @returns Personalized message
  */
-export function generateLeadMessage(template: string, data: LeadTemplateData): string {
+export function generateLeadMessage(
+  template: string,
+  data: LeadTemplateData,
+): string {
   return template
     .replace(/{leadName}/g, data.leadName)
     .replace(/{treatmentWanted}/g, data.treatmentWanted)
-    .replace(/{clinicName}/g, data.clinicName || 'our clinic');
+    .replace(/{clinicName}/g, data.clinicName || "our clinic");
 }
 
 /**
@@ -37,7 +43,10 @@ export function generateLeadMessage(template: string, data: LeadTemplateData): s
  * @param customTemplate - Optional custom template
  * @returns Formatted message
  */
-export function getLeadInitialContactMessage(data: LeadTemplateData, customTemplate?: string): string {
+export function getLeadInitialContactMessage(
+  data: LeadTemplateData,
+  customTemplate?: string,
+): string {
   const template = customTemplate || DEFAULT_LEAD_TEMPLATES.initialContact;
   return generateLeadMessage(template, data);
 }
@@ -48,7 +57,10 @@ export function getLeadInitialContactMessage(data: LeadTemplateData, customTempl
  * @param customTemplate - Optional custom template
  * @returns Formatted message
  */
-export function getLeadFollowUpMessage(data: LeadTemplateData, customTemplate?: string): string {
+export function getLeadFollowUpMessage(
+  data: LeadTemplateData,
+  customTemplate?: string,
+): string {
   const template = customTemplate || DEFAULT_LEAD_TEMPLATES.followUp;
   return generateLeadMessage(template, data);
 }
@@ -59,8 +71,12 @@ export function getLeadFollowUpMessage(data: LeadTemplateData, customTemplate?: 
  * @param customTemplate - Optional custom template
  * @returns Formatted message
  */
-export function getLeadAppointmentMessage(data: LeadTemplateData, customTemplate?: string): string {
-  const template = customTemplate || DEFAULT_LEAD_TEMPLATES.appointmentScheduling;
+export function getLeadAppointmentMessage(
+  data: LeadTemplateData,
+  customTemplate?: string,
+): string {
+  const template =
+    customTemplate || DEFAULT_LEAD_TEMPLATES.appointmentScheduling;
   return generateLeadMessage(template, data);
 }
 
@@ -70,13 +86,16 @@ export function getLeadAppointmentMessage(data: LeadTemplateData, customTemplate
  * @param message - Message to send
  * @returns true if successful
  */
-export function openWhatsAppWithLeadMessage(mobile: string, message: string): boolean {
+export function openWhatsAppWithLeadMessage(
+  mobile: string,
+  message: string,
+): boolean {
   if (!mobile || !message) {
     return false;
   }
 
   // Remove all non-digit characters
-  const sanitizedMobile = mobile.replace(/\D/g, '');
+  const sanitizedMobile = mobile.replace(/\D/g, "");
 
   if (sanitizedMobile.length < 10) {
     return false;
@@ -84,7 +103,7 @@ export function openWhatsAppWithLeadMessage(mobile: string, message: string): bo
 
   const encodedMessage = encodeURIComponent(message);
   const url = `https://wa.me/${sanitizedMobile}?text=${encodedMessage}`;
-  
-  window.open(url, '_blank');
+
+  window.open(url, "_blank");
   return true;
 }

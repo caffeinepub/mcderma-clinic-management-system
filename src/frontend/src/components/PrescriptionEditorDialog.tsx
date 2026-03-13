@@ -1,20 +1,42 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Camera, Send, Loader2, FileText, PenTool, History } from 'lucide-react';
-import { toast } from 'sonner';
-import type { Appointment, Prescription } from '../backend';
-import { ExternalBlob, Variant_typed_freehand_camera, Variant_telemedicine_inPerson } from '../backend';
-import { useSavePrescription, usePrescriptions, useGetCallerUserProfile, useGetPatients, useAddPatient } from '../hooks/useQueries';
-import PrescriptionTypedForm from './prescription/PrescriptionTypedForm';
-import FreehandPad from './prescription/FreehandPad';
-import PrescriptionCameraCapture from './prescription/PrescriptionCameraCapture';
-import PrescriptionHistoryList from './prescription/PrescriptionHistoryList';
-import { sendPrescriptionViaWhatsApp } from '../utils/whatsappPrescription';
-import { normalizePhone } from '../utils/phone';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Camera,
+  FileText,
+  History,
+  Loader2,
+  PenTool,
+  Send,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import type { Appointment, Prescription } from "../backend";
+import {
+  type ExternalBlob,
+  Variant_telemedicine_inPerson,
+  Variant_typed_freehand_camera,
+} from "../backend";
+import {
+  useAddPatient,
+  useGetCallerUserProfile,
+  useGetPatients,
+  usePrescriptions,
+  useSavePrescription,
+} from "../hooks/useQueries";
+import { normalizePhone } from "../utils/phone";
+import { sendPrescriptionViaWhatsApp } from "../utils/whatsappPrescription";
+import FreehandPad from "./prescription/FreehandPad";
+import PrescriptionCameraCapture from "./prescription/PrescriptionCameraCapture";
+import PrescriptionHistoryList from "./prescription/PrescriptionHistoryList";
+import PrescriptionTypedForm from "./prescription/PrescriptionTypedForm";
 
 interface PrescriptionEditorDialogProps {
   open: boolean;
@@ -27,29 +49,37 @@ export default function PrescriptionEditorDialog({
   onOpenChange,
   appointment,
 }: PrescriptionEditorDialogProps) {
-  const [activeTab, setActiveTab] = useState<'typed' | 'freehand' | 'camera' | 'history'>('typed');
-  const [typedContent, setTypedContent] = useState('');
+  const [activeTab, setActiveTab] = useState<
+    "typed" | "freehand" | "camera" | "history"
+  >("typed");
+  const [typedContent, setTypedContent] = useState("");
   const [freehandBlob, setFreehandBlob] = useState<ExternalBlob | null>(null);
   const [cameraBlob, setCameraBlob] = useState<ExternalBlob | null>(null);
   const [showCameraCapture, setShowCameraCapture] = useState(false);
-  const [doctorNotes, setDoctorNotes] = useState('');
+  const [doctorNotes, setDoctorNotes] = useState("");
 
   const savePrescription = useSavePrescription();
-  const { data: prescriptionHistory = [], isLoading: isLoadingHistory, refetch: refetchHistory } = usePrescriptions(appointment.mobile);
+  const {
+    data: prescriptionHistory = [],
+    isLoading: isLoadingHistory,
+    refetch: refetchHistory,
+  } = usePrescriptions(appointment.mobile);
   const { data: userProfile } = useGetCallerUserProfile();
   const { data: patients = [] } = useGetPatients();
   const addPatient = useAddPatient();
 
   // Sort prescription history by timestamp, newest first
-  const sortedPrescriptionHistory = [...prescriptionHistory].sort((a, b) => Number(b.timestamp - a.timestamp));
+  const sortedPrescriptionHistory = [...prescriptionHistory].sort((a, b) =>
+    Number(b.timestamp - a.timestamp),
+  );
 
   const ensurePatientExists = async () => {
     // Normalize the appointment mobile for comparison
     const normalizedAppointmentMobile = normalizePhone(appointment.mobile);
-    
+
     // Check if patient exists by comparing normalized mobile numbers
     const existingPatient = patients.find(
-      (p) => normalizePhone(p.mobile) === normalizedAppointmentMobile
+      (p) => normalizePhone(p.mobile) === normalizedAppointmentMobile,
     );
 
     if (!existingPatient) {
@@ -59,11 +89,11 @@ export default function PrescriptionEditorDialog({
           image: undefined,
           name: appointment.patientName,
           mobile: appointment.mobile,
-          area: '',
-          notes: '',
+          area: "",
+          notes: "",
         });
       } catch (error) {
-        console.error('Failed to create patient:', error);
+        console.error("Failed to create patient:", error);
         throw error;
       }
     }
@@ -72,41 +102,41 @@ export default function PrescriptionEditorDialog({
   const handleSave = async () => {
     try {
       let prescriptionType: Variant_typed_freehand_camera;
-      let prescriptionData: Prescription['prescriptionData'];
+      let prescriptionData: Prescription["prescriptionData"];
 
       // Determine prescription type and data based on active tab
-      if (activeTab === 'typed') {
+      if (activeTab === "typed") {
         if (!typedContent.trim()) {
-          toast.error('Please enter prescription content');
+          toast.error("Please enter prescription content");
           return;
         }
         prescriptionType = Variant_typed_freehand_camera.typed;
         prescriptionData = {
-          __kind__: 'typed',
+          __kind__: "typed",
           typed: typedContent,
         };
-      } else if (activeTab === 'freehand') {
+      } else if (activeTab === "freehand") {
         if (!freehandBlob) {
-          toast.error('Please draw prescription content');
+          toast.error("Please draw prescription content");
           return;
         }
         prescriptionType = Variant_typed_freehand_camera.freehand;
         prescriptionData = {
-          __kind__: 'freehand',
+          __kind__: "freehand",
           freehand: freehandBlob,
         };
-      } else if (activeTab === 'camera') {
+      } else if (activeTab === "camera") {
         if (!cameraBlob) {
-          toast.error('Please capture prescription image');
+          toast.error("Please capture prescription image");
           return;
         }
         prescriptionType = Variant_typed_freehand_camera.camera;
         prescriptionData = {
-          __kind__: 'camera',
+          __kind__: "camera",
           camera: cameraBlob,
         };
       } else {
-        toast.error('Invalid prescription type');
+        toast.error("Invalid prescription type");
         return;
       }
 
@@ -116,10 +146,10 @@ export default function PrescriptionEditorDialog({
       const prescription: Prescription = {
         patientName: appointment.patientName,
         mobile: appointment.mobile,
-        clinicName: userProfile?.clinicName || 'Clinic',
+        clinicName: userProfile?.clinicName || "Clinic",
         prescriptionType,
         prescriptionData,
-        doctorNotes: doctorNotes || '',
+        doctorNotes: doctorNotes || "",
         consultationType: Variant_telemedicine_inPerson.inPerson,
         appointmentId: appointment.id,
         timestamp: BigInt(Date.now()) * BigInt(1000000),
@@ -130,64 +160,64 @@ export default function PrescriptionEditorDialog({
       };
 
       await savePrescription.mutateAsync(prescription);
-      toast.success('Prescription saved successfully!');
-      
+      toast.success("Prescription saved successfully!");
+
       // Reset form
-      setTypedContent('');
+      setTypedContent("");
       setFreehandBlob(null);
       setCameraBlob(null);
-      setDoctorNotes('');
-      
+      setDoctorNotes("");
+
       // Reload history
       await refetchHistory();
-      
+
       // Switch to history tab to show the saved prescription
-      setActiveTab('history');
+      setActiveTab("history");
     } catch (error: any) {
-      console.error('Failed to save prescription:', error);
-      toast.error('Failed to save prescription', {
-        description: error.message || 'Please try again',
+      console.error("Failed to save prescription:", error);
+      toast.error("Failed to save prescription", {
+        description: error.message || "Please try again",
       });
     }
   };
 
   const handleFreehandSave = (blob: ExternalBlob) => {
     setFreehandBlob(blob);
-    toast.success('Freehand prescription ready to save');
+    toast.success("Freehand prescription ready to save");
   };
 
   const handleCameraCapture = (blob: ExternalBlob) => {
     setCameraBlob(blob);
     setShowCameraCapture(false);
-    toast.success('Camera prescription captured');
+    toast.success("Camera prescription captured");
   };
 
   const handleSendWhatsApp = async () => {
-    const clinicName = userProfile?.clinicName || 'Clinic';
-    
-    if (activeTab === 'typed' && typedContent.trim()) {
+    const clinicName = userProfile?.clinicName || "Clinic";
+
+    if (activeTab === "typed" && typedContent.trim()) {
       await sendPrescriptionViaWhatsApp(
         appointment.mobile,
         appointment.patientName,
         typedContent,
-        clinicName
+        clinicName,
       );
-    } else if (activeTab === 'freehand' && freehandBlob) {
+    } else if (activeTab === "freehand" && freehandBlob) {
       await sendPrescriptionViaWhatsApp(
         appointment.mobile,
         appointment.patientName,
         freehandBlob,
-        clinicName
+        clinicName,
       );
-    } else if (activeTab === 'camera' && cameraBlob) {
+    } else if (activeTab === "camera" && cameraBlob) {
       await sendPrescriptionViaWhatsApp(
         appointment.mobile,
         appointment.patientName,
         cameraBlob,
-        clinicName
+        clinicName,
       );
     } else {
-      toast.error('No prescription content to send');
+      toast.error("No prescription content to send");
     }
   };
 
@@ -200,11 +230,15 @@ export default function PrescriptionEditorDialog({
               Prescription for {appointment.patientName}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {userProfile?.clinicName || 'Clinic'}
+              {userProfile?.clinicName || "Clinic"}
             </p>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as any)}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="typed" className="gap-2">
                 <FileText className="h-4 w-4" />
@@ -225,8 +259,11 @@ export default function PrescriptionEditorDialog({
             </TabsList>
 
             <TabsContent value="typed" className="space-y-4">
-              <PrescriptionTypedForm content={typedContent} onChange={setTypedContent} />
-              
+              <PrescriptionTypedForm
+                content={typedContent}
+                onChange={setTypedContent}
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="doctor-notes">Doctor Notes (Optional)</Label>
                 <Textarea
@@ -259,7 +296,7 @@ export default function PrescriptionEditorDialog({
                       Saving...
                     </>
                   ) : (
-                    'Save Prescription'
+                    "Save Prescription"
                   )}
                 </Button>
               </div>
@@ -267,9 +304,11 @@ export default function PrescriptionEditorDialog({
 
             <TabsContent value="freehand" className="space-y-4">
               <FreehandPad onSave={handleFreehandSave} />
-              
+
               <div className="space-y-2">
-                <Label htmlFor="doctor-notes-freehand">Doctor Notes (Optional)</Label>
+                <Label htmlFor="doctor-notes-freehand">
+                  Doctor Notes (Optional)
+                </Label>
                 <Textarea
                   id="doctor-notes-freehand"
                   value={doctorNotes}
@@ -300,7 +339,7 @@ export default function PrescriptionEditorDialog({
                       Saving...
                     </>
                   ) : (
-                    'Save Prescription'
+                    "Save Prescription"
                   )}
                 </Button>
               </div>
@@ -309,7 +348,10 @@ export default function PrescriptionEditorDialog({
             <TabsContent value="camera" className="space-y-4">
               {!cameraBlob ? (
                 <div className="text-center py-8">
-                  <Button onClick={() => setShowCameraCapture(true)} className="gap-2">
+                  <Button
+                    onClick={() => setShowCameraCapture(true)}
+                    className="gap-2"
+                  >
                     <Camera className="h-5 w-5" />
                     Open Camera
                   </Button>
@@ -337,7 +379,9 @@ export default function PrescriptionEditorDialog({
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="doctor-notes-camera">Doctor Notes (Optional)</Label>
+                <Label htmlFor="doctor-notes-camera">
+                  Doctor Notes (Optional)
+                </Label>
                 <Textarea
                   id="doctor-notes-camera"
                   value={doctorNotes}
@@ -368,15 +412,15 @@ export default function PrescriptionEditorDialog({
                       Saving...
                     </>
                   ) : (
-                    'Save Prescription'
+                    "Save Prescription"
                   )}
                 </Button>
               </div>
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4">
-              <PrescriptionHistoryList 
-                prescriptions={sortedPrescriptionHistory} 
+              <PrescriptionHistoryList
+                prescriptions={sortedPrescriptionHistory}
                 isLoading={isLoadingHistory}
               />
             </TabsContent>

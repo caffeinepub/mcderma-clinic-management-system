@@ -1,27 +1,38 @@
-import { useEffect, useState } from 'react';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from './hooks/useQueries';
-import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from 'next-themes';
-import ProfileSetupDialog from './components/ProfileSetupDialog';
-import AuthenticatedShell from './components/AuthenticatedShell';
-import LoginPage from './pages/LoginPage';
-import ScheduleTab from './pages/ScheduleTab';
-import PatientsTab from './pages/PatientsTab';
-import LeadsTab from './pages/LeadsTab';
-import SettingsTab from './pages/SettingsTab';
-import { Loader2 } from 'lucide-react';
+import { Toaster } from "@/components/ui/sonner";
+import { Loader2 } from "lucide-react";
+import { ThemeProvider } from "next-themes";
+import { useEffect, useState } from "react";
+import AuthenticatedShell from "./components/AuthenticatedShell";
+import ProfileSetupDialog from "./components/ProfileSetupDialog";
+import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import { useGetCallerUserProfile } from "./hooks/useQueries";
+import LeadsTab from "./pages/LeadsTab";
+import LoginPage from "./pages/LoginPage";
+import PatientsTab from "./pages/PatientsTab";
+import ScheduleTab from "./pages/ScheduleTab";
+import SettingsTab from "./pages/SettingsTab";
 
 export default function App() {
   const { identity, isInitializing } = useInternetIdentity();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched,
+  } = useGetCallerUserProfile();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [activeTab, setActiveTab] = useState<'schedule' | 'patients' | 'leads' | 'settings'>('schedule');
+  const [activeTab, setActiveTab] = useState<
+    "schedule" | "patients" | "leads" | "settings"
+  >("schedule");
 
   const isAuthenticated = !!identity;
 
   useEffect(() => {
-    if (isAuthenticated && !profileLoading && isFetched && userProfile === null) {
+    if (
+      isAuthenticated &&
+      !profileLoading &&
+      isFetched &&
+      userProfile === null
+    ) {
       setShowProfileSetup(true);
     } else if (userProfile) {
       setShowProfileSetup(false);
@@ -47,13 +58,13 @@ export default function App() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'schedule':
+      case "schedule":
         return <ScheduleTab />;
-      case 'patients':
+      case "patients":
         return <PatientsTab />;
-      case 'leads':
+      case "leads":
         return <LeadsTab />;
-      case 'settings':
+      case "settings":
         return <SettingsTab />;
       default:
         return <ScheduleTab />;

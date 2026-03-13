@@ -1,25 +1,54 @@
-import { useState } from 'react';
-import { Plus, Search, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import PatientCard from '../components/PatientCard';
-import PatientDialog from '../components/PatientDialog';
-import { useGetPatients } from '../hooks/useQueries';
-import type { PatientView } from '../hooks/useQueries';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Search, Users } from "lucide-react";
+import { useState } from "react";
+import PatientCard from "../components/PatientCard";
+import PatientDialog from "../components/PatientDialog";
+import { useGetPatients } from "../hooks/useQueries";
+import type { PatientView } from "../hooks/useQueries";
+import { getTreatmentsList } from "../utils/treatmentsList";
 
 export default function PatientsTab() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [treatmentFilter, setTreatmentFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<PatientView | undefined>(undefined);
+  const [editingPatient, setEditingPatient] = useState<PatientView | undefined>(
+    undefined,
+  );
 
   const { data: patients = [], isLoading } = useGetPatients();
+  const treatments = getTreatmentsList();
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    patient.mobile.includes(searchQuery) ||
-    patient.area.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPatients = patients.filter((patient) => {
+    const matchesSearch =
+      patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      patient.mobile.includes(searchQuery) ||
+      patient.area.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (treatmentFilter) {
+      // Check if the patient's notes contain the treatment
+      const notes = (patient.notes || "").toLowerCase();
+      return notes.includes(treatmentFilter.toLowerCase());
+    }
+
+    return true;
+  });
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -47,7 +76,7 @@ export default function PatientsTab() {
 
       {/* Search Bar */}
       <Card className="shadow-sm">
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 space-y-2">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -56,7 +85,36 @@ export default function PatientsTab() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 h-12 text-base"
+              data-ocid="patients.search_input"
             />
+          </div>
+          <div className="flex gap-2 items-center">
+            <Select value={treatmentFilter} onValueChange={setTreatmentFilter}>
+              <SelectTrigger
+                className="flex-1 h-10"
+                data-ocid="patients.treatment_filter.select"
+              >
+                <SelectValue placeholder="Filter by treatment..." />
+              </SelectTrigger>
+              <SelectContent>
+                {treatments.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {treatmentFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTreatmentFilter("")}
+                className="text-muted-foreground"
+                data-ocid="patients.treatment_filter_clear.button"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -66,7 +124,7 @@ export default function PatientsTab() {
         <Card className="shadow-sm">
           <CardContent className="py-16">
             <div className="text-center text-muted-foreground">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3" />
               <p className="text-base">Loading patients...</p>
             </div>
           </CardContent>
@@ -77,12 +135,12 @@ export default function PatientsTab() {
             <div className="text-center text-muted-foreground">
               <Users className="h-16 w-16 mx-auto mb-4 opacity-30" />
               <p className="text-lg font-medium mb-1">
-                {searchQuery ? 'No patients found' : 'No patients yet'}
+                {searchQuery ? "No patients found" : "No patients yet"}
               </p>
               <p className="text-sm">
                 {searchQuery
-                  ? 'Try adjusting your search terms'
-                  : 'Add your first patient to get started'}
+                  ? "Try adjusting your search terms"
+                  : "Add your first patient to get started"}
               </p>
             </div>
           </CardContent>
@@ -90,10 +148,7 @@ export default function PatientsTab() {
       ) : (
         <div className="space-y-3">
           {filteredPatients.map((patient) => (
-            <PatientCard
-              key={patient.mobile}
-              patient={patient}
-            />
+            <PatientCard key={patient.mobile} patient={patient} />
           ))}
         </div>
       )}

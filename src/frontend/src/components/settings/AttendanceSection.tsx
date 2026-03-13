@@ -1,20 +1,44 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGetAllAttendance } from '../../hooks/useQueries';
-import { formatTimestamp12Hour } from '../../lib/utils';
-import { exportAttendanceData } from '../../utils/attendanceExport';
-import { ClipboardCheck } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ClipboardCheck } from "lucide-react";
+import { useState } from "react";
+import { useGetAllAttendance } from "../../hooks/useQueries";
+import { formatTimestamp12Hour } from "../../lib/utils";
+import { exportAttendanceData } from "../../utils/attendanceExport";
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default function AttendanceSection() {
   const { data: attendance = [] } = useGetAllAttendance();
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth(),
+  );
+
   // Sort attendance by timestamp (most recent first)
   const sortedAttendance = [...attendance].sort((a, b) => {
     return Number(b.timestamp) - Number(a.timestamp);
@@ -23,9 +47,9 @@ export default function AttendanceSection() {
   // Get today's attendance
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayTimestamp = BigInt(today.getTime() * 1000000);
-  
-  const todayAttendance = sortedAttendance.filter(record => {
+  const _todayTimestamp = BigInt(today.getTime() * 1000000);
+
+  const todayAttendance = sortedAttendance.filter((record) => {
     const recordDate = new Date(Number(record.timestamp) / 1000000);
     recordDate.setHours(0, 0, 0, 0);
     return recordDate.getTime() === today.getTime();
@@ -43,9 +67,7 @@ export default function AttendanceSection() {
             <ClipboardCheck className="h-5 w-5" />
             Today's Attendance
           </CardTitle>
-          <CardDescription>
-            Staff members who checked in today
-          </CardDescription>
+          <CardDescription>Staff members who checked in today</CardDescription>
         </CardHeader>
         <CardContent>
           {todayAttendance.length === 0 ? (
@@ -54,14 +76,16 @@ export default function AttendanceSection() {
             </div>
           ) : (
             <div className="space-y-3">
-              {todayAttendance.map((record, index) => (
+              {todayAttendance.map((record) => (
                 <div
-                  key={index}
+                  key={`${record.name}-${record.timestamp.toString()}`}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border"
                 >
                   <div>
                     <div className="font-medium">{record.name}</div>
-                    <div className="text-sm text-muted-foreground">{record.role}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {record.role}
+                    </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {formatTimestamp12Hour(record.timestamp)}
@@ -83,17 +107,21 @@ export default function AttendanceSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Select Month:</label>
+            <label htmlFor="month-select" className="text-sm font-medium">
+              Select Month:
+            </label>
             <Select
               value={selectedMonth.toString()}
-              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+              onValueChange={(value) =>
+                setSelectedMonth(Number.parseInt(value))
+              }
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger id="month-select" className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {MONTHS.map((month, index) => (
-                  <SelectItem key={index} value={index.toString()}>
+                  <SelectItem key={month} value={index.toString()}>
                     {month} {new Date().getFullYear()}
                   </SelectItem>
                 ))}
@@ -117,38 +145,40 @@ export default function AttendanceSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(monthlyData).map(([staffName, yearData], index) => {
-                    const monthData = yearData.months[selectedMonth];
-                    if (!monthData) return null;
+                  {Object.entries(monthlyData).map(
+                    ([staffName, yearData], index) => {
+                      const monthData = yearData.months[selectedMonth];
+                      if (!monthData) return null;
 
-                    return (
-                      <tr
-                        key={staffName}
-                        className={`border-b hover:bg-muted/50 transition-colors ${
-                          index % 2 === 0 ? 'bg-muted/20' : ''
-                        }`}
-                      >
-                        <td className="p-3 font-medium">{staffName}</td>
-                        <td className="p-3 text-center text-green-600 font-medium">
-                          {monthData.presentDays}
-                        </td>
-                        <td className="p-3 text-center text-red-600 font-medium">
-                          {monthData.absentDays}
-                        </td>
-                        <td className="p-3 text-sm text-muted-foreground">
-                          {monthData.absentDates.length === 0
-                            ? 'None'
-                            : monthData.absentDates
-                                .slice(0, 10)
-                                .map(d => d.toString().padStart(2, '0'))
-                                .join(', ') +
-                              (monthData.absentDates.length > 10
-                                ? ` +${monthData.absentDates.length - 10} more`
-                                : '')}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      return (
+                        <tr
+                          key={staffName}
+                          className={`border-b hover:bg-muted/50 transition-colors ${
+                            index % 2 === 0 ? "bg-muted/20" : ""
+                          }`}
+                        >
+                          <td className="p-3 font-medium">{staffName}</td>
+                          <td className="p-3 text-center text-green-600 font-medium">
+                            {monthData.presentDays}
+                          </td>
+                          <td className="p-3 text-center text-red-600 font-medium">
+                            {monthData.absentDays}
+                          </td>
+                          <td className="p-3 text-sm text-muted-foreground">
+                            {monthData.absentDates.length === 0
+                              ? "None"
+                              : monthData.absentDates
+                                  .slice(0, 10)
+                                  .map((d) => d.toString().padStart(2, "0"))
+                                  .join(", ") +
+                                (monthData.absentDates.length > 10
+                                  ? ` +${monthData.absentDates.length - 10} more`
+                                  : "")}
+                          </td>
+                        </tr>
+                      );
+                    },
+                  )}
                 </tbody>
               </table>
             </div>

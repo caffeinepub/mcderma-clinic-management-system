@@ -1,7 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Eraser, Trash2 } from 'lucide-react';
-import { ExternalBlob } from '../../backend';
+import { Button } from "@/components/ui/button";
+import { Eraser, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ExternalBlob } from "../../backend";
 
 interface FreehandPadProps {
   onSave: (blob: ExternalBlob) => void;
@@ -17,7 +17,7 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Set canvas size
@@ -25,29 +25,34 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
     canvas.height = 400;
 
     // Set drawing styles
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.lineWidth = 2;
-    ctx.strokeStyle = '#000000';
+    ctx.strokeStyle = "#000000";
 
     // Fill with white background
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     setContext(ctx);
   }, []);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const startDrawing = (
+    e:
+      | React.MouseEvent<HTMLCanvasElement>
+      | React.TouchEvent<HTMLCanvasElement>,
+  ) => {
     if (!context) return;
-    
+
     setIsDrawing(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    let x, y;
+    let x: number;
+    let y: number;
 
-    if ('touches' in e) {
+    if ("touches" in e) {
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -59,16 +64,21 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
     context.moveTo(x, y);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (
+    e:
+      | React.MouseEvent<HTMLCanvasElement>
+      | React.TouchEvent<HTMLCanvasElement>,
+  ) => {
     if (!isDrawing || !context) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    let x, y;
+    let x: number;
+    let y: number;
 
-    if ('touches' in e) {
+    if ("touches" in e) {
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -77,10 +87,10 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
     }
 
     if (isErasing) {
-      context.globalCompositeOperation = 'destination-out';
+      context.globalCompositeOperation = "destination-out";
       context.lineWidth = 20;
     } else {
-      context.globalCompositeOperation = 'source-over';
+      context.globalCompositeOperation = "source-over";
       context.lineWidth = 2;
     }
 
@@ -94,8 +104,8 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
 
   const handleClear = () => {
     if (!context || !canvasRef.current) return;
-    
-    context.fillStyle = '#ffffff';
+
+    context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
@@ -104,7 +114,7 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
 
     canvasRef.current.toBlob((blob) => {
       if (!blob) return;
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const arrayBuffer = reader.result as ArrayBuffer;
@@ -113,7 +123,7 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
         onSave(externalBlob);
       };
       reader.readAsArrayBuffer(blob);
-    }, 'image/png');
+    }, "image/png");
   };
 
   return (
@@ -129,38 +139,31 @@ export default function FreehandPad({ onSave }: FreehandPadProps) {
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
           className="w-full cursor-crosshair touch-none"
-          style={{ height: '400px' }}
+          style={{ height: "400px" }}
         />
       </div>
 
       <div className="flex gap-2">
         <Button
           onClick={() => setIsErasing(!isErasing)}
-          variant={isErasing ? 'default' : 'outline'}
+          variant={isErasing ? "default" : "outline"}
           size="sm"
         >
           <Eraser className="h-4 w-4 mr-2" />
-          {isErasing ? 'Drawing' : 'Eraser'}
+          {isErasing ? "Drawing" : "Eraser"}
         </Button>
-        <Button
-          onClick={handleClear}
-          variant="outline"
-          size="sm"
-        >
+        <Button onClick={handleClear} variant="outline" size="sm">
           <Trash2 className="h-4 w-4 mr-2" />
           Clear
         </Button>
-        <Button
-          onClick={handleSave}
-          size="sm"
-          className="ml-auto"
-        >
+        <Button onClick={handleSave} size="sm" className="ml-auto">
           Apply Drawing
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Draw your prescription using your mouse or touch screen. Use the eraser to make corrections.
+        Draw your prescription using your mouse or touch screen. Use the eraser
+        to make corrections.
       </p>
     </div>
   );

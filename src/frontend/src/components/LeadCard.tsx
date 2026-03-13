@@ -1,27 +1,34 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Phone, MessageCircle, Edit, Trash2, Star } from 'lucide-react';
-import { formatDateDDMMYY } from '../lib/utils';
-import type { Lead } from '../hooks/useQueries';
-import { useDeleteLead, useUpdateLead, useGetWhatsAppTemplates } from '../hooks/useQueries';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
+import { Edit, MessageCircle, Phone, Star, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { Lead } from "../hooks/useQueries";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { getLeadInitialContactMessage, openWhatsAppWithLeadMessage } from '../utils/whatsappTemplates';
+  useDeleteLead,
+  useGetWhatsAppTemplates,
+  useUpdateLead,
+} from "../hooks/useQueries";
+import { formatDateDDMMYY } from "../lib/utils";
+import {
+  getLeadInitialContactMessage,
+  openWhatsAppWithLeadMessage,
+} from "../utils/whatsappTemplates";
 
 interface LeadCardProps {
   lead: Lead;
@@ -34,16 +41,18 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
   const { data: templates = [] } = useGetWhatsAppTemplates();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<'initial' | 'followup' | 'appointment'>('initial');
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    "initial" | "followup" | "appointment"
+  >("initial");
 
   const handleDelete = async () => {
     try {
       await deleteLead.mutateAsync(lead.mobile);
-      toast.success('Lead deleted successfully');
+      toast.success("Lead deleted successfully");
       setShowDeleteDialog(false);
     } catch (error: any) {
-      toast.error('Failed to delete lead', {
-        description: error.message || 'Please try again',
+      toast.error("Failed to delete lead", {
+        description: error.message || "Please try again",
       });
     }
   };
@@ -57,10 +66,10 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
           leadStatus: newStatus,
         },
       });
-      toast.success('Status updated successfully');
+      toast.success("Status updated successfully");
     } catch (error: any) {
-      toast.error('Failed to update status', {
-        description: error.message || 'Please try again',
+      toast.error("Failed to update status", {
+        description: error.message || "Please try again",
       });
     }
   };
@@ -74,31 +83,46 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
   };
 
   const handleSendTemplate = () => {
-    const leadInitialTemplate = templates.find(t => t.templateName === 'lead-initial-contact');
-    const leadFollowUpTemplate = templates.find(t => t.templateName === 'lead-follow-up');
-    const leadAppointmentTemplate = templates.find(t => t.templateName === 'lead-appointment-scheduling');
+    const leadInitialTemplate = templates.find(
+      (t) => t.templateName === "lead-initial-contact",
+    );
+    const leadFollowUpTemplate = templates.find(
+      (t) => t.templateName === "lead-follow-up",
+    );
+    const leadAppointmentTemplate = templates.find(
+      (t) => t.templateName === "lead-appointment-scheduling",
+    );
 
-    let message = '';
+    let message = "";
     const leadData = {
       leadName: lead.leadName,
       mobile: lead.mobile,
       treatmentWanted: lead.treatmentWanted,
     };
 
-    if (selectedTemplate === 'initial') {
-      message = getLeadInitialContactMessage(leadData, leadInitialTemplate?.messageContent);
-    } else if (selectedTemplate === 'followup') {
-      message = getLeadInitialContactMessage(leadData, leadFollowUpTemplate?.messageContent);
-    } else if (selectedTemplate === 'appointment') {
-      message = getLeadInitialContactMessage(leadData, leadAppointmentTemplate?.messageContent);
+    if (selectedTemplate === "initial") {
+      message = getLeadInitialContactMessage(
+        leadData,
+        leadInitialTemplate?.messageContent,
+      );
+    } else if (selectedTemplate === "followup") {
+      message = getLeadInitialContactMessage(
+        leadData,
+        leadFollowUpTemplate?.messageContent,
+      );
+    } else if (selectedTemplate === "appointment") {
+      message = getLeadInitialContactMessage(
+        leadData,
+        leadAppointmentTemplate?.messageContent,
+      );
     }
 
     const success = openWhatsAppWithLeadMessage(lead.mobile, message);
     if (success) {
-      toast.success('Opening WhatsApp...');
+      toast.success("Opening WhatsApp...");
       setShowTemplateDialog(false);
     } else {
-      toast.error('Failed to open WhatsApp');
+      toast.error("Failed to open WhatsApp");
     }
   };
 
@@ -118,11 +142,17 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div className="flex items-center gap-1 text-amber-500">
-                  {Array.from({ length: lead.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
+                  {Array.from({ length: lead.rating }, (_, i) => {
+                    const starKey = `rating-star-pos-${i + 1}`;
+                    return (
+                      <Star key={starKey} className="h-4 w-4 fill-current" />
+                    );
+                  })}
                 </div>
-                <Select value={lead.leadStatus} onValueChange={handleStatusChange}>
+                <Select
+                  value={lead.leadStatus}
+                  onValueChange={handleStatusChange}
+                >
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -139,31 +169,45 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
             {/* Details */}
             <div className="space-y-1 text-sm">
               <p>
-                <span className="font-medium">Treatment:</span> {lead.treatmentWanted}
+                <span className="font-medium">Treatment:</span>{" "}
+                {lead.treatmentWanted}
               </p>
               <p>
                 <span className="font-medium">Area:</span> {lead.area}
               </p>
               <p>
-                <span className="font-medium">Follow-up:</span> {formatDateDDMMYY(followUpDate)}
+                <span className="font-medium">Follow-up:</span>{" "}
+                {formatDateDDMMYY(followUpDate)}
               </p>
               <p>
-                <span className="font-medium">Expected Date:</span> {formatDateDDMMYY(expectedDate)}
+                <span className="font-medium">Expected Date:</span>{" "}
+                {formatDateDDMMYY(expectedDate)}
               </p>
               {lead.doctorRemark && (
                 <p>
-                  <span className="font-medium">Remark:</span> {lead.doctorRemark}
+                  <span className="font-medium">Remark:</span>{" "}
+                  {lead.doctorRemark}
                 </p>
               )}
             </div>
 
             {/* Actions */}
             <div className="flex gap-2 pt-2">
-              <Button size="sm" variant="outline" onClick={handleCall} className="flex-1 gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCall}
+                className="flex-1 gap-2"
+              >
                 <Phone className="h-4 w-4" />
                 Call
               </Button>
-              <Button size="sm" variant="outline" onClick={handleWhatsApp} className="flex-1 gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleWhatsApp}
+                className="flex-1 gap-2"
+              >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
               </Button>
@@ -189,11 +233,15 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
           <DialogHeader>
             <DialogTitle>Delete Lead</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this lead? This action cannot be undone.
+              Are you sure you want to delete this lead? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -201,7 +249,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
               onClick={handleDelete}
               disabled={deleteLead.isPending}
             >
-              {deleteLead.isPending ? 'Deleting...' : 'Delete'}
+              {deleteLead.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -217,34 +265,42 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Select value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as any)}>
+            <Select
+              value={selectedTemplate}
+              onValueChange={(v) => setSelectedTemplate(v as any)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="initial">Initial Contact</SelectItem>
                 <SelectItem value="followup">Follow-up</SelectItem>
-                <SelectItem value="appointment">Appointment Scheduling</SelectItem>
+                <SelectItem value="appointment">
+                  Appointment Scheduling
+                </SelectItem>
               </SelectContent>
             </Select>
             <div className="p-3 bg-muted rounded-md text-sm">
               <p className="font-medium mb-2">Preview:</p>
               <p className="text-muted-foreground">
-                {selectedTemplate === 'initial' &&
+                {selectedTemplate === "initial" &&
                   getLeadInitialContactMessage({
                     leadName: lead.leadName,
                     mobile: lead.mobile,
                     treatmentWanted: lead.treatmentWanted,
                   })}
-                {selectedTemplate === 'followup' &&
+                {selectedTemplate === "followup" &&
                   `Hi ${lead.leadName}, following up on your inquiry about ${lead.treatmentWanted}. Are you still interested? We have some great options available for you.`}
-                {selectedTemplate === 'appointment' &&
+                {selectedTemplate === "appointment" &&
                   `Hello ${lead.leadName}! We are ready to schedule your appointment for ${lead.treatmentWanted}. Please let us know your preferred date and time.`}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplateDialog(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSendTemplate} className="gap-2">

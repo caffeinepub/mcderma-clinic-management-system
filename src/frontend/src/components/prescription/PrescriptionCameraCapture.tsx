@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Camera, X } from 'lucide-react';
-import { useCamera } from '../../camera/useCamera';
-import { compressImage } from '../../utils/imageCompression';
-import { ExternalBlob } from '../../backend';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Camera, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ExternalBlob } from "../../backend";
+import { useCamera } from "../../camera/useCamera";
+import { compressImage } from "../../utils/imageCompression";
 
 interface PrescriptionCameraCaptureProps {
   open: boolean;
@@ -28,7 +33,7 @@ export default function PrescriptionCameraCapture({
     capturePhoto,
     videoRef,
     canvasRef,
-  } = useCamera({ facingMode: 'environment' });
+  } = useCamera({ facingMode: "environment" });
 
   const [capturedImage, setCapturedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -43,7 +48,7 @@ export default function PrescriptionCameraCapture({
   const handleCapture = async () => {
     const photo = await capturePhoto();
     if (!photo) {
-      toast.error('Failed to capture photo');
+      toast.error("Failed to capture photo");
       return;
     }
 
@@ -57,7 +62,7 @@ export default function PrescriptionCameraCapture({
     try {
       // Compress image to < 400KB
       const compressed = await compressImage(capturedImage, 400 * 1024);
-      
+
       // Convert to ExternalBlob
       const arrayBuffer = await compressed.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -66,8 +71,8 @@ export default function PrescriptionCameraCapture({
       onCapture(externalBlob);
       handleClose();
     } catch (error: any) {
-      toast.error('Failed to process image', {
-        description: error.message || 'Please try again',
+      toast.error("Failed to process image", {
+        description: error.message || "Please try again",
       });
     }
   };
@@ -94,7 +99,8 @@ export default function PrescriptionCameraCapture({
             <DialogTitle>Camera Not Supported</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground">
-            Your browser does not support camera access. Please use a different browser or device.
+            Your browser does not support camera access. Please use a different
+            browser or device.
           </p>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </DialogContent>
@@ -104,25 +110,30 @@ export default function PrescriptionCameraCapture({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      {/* Portrait-oriented dialog: narrow width to keep 9:16 portrait ratio visible */}
+      <DialogContent className="max-w-xs w-full p-3">
         <DialogHeader>
-          <DialogTitle>Capture Prescription</DialogTitle>
+          <DialogTitle className="text-base">Capture Prescription</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {!capturedImage ? (
             <>
-              {/* Camera Preview */}
-              <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '4/3', minHeight: '300px' }}>
+              {/* Camera Preview — portrait 9:16 ratio */}
+              <div
+                className="relative bg-black rounded-lg overflow-hidden w-full"
+                style={{ aspectRatio: "9/16" }}
+              >
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
                   className="w-full h-full object-cover"
+                  style={{ objectPosition: "center top" }}
                 />
                 <canvas ref={canvasRef} className="hidden" />
-                
+
                 {error && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-4 text-center">
                     <div>
@@ -141,7 +152,7 @@ export default function PrescriptionCameraCapture({
                     disabled={isLoading}
                     className="flex-1"
                   >
-                    {isLoading ? 'Starting...' : 'Start Camera'}
+                    {isLoading ? "Starting..." : "Start Camera"}
                   </Button>
                 ) : (
                   <>
@@ -153,10 +164,7 @@ export default function PrescriptionCameraCapture({
                       <Camera className="h-4 w-4 mr-2" />
                       Capture
                     </Button>
-                    <Button
-                      onClick={handleClose}
-                      variant="outline"
-                    >
+                    <Button onClick={handleClose} variant="outline">
                       <X className="h-4 w-4 mr-2" />
                       Cancel
                     </Button>
@@ -166,8 +174,11 @@ export default function PrescriptionCameraCapture({
             </>
           ) : (
             <>
-              {/* Image Preview */}
-              <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '4/3', minHeight: '300px' }}>
+              {/* Image Preview — same portrait ratio */}
+              <div
+                className="relative bg-black rounded-lg overflow-hidden w-full"
+                style={{ aspectRatio: "9/16" }}
+              >
                 {previewUrl && (
                   <img
                     src={previewUrl}
@@ -186,10 +197,7 @@ export default function PrescriptionCameraCapture({
                 >
                   Retake
                 </Button>
-                <Button
-                  onClick={handleConfirm}
-                  className="flex-1"
-                >
+                <Button onClick={handleConfirm} className="flex-1">
                   Use This Photo
                 </Button>
               </div>

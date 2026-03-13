@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useGetAppointments } from './useQueries';
-import type { Appointment } from '../backend';
-import { toast } from 'sonner';
-import { formatTimestamp12Hour } from '../lib/utils';
-import { playNotificationSound } from '../utils/notificationSound';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import type { Appointment } from "../backend";
+import { formatTimestamp12Hour } from "../lib/utils";
+import { playNotificationSound } from "../utils/notificationSound";
+import { useGetAppointments } from "./useQueries";
 
 interface ScheduledNotification {
   appointmentTime: bigint;
@@ -16,27 +16,36 @@ export interface ActiveReminder {
 
 export function useNotifications() {
   const { data: appointments = [] } = useGetAppointments();
-  const scheduledNotifications = useRef<Map<string, ScheduledNotification>>(new Map());
+  const scheduledNotifications = useRef<Map<string, ScheduledNotification>>(
+    new Map(),
+  );
   const scheduledAlerts = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const firedReminders = useRef<Set<string>>(new Set());
   const permissionRequested = useRef(false);
-  const notificationSupported = typeof window !== 'undefined' && 'Notification' in window;
-  
-  const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(null);
+  const notificationSupported =
+    typeof window !== "undefined" && "Notification" in window;
+
+  const [activeReminder, setActiveReminder] = useState<ActiveReminder | null>(
+    null,
+  );
 
   // Request notification permission
   useEffect(() => {
     if (!permissionRequested.current && notificationSupported) {
-      if (Notification.permission === 'default') {
+      if (Notification.permission === "default") {
         Notification.requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            toast.success('Notifications enabled for appointment reminders');
-          } else if (permission === 'denied') {
-            toast.info('Notifications blocked. You will receive in-app reminders instead.');
+          if (permission === "granted") {
+            toast.success("Notifications enabled for appointment reminders");
+          } else if (permission === "denied") {
+            toast.info(
+              "Notifications blocked. You will receive in-app reminders instead.",
+            );
           }
         });
-      } else if (Notification.permission === 'denied') {
-        toast.info('Notifications are blocked. Enable them in browser settings for better reminders.');
+      } else if (Notification.permission === "denied") {
+        toast.info(
+          "Notifications are blocked. Enable them in browser settings for better reminders.",
+        );
       }
       permissionRequested.current = true;
     }
@@ -50,22 +59,23 @@ export function useNotifications() {
   // Schedule notifications or alerts for appointments
   useEffect(() => {
     // Clear all existing scheduled notifications and alerts
-    scheduledNotifications.current.forEach((notification) => {
+    for (const notification of scheduledNotifications.current.values()) {
       clearTimeout(notification.timeoutId);
-    });
+    }
     scheduledNotifications.current.clear();
 
-    scheduledAlerts.current.forEach((alertTimeout) => {
+    for (const alertTimeout of scheduledAlerts.current.values()) {
       clearTimeout(alertTimeout);
-    });
+    }
     scheduledAlerts.current.clear();
 
     // Determine if we should use browser notifications or in-app overlay
-    const useNotifications = notificationSupported && Notification.permission === 'granted';
+    const useNotifications =
+      notificationSupported && Notification.permission === "granted";
     const isDocumentVisible = () => !document.hidden;
 
     // Schedule new reminders
-    appointments.forEach((appointment) => {
+    for (const appointment of appointments) {
       // Convert nanoseconds to milliseconds
       const appointmentTime = Number(appointment.appointmentTime) / 1_000_000;
       const notificationTime = appointmentTime - 15 * 60 * 1000; // 15 minutes before
@@ -82,7 +92,7 @@ export function useNotifications() {
         }
 
         const timeString = formatTimestamp12Hour(appointment.appointmentTime);
-        const reminderMessage = `${appointment.patientName} at ${timeString}${appointment.notes ? ` - ${appointment.notes}` : ''}`;
+        const reminderMessage = `${appointment.patientName} at ${timeString}${appointment.notes ? ` - ${appointment.notes}` : ""}`;
 
         const timeoutId = setTimeout(() => {
           // Mark as fired to prevent duplicates
@@ -96,10 +106,10 @@ export function useNotifications() {
           } else if (useNotifications) {
             // Show browser notification when app is in background
             try {
-              const notification = new Notification('Upcoming Appointment', {
+              const notification = new Notification("Upcoming Appointment", {
                 body: reminderMessage,
-                icon: '/assets/generated/mcderma-pwa-icon-192.dim_192x192.png',
-                badge: '/assets/generated/mcderma-pwa-icon-192.dim_192x192.png',
+                icon: "/assets/generated/mcderma-pwa-icon-192.dim_192x192.png",
+                badge: "/assets/generated/mcderma-pwa-icon-192.dim_192x192.png",
                 tag: key,
                 requireInteraction: false,
               });
@@ -112,7 +122,7 @@ export function useNotifications() {
               // Auto-close after 10 seconds
               setTimeout(() => notification.close(), 10000);
             } catch (error) {
-              console.error('Failed to show notification:', error);
+              console.error("Failed to show notification:", error);
               // Fallback to alert if notification fails
               alert(`Upcoming Appointment:\n${reminderMessage}`);
             }
@@ -127,25 +137,28 @@ export function useNotifications() {
           timeoutId,
         });
       }
-    });
+    }
 
     // Cleanup function
     return () => {
-      scheduledNotifications.current.forEach((notification) => {
+      for (const notification of scheduledNotifications.current.values()) {
         clearTimeout(notification.timeoutId);
-      });
+      }
       scheduledNotifications.current.clear();
 
-      scheduledAlerts.current.forEach((alertTimeout) => {
+      for (const alertTimeout of scheduledAlerts.current.values()) {
         clearTimeout(alertTimeout);
-      });
+      }
       scheduledAlerts.current.clear();
     };
   }, [appointments, notificationSupported]);
 
   return {
-    notificationPermission: notificationSupported ? Notification.permission : 'default',
-    isUsingAlerts: !notificationSupported || Notification.permission !== 'granted',
+    notificationPermission: notificationSupported
+      ? Notification.permission
+      : "default",
+    isUsingAlerts:
+      !notificationSupported || Notification.permission !== "granted",
     activeReminder,
     dismissReminder,
   };

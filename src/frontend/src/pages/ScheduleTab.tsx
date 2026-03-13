@@ -1,30 +1,44 @@
-import { useState } from 'react';
-import { Plus, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import AppointmentCard from '../components/AppointmentCard';
-import AppointmentDialog from '../components/AppointmentDialog';
-import FollowUpDateTimeDialog from '../components/FollowUpDateTimeDialog';
-import PrescriptionEditorDialog from '../components/PrescriptionEditorDialog';
-import NextAppointmentWidget from '../components/NextAppointmentWidget';
-import { useGetTodaysAppointments, useGetTomorrowAppointments, useGetUpcomingAppointments, useUpdateAppointment, useGetAppointments } from '../hooks/useQueries';
-import { useNow } from '../hooks/useNow';
-import type { Appointment } from '../backend';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Calendar, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { Appointment } from "../backend";
+import AppointmentCard from "../components/AppointmentCard";
+import AppointmentDialog from "../components/AppointmentDialog";
+import FollowUpDateTimeDialog from "../components/FollowUpDateTimeDialog";
+import NextAppointmentWidget from "../components/NextAppointmentWidget";
+import PrescriptionEditorDialog from "../components/PrescriptionEditorDialog";
+import { useNow } from "../hooks/useNow";
+import {
+  useGetAppointments,
+  useGetTodaysAppointments,
+  useGetTomorrowAppointments,
+  useGetUpcomingAppointments,
+  useUpdateAppointment,
+} from "../hooks/useQueries";
 
 export default function ScheduleTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | undefined>(undefined);
+  const [editingAppointment, setEditingAppointment] = useState<
+    Appointment | undefined
+  >(undefined);
   const [isFollowUpDialogOpen, setIsFollowUpDialogOpen] = useState(false);
-  const [followUpAppointment, setFollowUpAppointment] = useState<Appointment | null>(null);
-  const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
-  const [prescriptionAppointment, setPrescriptionAppointment] = useState<Appointment | null>(null);
+  const [followUpAppointment, setFollowUpAppointment] =
+    useState<Appointment | null>(null);
+  const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] =
+    useState(false);
+  const [prescriptionAppointment, setPrescriptionAppointment] =
+    useState<Appointment | null>(null);
 
-  const { data: todaysAppointments = [], isLoading: loadingToday } = useGetTodaysAppointments();
-  const { data: tomorrowAppointments = [], isLoading: loadingTomorrow } = useGetTomorrowAppointments();
-  const { data: upcomingAppointments = [], isLoading: loadingUpcoming } = useGetUpcomingAppointments();
+  const { data: todaysAppointments = [], isLoading: loadingToday } =
+    useGetTodaysAppointments();
+  const { data: tomorrowAppointments = [], isLoading: loadingTomorrow } =
+    useGetTomorrowAppointments();
+  const { data: upcomingAppointments = [], isLoading: loadingUpcoming } =
+    useGetUpcomingAppointments();
   const { data: allAppointments = [] } = useGetAppointments();
   const updateAppointment = useUpdateAppointment();
-  
+
   // Get current time that updates every minute
   const now = useNow(60000);
 
@@ -55,11 +69,11 @@ export default function ScheduleTab() {
           isFollowUp: true,
         },
       });
-      toast.success('Follow-up scheduled successfully');
+      toast.success("Follow-up scheduled successfully");
       setIsFollowUpDialogOpen(false);
       setFollowUpAppointment(null);
-    } catch (error) {
-      toast.error('Failed to schedule follow-up');
+    } catch (_error) {
+      toast.error("Failed to schedule follow-up");
     }
   };
 
@@ -79,8 +93,12 @@ export default function ScheduleTab() {
       <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-lg px-3 py-1.5 shadow-md">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[8px] opacity-90 mb-0 leading-none">Appointments Today</p>
-            <p className="text-base font-bold leading-tight mt-0.5">{todaysAppointments.length}</p>
+            <p className="text-[8px] opacity-90 mb-0 leading-none">
+              Appointments Today
+            </p>
+            <p className="text-base font-bold leading-tight mt-0.5">
+              {todaysAppointments.length}
+            </p>
           </div>
           <Calendar className="h-4 w-4 opacity-80" />
         </div>
@@ -88,10 +106,12 @@ export default function ScheduleTab() {
 
       {/* Today's Schedule */}
       <section>
-        <h2 className="text-xl font-semibold mb-2 text-foreground">Today's Schedule</h2>
+        <h2 className="text-xl font-semibold mb-2 text-foreground">
+          Today's Schedule
+        </h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p>Loading appointments...</p>
           </div>
         ) : todaysAppointments.length === 0 ? (
@@ -120,7 +140,7 @@ export default function ScheduleTab() {
         <h2 className="text-xl font-semibold mb-2 text-foreground">Tomorrow</h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p>Loading appointments...</p>
           </div>
         ) : tomorrowAppointments.length === 0 ? (
@@ -147,7 +167,7 @@ export default function ScheduleTab() {
         <h2 className="text-xl font-semibold mb-2 text-foreground">Upcoming</h2>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p>Loading appointments...</p>
           </div>
         ) : upcomingAppointments.length === 0 ? (

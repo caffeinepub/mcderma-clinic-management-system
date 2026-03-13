@@ -15,22 +15,22 @@ interface StaffYearData {
 }
 
 export function exportAttendanceData(
-  attendanceRecords: AttendanceRecord[]
+  attendanceRecords: AttendanceRecord[],
 ): Record<string, StaffYearData> {
   const currentYear = new Date().getFullYear();
   const result: Record<string, StaffYearData> = {};
 
   // Group records by staff name
   const recordsByStaff: Record<string, AttendanceRecord[]> = {};
-  attendanceRecords.forEach((record) => {
+  for (const record of attendanceRecords) {
     if (!recordsByStaff[record.name]) {
       recordsByStaff[record.name] = [];
     }
     recordsByStaff[record.name].push(record);
-  });
+  }
 
   // Process each staff member
-  Object.entries(recordsByStaff).forEach(([staffName, records]) => {
+  for (const [staffName, records] of Object.entries(recordsByStaff)) {
     const yearData: StaffYearData = { months: {} };
 
     // Filter records for current year
@@ -41,7 +41,7 @@ export function exportAttendanceData(
 
     // Group by month
     const recordsByMonth: Record<number, Set<number>> = {};
-    currentYearRecords.forEach((record) => {
+    for (const record of currentYearRecords) {
       const date = new Date(Number(record.timestamp) / 1000000);
       const month = date.getMonth();
       const day = date.getDate();
@@ -50,7 +50,7 @@ export function exportAttendanceData(
         recordsByMonth[month] = new Set();
       }
       recordsByMonth[month].add(day);
-    });
+    }
 
     // Calculate absent dates and counts for each month
     for (let month = 0; month < 12; month++) {
@@ -72,7 +72,7 @@ export function exportAttendanceData(
     }
 
     result[staffName] = yearData;
-  });
+  }
 
   return result;
 }

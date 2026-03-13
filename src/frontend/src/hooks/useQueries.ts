@@ -1,7 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useActor } from './useActor';
-import type { Appointment, PatientView, UserProfile, Attendance, Prescription, Lead, AdminConfig, Staff, StaffPermissions } from '../backend';
-import { ExternalBlob, Variant_typed_freehand_camera, Variant_telemedicine_inPerson } from '../backend';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type {
+  AdminConfig,
+  Appointment,
+  Attendance,
+  Lead,
+  PatientView,
+  Prescription,
+  Staff,
+  StaffPermissions,
+  UserProfile,
+} from "../backend";
+import {
+  ExternalBlob,
+  Variant_telemedicine_inPerson,
+  Variant_typed_freehand_camera,
+} from "../backend";
+import { useActor } from "./useActor";
 
 // Temporary type definitions for missing backend types
 interface WhatsAppTemplate {
@@ -17,9 +31,9 @@ export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
 
   const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
+    queryKey: ["currentUserProfile"],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !actorFetching,
@@ -42,11 +56,11 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
     },
   });
 }
@@ -56,7 +70,7 @@ export function useGetAppointments() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Appointment[]>({
-    queryKey: ['appointments'],
+    queryKey: ["appointments"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAppointments();
@@ -72,7 +86,7 @@ export function useGetTodaysAppointments() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Appointment[]>({
-    queryKey: ['todaysAppointments'],
+    queryKey: ["todaysAppointments"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getTodaysAppointmentsSorted();
@@ -88,7 +102,7 @@ export function useGetTomorrowAppointments() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Appointment[]>({
-    queryKey: ['tomorrowAppointments'],
+    queryKey: ["tomorrowAppointments"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getTomorrowAppointmentsSorted();
@@ -104,7 +118,7 @@ export function useGetUpcomingAppointments() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Appointment[]>({
-    queryKey: ['upcomingAppointments'],
+    queryKey: ["upcomingAppointments"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getUpcomingAppointmentsSorted();
@@ -121,20 +135,20 @@ export function useAddAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (appointment: Omit<Appointment, 'id' | 'isFollowUp'>) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async (appointment: Omit<Appointment, "id" | "isFollowUp">) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.addAppointment(
         appointment.patientName,
         appointment.mobile,
         appointment.appointmentTime,
-        appointment.notes
+        appointment.notes,
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
     },
   });
 }
@@ -144,15 +158,18 @@ export function useUpdateAppointment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, appointment }: { id: bigint; appointment: Appointment }) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async ({
+      id,
+      appointment,
+    }: { id: bigint; appointment: Appointment }) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.updateAppointment(id, appointment);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
     },
   });
 }
@@ -163,14 +180,14 @@ export function useDeleteAppointment() {
 
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.deleteAppointment(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
     },
   });
 }
@@ -181,14 +198,14 @@ export function useToggleFollowUpAppointment() {
 
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.toggleFollowUpAppointment(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['tomorrowAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
+      queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
     },
   });
 }
@@ -198,7 +215,7 @@ export function useGetPatients() {
   const { actor, isFetching } = useActor();
 
   return useQuery<PatientView[]>({
-    queryKey: ['patients'],
+    queryKey: ["patients"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getPatients();
@@ -215,18 +232,18 @@ export function useAddPatient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (patient: Omit<PatientView, 'prescriptionHistory'>) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async (patient: Omit<PatientView, "prescriptionHistory">) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.addPatient(
         patient.image || null,
         patient.name,
         patient.mobile,
         patient.area,
-        patient.notes
+        patient.notes,
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
@@ -236,19 +253,25 @@ export function useUpdatePatient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ oldMobile, patient }: { oldMobile: string; patient: Omit<PatientView, 'prescriptionHistory'> }) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async ({
+      oldMobile,
+      patient,
+    }: {
+      oldMobile: string;
+      patient: Omit<PatientView, "prescriptionHistory">;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.updatePatient(
         oldMobile,
         patient.image || null,
         patient.name,
         patient.mobile,
         patient.area,
-        patient.notes
+        patient.notes,
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
@@ -259,11 +282,11 @@ export function useDeletePatient() {
 
   return useMutation({
     mutationFn: async (mobile: string) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.deletePatient(mobile);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
@@ -273,7 +296,7 @@ export function useGetLeads() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Lead[]>({
-    queryKey: ['leads'],
+    queryKey: ["leads"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getLeads();
@@ -291,7 +314,7 @@ export function useAddLead() {
 
   return useMutation({
     mutationFn: async (lead: Lead) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.addLead(
         lead.leadName,
         lead.mobile,
@@ -302,11 +325,11 @@ export function useAddLead() {
         lead.rating,
         lead.doctorRemark,
         lead.addToAppointment,
-        lead.leadStatus
+        lead.leadStatus,
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
@@ -317,7 +340,7 @@ export function useUpdateLead() {
 
   return useMutation({
     mutationFn: async ({ mobile, lead }: { mobile: string; lead: Lead }) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.updateLead(
         mobile,
         lead.leadName,
@@ -329,11 +352,11 @@ export function useUpdateLead() {
         lead.rating,
         lead.doctorRemark,
         lead.addToAppointment,
-        lead.leadStatus
+        lead.leadStatus,
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
@@ -344,11 +367,11 @@ export function useDeleteLead() {
 
   return useMutation({
     mutationFn: async (mobile: string) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.deleteLead(mobile);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
@@ -358,7 +381,7 @@ export function useGetStaff() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Staff[]>({
-    queryKey: ['staff'],
+    queryKey: ["staff"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getStaff();
@@ -375,12 +398,16 @@ export function useAddStaff() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, role, permissions }: { name: string; role: string; permissions: StaffPermissions }) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async ({
+      name,
+      role,
+      permissions,
+    }: { name: string; role: string; permissions: StaffPermissions }) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.addStaff(name, role, permissions);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
     },
   });
 }
@@ -390,7 +417,7 @@ export function useGetAllAttendance() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Attendance[]>({
-    queryKey: ['attendance'],
+    queryKey: ["attendance"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAttendance();
@@ -406,22 +433,24 @@ export function useGetTodaysAttendance() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Attendance[]>({
-    queryKey: ['todaysAttendance'],
+    queryKey: ["todaysAttendance"],
     queryFn: async () => {
       if (!actor) return [];
       const allAttendance = await actor.getAttendance();
-      
+
       // Filter for today's attendance
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayStartNano = BigInt(todayStart.getTime()) * BigInt(1000000);
-      
+
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndNano = BigInt(todayEnd.getTime()) * BigInt(1000000);
-      
-      return allAttendance.filter(record => {
-        return record.timestamp >= todayStartNano && record.timestamp <= todayEndNano;
+
+      return allAttendance.filter((record) => {
+        return (
+          record.timestamp >= todayStartNano && record.timestamp <= todayEndNano
+        );
       });
     },
     enabled: !!actor && !isFetching,
@@ -437,34 +466,38 @@ export function useCreateAttendance() {
 
   return useMutation({
     mutationFn: async ({ name, role }: { name: string; role: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      
+      if (!actor) throw new Error("Actor not available");
+
       // Check for duplicate attendance today
       const allAttendance = await actor.getAttendance();
-      
+
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayStartNano = BigInt(todayStart.getTime()) * BigInt(1000000);
-      
+
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndNano = BigInt(todayEnd.getTime()) * BigInt(1000000);
-      
-      const todaysAttendance = allAttendance.filter(record => {
-        return record.timestamp >= todayStartNano && record.timestamp <= todayEndNano;
+
+      const todaysAttendance = allAttendance.filter((record) => {
+        return (
+          record.timestamp >= todayStartNano && record.timestamp <= todayEndNano
+        );
       });
-      
-      const alreadyRegistered = todaysAttendance.some(record => record.name === name);
-      
+
+      const alreadyRegistered = todaysAttendance.some(
+        (record) => record.name === name,
+      );
+
       if (alreadyRegistered) {
         throw new Error(`${name} has already checked in today`);
       }
-      
+
       return actor.createAttendance(name, role);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['attendance'] });
-      queryClient.invalidateQueries({ queryKey: ['todaysAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["todaysAttendance"] });
     },
   });
 }
@@ -474,19 +507,19 @@ export function useGetPermissionsMatrix() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Record<string, StaffPermissions>>({
-    queryKey: ['permissionsMatrix'],
+    queryKey: ["permissionsMatrix"],
     queryFn: async () => {
       if (!actor) return {};
       const staff = await actor.getStaff();
       const matrix: Record<string, StaffPermissions> = {};
-      
+
       for (const member of staff) {
         const permissions = await actor.getStaffPermissions(member.name);
         if (permissions) {
           matrix[member.name] = permissions;
         }
       }
-      
+
       return matrix;
     },
     enabled: !!actor && !isFetching,
@@ -501,12 +534,15 @@ export function useSetStaffPermissions() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ staffName, permissions }: { staffName: string; permissions: StaffPermissions }) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async ({
+      staffName,
+      permissions,
+    }: { staffName: string; permissions: StaffPermissions }) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.updateStaffPermissions(staffName, permissions);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permissionsMatrix'] });
+      queryClient.invalidateQueries({ queryKey: ["permissionsMatrix"] });
     },
   });
 }
@@ -516,7 +552,7 @@ export function useGetAdminConfig() {
   const { actor, isFetching } = useActor();
 
   return useQuery<AdminConfig | null>({
-    queryKey: ['adminConfig'],
+    queryKey: ["adminConfig"],
     queryFn: async () => {
       if (!actor) return null;
       return actor.getAdminConfig();
@@ -530,20 +566,24 @@ export function useSetupAdminConfig() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      hashedPassword, 
-      securityQuestion, 
-      hashedSecurityAnswer 
-    }: { 
-      hashedPassword: Uint8Array; 
+    mutationFn: async ({
+      hashedPassword,
+      securityQuestion,
+      hashedSecurityAnswer,
+    }: {
+      hashedPassword: Uint8Array;
       securityQuestion: string;
       hashedSecurityAnswer: Uint8Array;
     }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.setAdminPassword(hashedPassword, securityQuestion, hashedSecurityAnswer);
+      if (!actor) throw new Error("Actor not available");
+      return actor.setAdminPassword(
+        hashedPassword,
+        securityQuestion,
+        hashedSecurityAnswer,
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminConfig'] });
+      queryClient.invalidateQueries({ queryKey: ["adminConfig"] });
     },
   });
 }
@@ -553,7 +593,7 @@ export function useVerifyAdminPassword() {
 
   return useMutation({
     mutationFn: async (hashedPassword: Uint8Array) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.verifyAdminPassword(hashedPassword);
     },
   });
@@ -562,29 +602,34 @@ export function useVerifyAdminPassword() {
 // WhatsApp Templates Queries (Placeholder - backend not implemented)
 export function useGetWhatsAppTemplates() {
   return useQuery<WhatsAppTemplate[]>({
-    queryKey: ['whatsappTemplates'],
+    queryKey: ["whatsappTemplates"],
     queryFn: async () => {
       // Return default templates for lead entry
       return [
         {
-          templateName: 'lead-initial-contact',
-          messageContent: 'Hello {leadName}! Thank you for your interest in {treatmentWanted}. We would love to discuss your requirements. When would be a good time to connect?',
+          templateName: "lead-initial-contact",
+          messageContent:
+            "Hello {leadName}! Thank you for your interest in {treatmentWanted}. We would love to discuss your requirements. When would be a good time to connect?",
         },
         {
-          templateName: 'lead-follow-up',
-          messageContent: 'Hi {leadName}, following up on your inquiry about {treatmentWanted}. Are you still interested? We have some great options available for you.',
+          templateName: "lead-follow-up",
+          messageContent:
+            "Hi {leadName}, following up on your inquiry about {treatmentWanted}. Are you still interested? We have some great options available for you.",
         },
         {
-          templateName: 'lead-appointment-scheduling',
-          messageContent: 'Hello {leadName}! We are ready to schedule your appointment for {treatmentWanted}. Please let us know your preferred date and time.',
+          templateName: "lead-appointment-scheduling",
+          messageContent:
+            "Hello {leadName}! We are ready to schedule your appointment for {treatmentWanted}. Please let us know your preferred date and time.",
         },
         {
-          templateName: 'appointment-reminder',
-          messageContent: 'Reminder: Your appointment is scheduled for {date} at {time}. Looking forward to seeing you!',
+          templateName: "appointment-reminder",
+          messageContent:
+            "Reminder: Your appointment is scheduled for {date} at {time}. Looking forward to seeing you!",
         },
         {
-          templateName: 'after-appointment-feedback',
-          messageContent: 'Thank you for visiting us! We hope you had a great experience. Please share your feedback.',
+          templateName: "after-appointment-feedback",
+          messageContent:
+            "Thank you for visiting us! We hope you had a great experience. Please share your feedback.",
         },
       ];
     },
@@ -595,12 +640,12 @@ export function useSaveWhatsAppTemplates() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (templates: WhatsAppTemplate[]) => {
+    mutationFn: async (_templates: WhatsAppTemplate[]) => {
       // Placeholder - backend not implemented
       return Promise.resolve();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['whatsappTemplates'] });
+      queryClient.invalidateQueries({ queryKey: ["whatsappTemplates"] });
     },
   });
 }
@@ -610,7 +655,7 @@ export function usePrescriptions(patientMobile: string) {
   const { actor, isFetching } = useActor();
 
   return useQuery<Prescription[]>({
-    queryKey: ['prescriptions', patientMobile],
+    queryKey: ["prescriptions", patientMobile],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getPrescriptions(patientMobile);
@@ -628,12 +673,14 @@ export function useSavePrescription() {
 
   return useMutation({
     mutationFn: async (prescription: Prescription) => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) throw new Error("Actor not available");
       return actor.savePrescription(prescription);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.mobile] });
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({
+        queryKey: ["prescriptions", variables.mobile],
+      });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
@@ -643,13 +690,18 @@ export function useDeletePrescription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ patientMobile, id }: { patientMobile: string; id: bigint }) => {
-      if (!actor) throw new Error('Actor not available');
+    mutationFn: async ({
+      patientMobile,
+      id,
+    }: { patientMobile: string; id: bigint }) => {
+      if (!actor) throw new Error("Actor not available");
       return actor.deletePrescription(patientMobile, id);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['prescriptions', variables.patientMobile] });
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({
+        queryKey: ["prescriptions", variables.patientMobile],
+      });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
   });
 }
