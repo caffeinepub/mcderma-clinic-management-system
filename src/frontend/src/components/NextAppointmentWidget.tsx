@@ -1,6 +1,6 @@
 import { Calendar, Clock, FileText, User } from "lucide-react";
 import type { Appointment } from "../backend";
-import { formatTimestamp12Hour } from "../lib/utils";
+import { formatTimestamp12Hour } from "../utils/dateUtils";
 
 interface NextAppointmentWidgetProps {
   appointments: Appointment[];
@@ -32,7 +32,7 @@ export default function NextAppointmentWidget({
               Next Appointment
             </p>
             <p className="text-base text-foreground">
-              No upcoming appointments
+              No Appointment For Today
             </p>
           </div>
         </div>

@@ -31,7 +31,10 @@ import {
   useDeleteAppointment,
   useGetPatients,
 } from "../hooks/useQueries";
-import { formatTimestamp12Hour, formatTimestampDDMMYY } from "../lib/utils";
+import {
+  formatTimestamp12Hour,
+  formatTimestampDDMMYY,
+} from "../utils/dateUtils";
 import AppointmentFeedbackActions from "./AppointmentFeedbackActions";
 
 // localStorage helpers for remark

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Appointment } from "../backend";
-import { formatTimestamp12Hour } from "../lib/utils";
+import { formatTimestamp12Hour } from "../utils/dateUtils";
 import { playNotificationSound } from "../utils/notificationSound";
 import { useGetAppointments } from "./useQueries";
 

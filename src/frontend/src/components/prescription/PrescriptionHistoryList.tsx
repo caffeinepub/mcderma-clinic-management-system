@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, FileText, Image as ImageIcon } from "lucide-react";
 import type { Prescription } from "../../backend";
-import { formatDateTime12Hour } from "../../lib/utils";
+import { formatDateTime12Hour } from "../../utils/dateUtils";
 
 interface PrescriptionHistoryListProps {
   prescriptions: Prescription[];

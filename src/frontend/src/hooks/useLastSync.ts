@@ -1,6 +1,6 @@
-import { formatTime12Hour } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { formatTime12Hour } from "../utils/dateUtils";
 
 /**
  * Hook that tracks the last successful data synchronization time.

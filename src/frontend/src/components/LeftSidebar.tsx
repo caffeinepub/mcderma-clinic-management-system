@@ -17,7 +17,7 @@ import {
   useGetStaff,
   useGetTodaysAttendance,
 } from "../hooks/useQueries";
-import { formatTime12Hour } from "../lib/utils";
+import { formatTime12Hour } from "../utils/dateUtils";
 
 interface LeftSidebarProps {
   open: boolean;

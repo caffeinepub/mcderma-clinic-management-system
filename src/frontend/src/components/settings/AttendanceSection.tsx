@@ -15,8 +15,8 @@ import {
 import { ClipboardCheck } from "lucide-react";
 import { useState } from "react";
 import { useGetAllAttendance } from "../../hooks/useQueries";
-import { formatTimestamp12Hour } from "../../lib/utils";
 import { exportAttendanceData } from "../../utils/attendanceExport";
+import { formatTimestamp12Hour } from "../../utils/dateUtils";
 
 const MONTHS = [
   "January",

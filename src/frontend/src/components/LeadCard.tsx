@@ -24,7 +24,7 @@ import {
   useGetWhatsAppTemplates,
   useUpdateLead,
 } from "../hooks/useQueries";
-import { formatDateDDMMYY } from "../lib/utils";
+import { formatDateDDMMYY } from "../utils/dateUtils";
 import {
   getLeadInitialContactMessage,
   openWhatsAppWithLeadMessage,

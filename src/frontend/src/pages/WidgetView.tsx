@@ -1,7 +1,7 @@
 import { Calendar, Clock, FileText, User } from "lucide-react";
 import { useNow } from "../hooks/useNow";
 import { useGetAppointments } from "../hooks/useQueries";
-import { formatTimestamp12Hour } from "../lib/utils";
+import { formatTimestamp12Hour } from "../utils/dateUtils";
 import { extractTreatmentFromNotes } from "../utils/treatment";
 
 export default function WidgetView() {

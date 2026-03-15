@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +9,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -22,14 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import {
-  CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  UserPlus,
-} from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Appointment } from "../backend";
@@ -68,7 +56,7 @@ export default function AppointmentDialog({
 
   const [patientName, setPatientName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [hour, setHour] = useState("12");
   const [minute, setMinute] = useState("00");
   const [period, setPeriod] = useState<"AM" | "PM">("PM");
@@ -76,8 +64,6 @@ export default function AppointmentDialog({
   const [showContactReview, setShowContactReview] = useState(false);
   const [selectedContactName, setSelectedContactName] = useState("");
   const [selectedContactMobile, setSelectedContactMobile] = useState("");
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date | undefined>();
 
   // Check if Contact Picker API is supported
   const isContactPickerSupported =
@@ -91,7 +77,7 @@ export default function AppointmentDialog({
         setNotes(prefilledData.notes || "");
 
         if (prefilledData.appointmentTime) {
-          setDate(prefilledData.appointmentTime);
+          setDate(format(prefilledData.appointmentTime, "yyyy-MM-dd"));
           const hours = prefilledData.appointmentTime.getHours();
           const mins = prefilledData.appointmentTime.getMinutes();
 
@@ -111,7 +97,7 @@ export default function AppointmentDialog({
 
           setMinute(mins.toString().padStart(2, "0"));
         } else {
-          setDate(new Date());
+          setDate(format(new Date(), "yyyy-MM-dd"));
         }
       } else if (appointment) {
         setPatientName(appointment.patientName);
@@ -121,7 +107,7 @@ export default function AppointmentDialog({
         const appointmentDate = new Date(
           Number(appointment.appointmentTime) / 1000000,
         );
-        setDate(appointmentDate);
+        setDate(format(appointmentDate, "yyyy-MM-dd"));
 
         const hours = appointmentDate.getHours();
         const mins = appointmentDate.getMinutes();
@@ -144,7 +130,7 @@ export default function AppointmentDialog({
       } else {
         setPatientName("");
         setMobile("");
-        setDate(new Date());
+        setDate(format(new Date(), "yyyy-MM-dd"));
         setHour("12");
         setMinute("00");
         setPeriod("PM");
@@ -168,7 +154,7 @@ export default function AppointmentDialog({
       hours = 0;
     }
 
-    const appointmentDateTime = new Date(date);
+    const appointmentDateTime = new Date(`${date}T00:00`);
     appointmentDateTime.setHours(hours, Number.parseInt(minute), 0, 0);
     const timestamp = BigInt(appointmentDateTime.getTime() * 1000000);
 
@@ -240,33 +226,6 @@ export default function AppointmentDialog({
     setSelectedContactMobile("");
   };
 
-  const handleCalendarOpen = (open: boolean) => {
-    setCalendarOpen(open);
-    if (open) {
-      setTempDate(date || new Date());
-    }
-  };
-
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setTempDate(selectedDate);
-  };
-
-  const handleSetDate = () => {
-    if (tempDate) {
-      setDate(tempDate);
-      setCalendarOpen(false);
-    }
-  };
-
-  const handleClearDate = () => {
-    setTempDate(undefined);
-  };
-
-  const handleCancelDate = () => {
-    setCalendarOpen(false);
-    setTempDate(date);
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -313,84 +272,15 @@ export default function AppointmentDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Appointment Date</Label>
-              <Popover
-                open={calendarOpen}
-                onOpenChange={handleCalendarOpen}
-                modal={true}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto p-0 appointment-calendar-popover"
-                  align="center"
-                  side="top"
-                >
-                  <div className="enhanced-calendar-container">
-                    {/* Blue header with selected date */}
-                    <div className="calendar-header">
-                      <div className="calendar-year">
-                        {tempDate
-                          ? format(tempDate, "yyyy")
-                          : format(new Date(), "yyyy")}
-                      </div>
-                      <div className="calendar-selected-date">
-                        {tempDate
-                          ? format(tempDate, "EEE, d MMM")
-                          : format(new Date(), "EEE, d MMM")}
-                      </div>
-                    </div>
-
-                    {/* Calendar grid */}
-                    <div className="calendar-body">
-                      <Calendar
-                        mode="single"
-                        selected={tempDate}
-                        onSelect={handleDateSelect}
-                        initialFocus
-                      />
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="calendar-footer">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleClearDate}
-                        className="calendar-action-btn"
-                      >
-                        Clear
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleCancelDate}
-                        className="calendar-action-btn"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={handleSetDate}
-                        className="calendar-action-btn calendar-action-btn-primary"
-                      >
-                        Set
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="appointmentDate">Appointment Date</Label>
+              <Input
+                id="appointmentDate"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                data-ocid="appointment.input"
+              />
             </div>
 
             <div className="space-y-2">

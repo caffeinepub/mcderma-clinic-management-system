@@ -1,5 +1,5 @@
 import type { Appointment, Attendance, Lead, PatientView } from "../backend";
-import { formatDateDDMMYY, formatTimestamp12Hour } from "../lib/utils";
+import { formatDateDDMMYY, formatTimestamp12Hour } from "../utils/dateUtils";
 
 // Simple JSON export functions that work without external dependencies
 export function exportAppointmentsToPDF(appointments: Appointment[]) {
