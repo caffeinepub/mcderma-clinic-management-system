@@ -174,6 +174,7 @@ export default function LeadDialog({
 
       onOpenChange(false);
     } catch (_error) {
+      console.error("Lead save error:", _error);
       toast.error("Failed to save lead");
     }
   };
@@ -218,17 +219,24 @@ export default function LeadDialog({
 
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number *</Label>
-              <Input
-                id="mobile"
-                type="tel"
-                value={formData.mobile}
-                onChange={(e) =>
-                  setFormData({ ...formData, mobile: e.target.value })
-                }
-                required
-                placeholder="Enter mobile number"
-                disabled={isPending}
-              />
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
+                  +91
+                </span>
+                <Input
+                  className="rounded-l-none flex-1"
+                  id="mobile"
+                  type="tel"
+                  inputMode="numeric"
+                  value={formData.mobile}
+                  onChange={(e) =>
+                    setFormData({ ...formData, mobile: e.target.value })
+                  }
+                  required
+                  placeholder="10-digit number"
+                  disabled={isPending}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

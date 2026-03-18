@@ -150,6 +150,9 @@ export function useAddAppointment() {
       queryClient.invalidateQueries({ queryKey: ["tomorrowAppointments"] });
       queryClient.invalidateQueries({ queryKey: ["upcomingAppointments"] });
     },
+    onError: (error) => {
+      console.error("Add appointment error:", error);
+    },
   });
 }
 
@@ -245,6 +248,9 @@ export function useAddPatient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
+    onError: (error) => {
+      console.error("Add patient error:", error);
+    },
   });
 }
 
@@ -330,6 +336,9 @@ export function useAddLead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: (error) => {
+      console.error("Add lead error:", error);
     },
   });
 }

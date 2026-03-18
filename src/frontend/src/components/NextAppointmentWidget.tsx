@@ -11,14 +11,14 @@ export default function NextAppointmentWidget({
   appointments,
   currentTime,
 }: NextAppointmentWidgetProps) {
-  // Find the next upcoming appointment (smallest appointmentTime >= now)
+  // Find the next upcoming appointment from today's list only (time >= now)
   const nowMs = currentTime.getTime() * 1_000_000; // Convert to nanoseconds
 
-  const upcomingAppointments = appointments
+  const upcomingToday = appointments
     .filter((apt) => Number(apt.appointmentTime) >= nowMs)
     .sort((a, b) => Number(a.appointmentTime) - Number(b.appointmentTime));
 
-  const nextAppointment = upcomingAppointments[0];
+  const nextAppointment = upcomingToday[0];
 
   if (!nextAppointment) {
     return (
@@ -32,7 +32,7 @@ export default function NextAppointmentWidget({
               Next Appointment
             </p>
             <p className="text-base text-foreground">
-              No Appointment For Today
+              No More Appointment for Today
             </p>
           </div>
         </div>

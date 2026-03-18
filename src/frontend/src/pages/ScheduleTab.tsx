@@ -10,7 +10,6 @@ import NextAppointmentWidget from "../components/NextAppointmentWidget";
 import PrescriptionEditorDialog from "../components/PrescriptionEditorDialog";
 import { useNow } from "../hooks/useNow";
 import {
-  useGetAppointments,
   useGetTodaysAppointments,
   useGetTomorrowAppointments,
   useGetUpcomingAppointments,
@@ -36,7 +35,6 @@ export default function ScheduleTab() {
     useGetTomorrowAppointments();
   const { data: upcomingAppointments = [], isLoading: loadingUpcoming } =
     useGetUpcomingAppointments();
-  const { data: allAppointments = [] } = useGetAppointments();
   const updateAppointment = useUpdateAppointment();
 
   // Get current time that updates every minute
@@ -86,8 +84,11 @@ export default function ScheduleTab() {
 
   return (
     <div className="space-y-4">
-      {/* Next Appointment Widget */}
-      <NextAppointmentWidget appointments={allAppointments} currentTime={now} />
+      {/* Next Appointment Widget — today's appointments only */}
+      <NextAppointmentWidget
+        appointments={todaysAppointments}
+        currentTime={now}
+      />
 
       {/* Today's Count Card - Ultra Compact Design */}
       <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-lg px-3 py-1.5 shadow-md">

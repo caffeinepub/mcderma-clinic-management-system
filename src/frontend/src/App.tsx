@@ -12,6 +12,8 @@ import PatientsTab from "./pages/PatientsTab";
 import ScheduleTab from "./pages/ScheduleTab";
 import SettingsTab from "./pages/SettingsTab";
 
+const MAX_LOADING_MS = 12000;
+
 export default function App() {
   const { identity, isInitializing } = useInternetIdentity();
   const {
@@ -20,11 +22,18 @@ export default function App() {
     isFetched,
   } = useGetCallerUserProfile();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "schedule" | "patients" | "leads" | "settings"
   >("schedule");
 
   const isAuthenticated = !!identity;
+
+  // Safety valve: never show spinner longer than MAX_LOADING_MS
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimedOut(true), MAX_LOADING_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (
@@ -39,7 +48,10 @@ export default function App() {
     }
   }, [isAuthenticated, profileLoading, isFetched, userProfile]);
 
-  if (isInitializing || (isAuthenticated && profileLoading)) {
+  const isLoading =
+    !loadingTimedOut && (isInitializing || (isAuthenticated && profileLoading));
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

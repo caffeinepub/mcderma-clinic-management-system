@@ -1,11 +1,23 @@
-# Specification
+# McDerma Clinic Management System
 
-## Summary
-**Goal:** Update the Next Appointment widget to only show appointments from today's list, never from tomorrow's or upcoming sections.
+## Current State
+Full-featured clinic PWA with appointment scheduling, patient/lead management, staff attendance, role-based access, prescriptions, WhatsApp integration, and analytics. Mobile number inputs are plain text fields with no country code prefix.
 
-**Planned changes:**
-- Modify `NextAppointmentWidget` to filter and evaluate only today's appointments when finding the next upcoming appointment.
-- If today has no appointments (or all have passed), display "No Appointment For Today" instead of pulling from future sections.
-- Apply the same today-only logic in `WidgetView.tsx` if it also renders next-appointment data.
+## Requested Changes (Diff)
 
-**User-visible outcome:** The Next Appointment widget will only display upcoming appointments from today. If there are no remaining appointments today, it shows "No Appointment For Today" rather than pulling in tomorrow's or upcoming appointments.
+### Add
+- +91 country code prefix shown as a fixed visual tab before all mobile number input fields (AppointmentDialog, PatientDialog, LeadDialog, ContactImportReviewDialog if applicable)
+
+### Modify
+- Mobile number input layout: wrap in flex container with "+91" as a styled fixed prefix span and the input field beside it
+- Fix "fail to save entry" error: improve error handling, ensure actor availability checks, add specific error messages to help diagnose failures. Also check that all mutations properly handle the actor state.
+
+### Remove
+- Nothing removed
+
+## Implementation Plan
+1. Update AppointmentDialog.tsx: change mobile input to show +91 prefix (fixed span + input side by side)
+2. Update PatientDialog.tsx: same change for mobile input
+3. Update LeadDialog.tsx: same change for mobile input
+4. Add better error handling in mutations - log actual errors, not just generic messages
+5. Ensure actor availability before each mutation

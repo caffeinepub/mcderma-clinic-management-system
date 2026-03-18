@@ -195,6 +195,7 @@ export default function AppointmentDialog({
       }
       onOpenChange(false);
     } catch (_error) {
+      console.error("Appointment save error:", _error);
       toast.error(
         isEditing
           ? "Failed to update appointment"
@@ -262,13 +263,21 @@ export default function AppointmentDialog({
 
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number</Label>
-              <Input
-                id="mobile"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="Enter mobile number"
-                required
-              />
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
+                  +91
+                </span>
+                <Input
+                  className="rounded-l-none flex-1"
+                  id="mobile"
+                  type="tel"
+                  inputMode="numeric"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder="10-digit number"
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
