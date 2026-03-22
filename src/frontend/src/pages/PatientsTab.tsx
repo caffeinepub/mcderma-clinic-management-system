@@ -42,7 +42,6 @@ export default function PatientsTab() {
     if (!matchesSearch) return false;
 
     if (treatmentFilter) {
-      // Check if the patient's notes contain the treatment
       const notes = (patient.notes || "").toLowerCase();
       return notes.includes(treatmentFilter.toLowerCase());
     }
@@ -60,15 +59,32 @@ export default function PatientsTab() {
       {/* Header Section */}
       <Card className="border-none shadow-sm bg-gradient-to-br from-primary/5 via-background to-background">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10">
-              <Users className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Patients</CardTitle>
+                <CardDescription className="text-base">
+                  Manage your patient records
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl">Patients</CardTitle>
-              <CardDescription className="text-base">
-                Manage your patient records
-              </CardDescription>
+            {/* Total Patient Count Badge */}
+            <div
+              className="flex flex-col items-center justify-center px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 min-w-[64px]"
+              data-ocid="patients.total_count.card"
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-primary/70 leading-none mb-0.5">
+                Total
+              </span>
+              <span className="text-xl font-bold text-primary leading-none">
+                {isLoading ? "—" : patients.length}
+              </span>
+              <span className="text-[10px] font-medium text-primary/70 leading-none mt-0.5">
+                Patients
+              </span>
             </div>
           </div>
         </CardHeader>

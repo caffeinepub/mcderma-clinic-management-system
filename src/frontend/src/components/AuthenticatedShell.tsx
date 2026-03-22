@@ -3,10 +3,12 @@ import BottomNav from "./BottomNav";
 import Header from "./Header";
 import LeftSidebar from "./LeftSidebar";
 
+type TabId = "schedule" | "patients" | "leads" | "history" | "settings";
+
 interface AuthenticatedShellProps {
   children: React.ReactNode;
-  activeTab: "schedule" | "patients" | "leads" | "settings";
-  onTabChange: (tab: "schedule" | "patients" | "leads" | "settings") => void;
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
 }
 
 export default function AuthenticatedShell({
@@ -16,11 +18,11 @@ export default function AuthenticatedShell({
 }: AuthenticatedShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // All tabs are always accessible
-  const allTabs: Array<"schedule" | "patients" | "leads" | "settings"> = [
+  const allTabs: Array<TabId> = [
     "schedule",
     "patients",
     "leads",
+    "history",
     "settings",
   ];
 

@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ClipboardCheck,
   Download,
+  FileText,
   MessageSquare,
   Share2,
   Shield,
@@ -21,6 +22,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import ExportFormatDialog from "../components/ExportFormatDialog";
+import PrivacyPolicyDialog from "../components/PrivacyPolicyDialog";
 import AdminGateDialog from "../components/admin/AdminGateDialog";
 import PermissionsMatrix from "../components/admin/PermissionsMatrix";
 import AttendanceSection from "../components/settings/AttendanceSection";
@@ -64,6 +66,7 @@ export default function SettingsTab() {
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportType, setExportType] = useState<ExportType>(null);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   const handleSaveProfile = async () => {
     try {
@@ -85,7 +88,7 @@ export default function SettingsTab() {
 
   const handleShareApp = async () => {
     const shareData = {
-      title: "McDerma Clinic App",
+      title: "Client Appointment Management App",
       text: "Check out this clinic management app!",
       url: window.location.origin,
     };
@@ -199,23 +202,26 @@ export default function SettingsTab() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
+                  data-ocid="settings.profile.input"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="clinicName">Clinic Name</Label>
+                <Label htmlFor="clinicName">App / Clinic Name</Label>
                 <Input
                   id="clinicName"
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
-                  placeholder="Enter your clinic name"
+                  placeholder="Client Appointment Management"
+                  data-ocid="settings.clinicname.input"
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={handleSaveProfile}
                   disabled={saveProfile.isPending}
+                  data-ocid="settings.profile.save_button"
                 >
                   {saveProfile.isPending ? "Saving..." : "Save Changes"}
                 </Button>
@@ -223,9 +229,19 @@ export default function SettingsTab() {
                   variant="outline"
                   onClick={handleShareApp}
                   className="gap-2"
+                  data-ocid="settings.share.button"
                 >
                   <Share2 className="h-4 w-4" />
                   Share App
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPrivacyPolicy(true)}
+                  className="gap-2"
+                  data-ocid="privacy_policy.open_modal_button"
+                >
+                  <FileText className="h-4 w-4" />
+                  Privacy Policy
                 </Button>
               </div>
             </CardContent>
@@ -237,7 +253,11 @@ export default function SettingsTab() {
               <CardDescription>Manage your account</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="destructive" onClick={handleLogout}>
+              <Button
+                variant="destructive"
+                onClick={handleLogout}
+                data-ocid="settings.logout.button"
+              >
                 Logout
               </Button>
             </CardContent>
@@ -268,6 +288,7 @@ export default function SettingsTab() {
                 <Button
                   onClick={() => setShowAdminGate(true)}
                   className="gap-2"
+                  data-ocid="settings.admin.open_modal_button"
                 >
                   <Shield className="h-4 w-4" />
                   Unlock Admin Section
@@ -293,6 +314,7 @@ export default function SettingsTab() {
                   onClick={() => handleExportClick("appointments")}
                   variant="outline"
                   className="gap-2 justify-start"
+                  data-ocid="settings.appointments.button"
                 >
                   <Download className="h-4 w-4" />
                   Export Appointments
@@ -301,6 +323,7 @@ export default function SettingsTab() {
                   onClick={() => handleExportClick("patients")}
                   variant="outline"
                   className="gap-2 justify-start"
+                  data-ocid="settings.patients.button"
                 >
                   <Download className="h-4 w-4" />
                   Export Patients
@@ -309,6 +332,7 @@ export default function SettingsTab() {
                   onClick={() => handleExportClick("leads")}
                   variant="outline"
                   className="gap-2 justify-start"
+                  data-ocid="settings.leads.button"
                 >
                   <Download className="h-4 w-4" />
                   Export Leads
@@ -317,6 +341,7 @@ export default function SettingsTab() {
                   onClick={() => handleExportClick("attendance")}
                   variant="outline"
                   className="gap-2 justify-start"
+                  data-ocid="settings.attendance.button"
                 >
                   <Download className="h-4 w-4" />
                   Export Attendance
@@ -339,6 +364,11 @@ export default function SettingsTab() {
         onConfirm={handleExportConfirm}
         title="Select Export Format"
         description="Choose PDF or Excel format for your export"
+      />
+
+      <PrivacyPolicyDialog
+        open={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
       />
     </div>
   );

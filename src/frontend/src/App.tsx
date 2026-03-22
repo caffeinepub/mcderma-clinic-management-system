@@ -6,6 +6,7 @@ import AuthenticatedShell from "./components/AuthenticatedShell";
 import ProfileSetupDialog from "./components/ProfileSetupDialog";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
+import HistoryTab from "./pages/HistoryTab";
 import LeadsTab from "./pages/LeadsTab";
 import LoginPage from "./pages/LoginPage";
 import PatientsTab from "./pages/PatientsTab";
@@ -13,6 +14,8 @@ import ScheduleTab from "./pages/ScheduleTab";
 import SettingsTab from "./pages/SettingsTab";
 
 const MAX_LOADING_MS = 12000;
+
+type TabId = "schedule" | "patients" | "leads" | "history" | "settings";
 
 export default function App() {
   const { identity, isInitializing } = useInternetIdentity();
@@ -23,13 +26,10 @@ export default function App() {
   } = useGetCallerUserProfile();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "schedule" | "patients" | "leads" | "settings"
-  >("schedule");
+  const [activeTab, setActiveTab] = useState<TabId>("schedule");
 
   const isAuthenticated = !!identity;
 
-  // Safety valve: never show spinner longer than MAX_LOADING_MS
   useEffect(() => {
     const timer = setTimeout(() => setLoadingTimedOut(true), MAX_LOADING_MS);
     return () => clearTimeout(timer);
@@ -76,6 +76,8 @@ export default function App() {
         return <PatientsTab />;
       case "leads":
         return <LeadsTab />;
+      case "history":
+        return <HistoryTab />;
       case "settings":
         return <SettingsTab />;
       default:

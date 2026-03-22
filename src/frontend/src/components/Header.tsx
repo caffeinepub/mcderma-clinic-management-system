@@ -26,7 +26,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const isSyncing = useSyncStatus();
   const queryClient = useQueryClient();
 
-  const clinicName = userProfile?.clinicName || "McDerma";
+  const clinicName = userProfile?.clinicName || "Client Appointment Management";
   const username = userProfile?.username || "User";
 
   const handleLogout = async () => {
@@ -55,7 +55,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
             className="h-10 w-10"
           />
           <div className="flex flex-col">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent leading-tight">
               {clinicName}
             </h1>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

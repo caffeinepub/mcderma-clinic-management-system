@@ -44,6 +44,7 @@ export default function PatientPrescriptionHistoryDialog({
           <PrescriptionHistoryList
             prescriptions={sortedPrescriptions}
             isLoading={isLoading}
+            patientMobile={patientMobile}
           />
         </div>
       </DialogContent>
