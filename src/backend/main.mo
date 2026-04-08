@@ -7,16 +7,16 @@ import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 import Array "mo:core/Array";
-import Storage "blob-storage/Storage";
-import MixinStorage "blob-storage/Mixin";
-import AccessControl "authorization/access-control";
-import MixinAuthorization "authorization/MixinAuthorization";
+import Storage "mo:caffeineai-object-storage/Storage";
+import MixinObjectStorage "mo:caffeineai-object-storage/Mixin";
+import AccessControl "mo:caffeineai-authorization/access-control";
+import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  include MixinStorage();
+  include MixinObjectStorage();
 
   type Credentials = {
     hashedPassword : Blob;
@@ -149,6 +149,7 @@ actor {
   let userData = Map.empty<Principal, UserData>();
   let usernameToPrincipal = Map.empty<Text, Principal>();
   let syncData = Map.empty<Principal, Time.Time>();
+  let subscriptionData = Map.empty<Principal, Int>();
 
   func getOrInitializeUserData(caller : Principal) : UserData {
     switch (userData.get(caller)) {
@@ -1618,6 +1619,53 @@ actor {
         };
       };
       case (null) { Runtime.trap("User not found") };
+    };
+  };
+
+  // Subscription: expiry stored as nanosecond timestamp (Int)
+  // 90 days in nanoseconds = 90 * 24 * 60 * 60 * 1_000_000_000
+  let ninetyDaysNs : Int = 7_776_000_000_000_000;
+
+  public shared ({ caller }) func getSubscriptionExpiry() : async Int {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    switch (subscriptionData.get(caller)) {
+      case (?expiry) { expiry };
+      case (null) {
+        let expiry = Time.now() + ninetyDaysNs;
+        subscriptionData.add(caller, expiry);
+        expiry;
+      };
+    };
+  };
+
+  public shared ({ caller }) func renewSubscription() : async Int {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized");
+    };
+    let now = Time.now();
+    let currentExpiry = switch (subscriptionData.get(caller)) {
+      case (?expiry) { if (expiry > now) expiry else now };
+      case (null) { now };
+    };
+    let newExpiry = currentExpiry + ninetyDaysNs;
+    subscriptionData.add(caller, newExpiry);
+    newExpiry;
+  };
+
+  public shared ({ caller }) func isSubscriptionActive() : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return false;
+    };
+    let now = Time.now();
+    switch (subscriptionData.get(caller)) {
+      case (?expiry) { expiry > now };
+      case (null) {
+        let expiry = now + ninetyDaysNs;
+        subscriptionData.add(caller, expiry);
+        true;
+      };
     };
   };
 };

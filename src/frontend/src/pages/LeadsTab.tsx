@@ -79,10 +79,8 @@ export default function LeadsTab() {
     );
   });
 
-  // Sort leads by follow-up date
-  const sortedLeads = [...filteredLeads].sort((a, b) => {
-    return Number(a.followUpDate - b.followUpDate);
-  });
+  // Show latest entry first — reverse so the most recently added lead appears at the top
+  const sortedLeads = [...filteredLeads].reverse();
 
   return (
     <div className="space-y-4">

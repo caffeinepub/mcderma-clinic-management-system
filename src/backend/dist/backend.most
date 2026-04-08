@@ -1,0 +1,141 @@
+// Version: 1.0.0
+type AdminConfig__889654536 =
+  {
+    hashedPassword : ?Blob;
+    hashedSecurityAnswer : ?Blob;
+    securityQuestion : Text
+  };
+type Appointment__384223623 =
+  {
+    appointmentTime : Nat;
+    id : Nat;
+    isFollowUp : Bool;
+    mobile : Text;
+    notes : Text;
+    patientName : Text
+  };
+type Attendance__674725553 = {name : Text; role : Text; timestamp : Int};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type ExternalBlob__246066408 = Blob;
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Lead__21276013 =
+  {
+    addToAppointment : Bool;
+    area : Text;
+    doctorRemark : Text;
+    expectedTreatmentDate : Int;
+    followUpDate : Int;
+    leadName : Text;
+    leadStatus : Text;
+    mobile : Text;
+    rating : Nat8;
+    treatmentWanted : Text
+  };
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type List__415060402<T> = List__790383201<T>;
+type List__790383201<T> =
+  {
+    var blockIndex : Nat__490723111;
+    var blocks : [var [var ?T]];
+    var elementIndex : Nat__490723111
+  };
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Patient__823362798 =
+  {
+    area : Text;
+    image : ?ExternalBlob__246066408;
+    mobile : Text;
+    name : Text;
+    notes : Text;
+    prescriptionHistory : List__415060402<Prescription__847157722>
+  };
+type Prescription__847157722 =
+  {
+    allergies : ?Text;
+    appointmentId : ?Nat;
+    clinicName : Text;
+    consultationType : {#inPerson; #telemedicine};
+    doctorNotes : Text;
+    followUp : ?Text;
+    medicalHistory : ?Text;
+    mobile : Text;
+    patientName : Text;
+    prescriptionData :
+      {
+        #camera : ExternalBlob__246066408;
+        #freehand : ExternalBlob__246066408;
+        #typed : Text
+      };
+    prescriptionType : {#camera; #freehand; #typed};
+    symptoms : ?Text;
+    timestamp : Int
+  };
+type StaffPermissions__333123232 =
+  {
+    canAccessAppointments : Bool;
+    canAccessLeads : Bool;
+    canAccessPatients : Bool;
+    canAccessSettings : Bool;
+    hasFullControl : Bool
+  };
+type Staff__880930854 = {name : Text; role : Text};
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type UserData__498200022 =
+  {
+    adminConfig : AdminConfig__889654536;
+    appointmentIdCounter : Nat;
+    appointments : Map__605269027<Nat, Appointment__384223623>;
+    appointmentsLastModified : Time__900049286;
+    attendance : Map__605269027<Text, Attendance__674725553>;
+    attendanceIdCounter : Nat;
+    hashedPassword : Blob;
+    leads : Map__605269027<Text, Lead__21276013>;
+    leadsLastModified : Time__900049286;
+    patients : Map__605269027<Text, Patient__823362798>;
+    patientsLastModified : Time__900049286;
+    prescriptionsLastModified : Time__900049286;
+    profile : UserProfile__491224006;
+    profileLastModified : Time__900049286;
+    staff : Map__605269027<Text, Staff__880930854>;
+    staffLastModified : Time__900049286;
+    staffPermissions : Map__605269027<Text, StaffPermissions__333123232>;
+    whatsappTemplates : Map__605269027<Text, WhatsAppTemplate__265091614>
+  };
+type UserProfile__491224006 = {clinicName : Text; username : Text};
+type UserRole__1054455867 = {#admin; #guest; #user};
+type WhatsAppTemplate__265091614 =
+  {messageContent : Text; templateName : Text};
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable ninetyDaysNs : Int;
+  stable subscriptionData :
+    {var root : Node__46230540<Principal, Int>; var size : Nat__490723111};
+  stable syncData :
+    {
+      var root : Node__46230540<Principal, Time__900049286>;
+      var size : Nat__490723111
+    };
+  stable userData :
+    {
+      var root : Node__46230540<Principal, UserData__498200022>;
+      var size : Nat__490723111
+    };
+  stable usernameToPrincipal :
+    {var root : Node__46230540<Text, Principal>; var size : Nat__490723111}
+};

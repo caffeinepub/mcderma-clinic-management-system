@@ -130,13 +130,16 @@ export interface backendInterface {
     getPrescriptionsLastModified(): Promise<Time | null>;
     getStaff(): Promise<Array<Staff>>;
     getStaffPermissions(staffName: string): Promise<StaffPermissions | null>;
+    getSubscriptionExpiry(): Promise<bigint>;
     getTodaysAppointmentsSorted(): Promise<Array<Appointment>>;
     getTomorrowAppointmentsSorted(): Promise<Array<Appointment>>;
     getUpcomingAppointmentsSorted(): Promise<Array<Appointment>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    isSubscriptionActive(): Promise<boolean>;
     login(username: string, hashedPassword: Uint8Array): Promise<string>;
     register(username: string, hashedPassword: Uint8Array): Promise<string>;
+    renewSubscription(): Promise<bigint>;
     resetAdminPassword(hashedSecurityAnswer: Uint8Array, newHashedPassword: Uint8Array): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     savePrescription(prescription: Prescription): Promise<string>;

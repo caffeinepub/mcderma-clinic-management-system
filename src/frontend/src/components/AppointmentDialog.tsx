@@ -21,6 +21,7 @@ import { UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Appointment } from "../backend";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useContactPicker } from "../hooks/useContactPicker";
 import {
   useAddAppointment,
@@ -29,6 +30,7 @@ import {
 } from "../hooks/useQueries";
 import { normalizePhone } from "../utils/phone";
 import ContactImportReviewDialog from "./ContactImportReviewDialog";
+import SubscriptionExpiredModal from "./subscription/SubscriptionExpiredModal";
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -49,6 +51,8 @@ export default function AppointmentDialog({
   prefilledData,
 }: AppointmentDialogProps) {
   const isEditing = !!appointment;
+  const { isActive: isSubscriptionActive } = useSubscription();
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
   const addAppointment = useAddAppointment();
   const updateAppointment = useUpdateAppointment();
   const { data: patients = [] } = useGetPatients();
@@ -141,6 +145,11 @@ export default function AppointmentDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isEditing && !isSubscriptionActive) {
+      setShowExpiredModal(true);
+      return;
+    }
 
     if (!date) {
       toast.error("Please select a date");
@@ -382,6 +391,7 @@ export default function AppointmentDialog({
         contactMobile={selectedContactMobile}
         onConfirm={handleContactConfirm}
       />
+      <SubscriptionExpiredModal open={showExpiredModal} />
     </>
   );
 }

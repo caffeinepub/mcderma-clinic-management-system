@@ -27,6 +27,8 @@ import AdminGateDialog from "../components/admin/AdminGateDialog";
 import PermissionsMatrix from "../components/admin/PermissionsMatrix";
 import AttendanceSection from "../components/settings/AttendanceSection";
 import WhatsAppTemplatesEditor from "../components/settings/WhatsAppTemplatesEditor";
+import RenewSubscriptionDialog from "../components/subscription/RenewSubscriptionDialog";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useGetAllAttendance,
@@ -67,6 +69,12 @@ export default function SettingsTab() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportType, setExportType] = useState<ExportType>(null);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const {
+    expiryDate,
+    isActive: isSubActive,
+    daysRemaining,
+  } = useSubscription();
 
   const handleSaveProfile = async () => {
     try {
@@ -249,6 +257,61 @@ export default function SettingsTab() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Subscription</span>
+                <span
+                  className={`text-sm font-medium px-2 py-0.5 rounded-full ${isSubActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
+                >
+                  {isSubActive ? "Active" : "Expired"}
+                </span>
+              </CardTitle>
+              <CardDescription>Clinic app subscription status</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Plan</span>
+                  <span className="font-medium">3 Month Access</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Fee</span>
+                  <span className="font-medium">₹1,499 / 3 months</span>
+                </div>
+                {expiryDate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Valid Until</span>
+                    <span className="font-medium">
+                      {expiryDate.toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Days Remaining</span>
+                  <span
+                    className={`font-medium ${daysRemaining <= 7 ? "text-red-500" : "text-green-600"}`}
+                  >
+                    {isSubActive ? `${daysRemaining} days` : "Expired"}
+                  </span>
+                </div>
+              </div>
+              <Button
+                className="w-full"
+                variant={isSubActive ? "outline" : "default"}
+                onClick={() => setShowRenewDialog(true)}
+              >
+                {isSubActive
+                  ? "Extend Subscription"
+                  : "Renew Subscription – ₹1,499"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Account Actions</CardTitle>
               <CardDescription>Manage your account</CardDescription>
             </CardHeader>
@@ -369,6 +432,10 @@ export default function SettingsTab() {
       <PrivacyPolicyDialog
         open={showPrivacyPolicy}
         onClose={() => setShowPrivacyPolicy(false)}
+      />
+      <RenewSubscriptionDialog
+        open={showRenewDialog}
+        onOpenChange={setShowRenewDialog}
       />
     </div>
   );

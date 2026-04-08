@@ -4,6 +4,8 @@ import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
 import AuthenticatedShell from "./components/AuthenticatedShell";
 import ProfileSetupDialog from "./components/ProfileSetupDialog";
+import SubscriptionWarningBanner from "./components/subscription/SubscriptionWarningBanner";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
 import HistoryTab from "./pages/HistoryTab";
@@ -87,10 +89,13 @@ export default function App() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthenticatedShell activeTab={activeTab} onTabChange={setActiveTab}>
-        {renderTabContent()}
-      </AuthenticatedShell>
-      {showProfileSetup && <ProfileSetupDialog />}
+      <SubscriptionProvider>
+        <SubscriptionWarningBanner />
+        <AuthenticatedShell activeTab={activeTab} onTabChange={setActiveTab}>
+          {renderTabContent()}
+        </AuthenticatedShell>
+        {showProfileSetup && <ProfileSetupDialog />}
+      </SubscriptionProvider>
       <Toaster position="top-center" />
     </ThemeProvider>
   );

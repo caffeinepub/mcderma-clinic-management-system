@@ -1,0 +1,180 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = 
+ record {
+   clinicName: text;
+   username: text;
+ };
+type Time = int;
+type StaffPermissions = 
+ record {
+   canAccessAppointments: bool;
+   canAccessLeads: bool;
+   canAccessPatients: bool;
+   canAccessSettings: bool;
+   hasFullControl: bool;
+ };
+type Staff = 
+ record {
+   name: text;
+   role: text;
+ };
+type Prescription = 
+ record {
+   allergies: opt text;
+   appointmentId: opt nat;
+   clinicName: text;
+   consultationType: variant {
+                       inPerson;
+                       telemedicine;
+                     };
+   doctorNotes: text;
+   followUp: opt text;
+   medicalHistory: opt text;
+   mobile: text;
+   patientName: text;
+   prescriptionData:
+    variant {
+      camera: ExternalBlob;
+      freehand: ExternalBlob;
+      typed: text;
+    };
+   prescriptionType: variant {
+                       camera;
+                       freehand;
+                       typed;
+                     };
+   symptoms: opt text;
+   timestamp: int;
+ };
+type PatientView = 
+ record {
+   area: text;
+   image: opt ExternalBlob;
+   mobile: text;
+   name: text;
+   notes: text;
+   prescriptionHistory: vec Prescription;
+ };
+type Lead = 
+ record {
+   addToAppointment: bool;
+   area: text;
+   doctorRemark: text;
+   expectedTreatmentDate: int;
+   followUpDate: int;
+   leadName: text;
+   leadStatus: text;
+   mobile: text;
+   rating: nat8;
+   treatmentWanted: text;
+ };
+type ExternalBlob = blob;
+type Attendance = 
+ record {
+   name: text;
+   role: text;
+   timestamp: int;
+ };
+type Appointment = 
+ record {
+   appointmentTime: nat;
+   id: nat;
+   isFollowUp: bool;
+   mobile: text;
+   notes: text;
+   patientName: text;
+ };
+type AdminConfig = 
+ record {
+   hashedPassword: opt blob;
+   hashedSecurityAnswer: opt blob;
+   securityQuestion: text;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initializeAccessControl: () -> ();
+  addAppointment: (patientName: text, mobile: text, appointmentTime: 
+   nat, notes: text) -> (text);
+  addLead: (leadName: text, mobile: text, treatmentWanted: text, area: 
+   text, followUpDate: int, expectedTreatmentDate: int, rating: nat8,
+   doctorRemark: text, addToAppointment: bool, leadStatus: text) -> (
+   text);
+  addPatient: (image: opt ExternalBlob, name: text, mobile: text, area: 
+   text, notes: text) -> (text);
+  addStaff: (name: text, role: text, permissions: StaffPermissions) -> (text);
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  createAttendance: (name: text, role: text) -> (bool);
+  deleteAppointment: (id: nat) -> (text);
+  deleteLead: (mobile: text) -> (text);
+  deletePatient: (mobile: text) -> (text);
+  deletePrescription: (patientMobile: text, id: nat) -> (text);
+  deleteStaff: (staffName: text) -> (text);
+  getAdminConfig: () -> (opt AdminConfig) query;
+  getAppointments: () -> (vec Appointment) query;
+  getAttendance: () -> (vec Attendance) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getLeads: () -> (vec Lead) query;
+  getPatients: () -> (vec PatientView) query;
+  getPrescriptionById: (patientMobile: text, id: nat) ->
+   (opt Prescription) query;
+  getPrescriptions: (patientMobile: text) -> (vec Prescription) query;
+  getPrescriptionsLastModified: () -> (opt Time) query;
+  getStaff: () -> (vec Staff) query;
+  getStaffPermissions: (staffName: text) -> (opt StaffPermissions) query;
+  getSubscriptionExpiry: () -> (int);
+  getTodaysAppointmentsSorted: () -> (vec Appointment) query;
+  getTomorrowAppointmentsSorted: () -> (vec Appointment) query;
+  getUpcomingAppointmentsSorted: () -> (vec Appointment) query;
+  getUserProfile: (user: principal) -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  isSubscriptionActive: () -> (bool);
+  login: (username: text, hashedPassword: blob) -> (text);
+  register: (username: text, hashedPassword: blob) -> (text);
+  renewSubscription: () -> (int);
+  resetAdminPassword: (hashedSecurityAnswer: blob, newHashedPassword:
+   blob) -> (text);
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  savePrescription: (prescription: Prescription) -> (text);
+  setAdminPassword: (hashedPassword: blob, securityQuestion: text,
+   hashedSecurityAnswer: blob) -> (text);
+  toggleFollowUpAppointment: (id: nat) -> (text);
+  unlockAdmin: (hashedSecurityAnswer: blob) -> (bool);
+  updateAppointment: (id: nat, updatedAppointment: Appointment) -> (text);
+  updateAttendance: (_timestamp: text, name: text, role: text) -> (bool);
+  updateLead: (mobile: text, leadName: text, newMobile: text,
+   treatmentWanted: text, area: text, followUpDate: int,
+   expectedTreatmentDate: int, rating: nat8, doctorRemark: text,
+   addToAppointment: bool, leadStatus: text) -> (text);
+  updatePatient: (mobile: text, image: opt ExternalBlob, name: text,
+   newMobile: text, area: text, notes: text) -> (text);
+  updateStaffPermissions: (staffName: text, permissions: StaffPermissions) ->
+   (text);
+  verifyAdminPassword: (hashedPassword: blob) -> (bool);
+}
